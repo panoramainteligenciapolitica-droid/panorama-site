@@ -67,11 +67,25 @@ a { color: inherit; }
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg); box-shadow: 0 1px 0 var(--line); }
 .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1rem; }
 .top .logo { width: 180px; color: var(--navy-ink); }
+.brand { margin-right: auto; }
 .nav { display: flex; align-items: center; gap: 1.6rem; font-size: .92rem; font-weight: 400; }
-.nav a { text-decoration: none; color: var(--muted); }
+.nav a { text-decoration: none; color: var(--muted); white-space: nowrap; }
 .nav a:hover { color: var(--text); }
-.nav a.cta { color: #fff; background: var(--navy); padding: .55rem 1.1rem; border-radius: 999px; }
-@media (max-width: 820px) { .nav a:not(.cta) { display: none; } .top .logo { width: 142px; } }
+.top .cta { flex: none; font-size: .92rem; font-weight: 400; text-decoration: none; color: #fff; background: var(--navy); padding: .55rem 1.1rem; border-radius: 999px; }
+.top .cta:hover { background: var(--navy-ink); }
+/* No celular, as seções viram botões numa segunda linha da barra, que desliza para o lado se faltar espaço */
+@media (max-width: 820px) {
+  .top .wrap { flex-wrap: wrap; row-gap: .6rem; padding-block: .75rem .7rem; }
+  .top .logo { width: 142px; }
+  .nav { order: 3; flex-basis: 100%; gap: 2px; padding: 3px; background: var(--surface); border-radius: 999px; font-size: .78rem; overflow-x: auto; scrollbar-width: none; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a { flex: 1 0 auto; text-align: center; color: var(--text); padding: .4rem .5rem; border-radius: 999px; transition: background .3s, box-shadow .3s; }
+  .nav a.on { background: #fff; box-shadow: 0 1px 4px rgba(27, 46, 83, .2); }
+  .nav a::after { content: none !important; }
+}
+@media (max-width: 374px) { .nav a { padding-inline: .3rem; } }
+main section[id] { scroll-margin-top: 4.4rem; }
+@media (max-width: 820px) { main section[id] { scroll-margin-top: 6.8rem; } }
 
 /* Abertura dividida, como a capa do LinkedIn */
 .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); min-height: 0; }
@@ -208,20 +222,87 @@ footer .item { display: flex; align-items: center; gap: .45rem; }
 footer .ico { width: 17px; height: 17px; }
 footer small { flex-basis: 100%; color: var(--muted); font-size: .78rem; }
 footer .padrao { width: 130px; }
+
+/* Movimento: entradas suaves ao rolar, faixas azuis que se abrem e frase que acende palavra por palavra */
+:root { --ease: cubic-bezier(.2, .7, .2, 1); }
+.top { transition: box-shadow .35s ease; }
+.top.scrolled { box-shadow: 0 1px 0 var(--line), 0 12px 30px -20px rgba(27, 46, 83, .45); }
+.progress { position: absolute; left: 0; bottom: -1px; width: 100%; height: 2px; background: var(--gold); transform-origin: left; transform: scaleX(0); }
+.nav a:not(.cta) { position: relative; transition: color .3s; }
+.nav a:not(.cta)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: var(--gold); transform: scaleX(0); transition: transform .45s var(--ease); }
+.nav a.on { color: var(--text); }
+.nav a.on::after { transform: scaleX(1); }
+.btn { transition: background .3s, border-color .3s, transform .35s var(--ease); }
+.btn:hover { transform: translateY(-2px); }
+
+.hero-art img { translate: 0 var(--py, 0px); will-change: translate; }
+.why-bg { position: absolute; left: 0; top: -12%; width: 100%; height: 124%; object-fit: cover; opacity: .16; pointer-events: none; translate: 0 var(--py, 0px); will-change: translate; }
+.why .head { max-width: 54rem; }
+.why .statement { font-size: clamp(2rem, 4.2vw, 3.2rem); font-weight: 300; }
+
+/* Cartões de setores com a escada no canto, como o cartão de visita */
+.sector { position: relative; overflow: hidden; }
+.sector .padrao { width: 110px; }
+.sector .mark { margin-bottom: .9rem; }
+.sector .padrao .pn { fill: #fff; }
+.sector .padrao use { transition: transform .5s var(--ease); }
+.sector { transition: transform .45s var(--ease), box-shadow .45s, border-color .45s; }
+.sector:hover { transform: translateY(-4px); box-shadow: 0 22px 34px -26px rgba(27, 46, 83, .5); border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+.reasons li { transition: background .4s; }
+.reasons li:hover { background: #2a4072; }
+
+/* No computador, o lado esquerdo acompanha a leitura */
+@media (min-width: 861px) {
+  .about-side { position: sticky; top: 7rem; align-self: start; }
+  .axis { overflow: clip; background: linear-gradient(90deg, var(--navy) calc(100% * 4 / 11), transparent 0); }
+  .axis-head { background: transparent; position: sticky; top: 6.5rem; align-self: start; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .js .rv { opacity: 0; transform: translate3d(0, 28px, 0); transition: opacity .9s ease, transform 1.1s var(--ease); transition-delay: calc(var(--i, 0) * 110ms); }
+  .js .rv-zoom { transform: scale(1.06); transition-duration: 1.4s, 1.8s; }
+  .js .rv.in { opacity: 1; transform: none; }
+
+  /* O padrão em escada se monta a partir do canto */
+  .js .padrao use { opacity: 0; transform: scale(.45); transform-box: fill-box; transform-origin: center; transition: opacity .6s ease, transform .8s var(--ease); transition-delay: calc(var(--k) * 95ms + 150ms); }
+  .js .padrao.in use { opacity: 1; transform: none; }
+  /* Nas faixas azuis, a escada acompanha a rolagem: monta ao descer e desmonta ao subir */
+  .js .padrao.scrub use { transition: opacity .25s linear, transform .35s var(--ease); transition-delay: 0s; }
+
+  /* As quatro formas do símbolo se encontram */
+  .js .simbolo path { opacity: 0; transition: transform 1.5s var(--ease), opacity 1s ease; }
+  .js .simbolo path:nth-child(1) { transform: translate(-110px, -110px); }
+  .js .simbolo path:nth-child(2) { transform: translate(110px, 110px); }
+  .js .simbolo path:nth-child(3) { transform: translate(110px, -110px); transition-delay: .18s; }
+  .js .simbolo path:nth-child(4) { transform: translate(-110px, 110px); transition-delay: .18s; }
+  .js .simbolo.in path { opacity: 1; transform: none; }
+
+  /* As linhas douradas crescem */
+  .js .rule { transform: scaleY(0); transform-origin: top; transition: transform 1.4s var(--ease) .25s; }
+  .js .rule.in { transform: none; }
+
+  .js .statement .w { transition: opacity .25s linear; }
+}
+@media (prefers-reduced-motion: no-preference) and (max-width: 860px) {
+  .js .rule { transform: scaleX(0); transform-origin: left; }
+}
 </style>
+<script>document.documentElement.classList.add('js');setTimeout(function(){if(!window.__mov)document.documentElement.classList.remove('js')},2500);</script>
 </head>
 <body>
 
 <header class="top">
   <div class="wrap">
-    <a href="#inicio" aria-label="Panorama, início"><svg class="logo" viewBox="0 0 738.62 176.09" role="img" aria-label="Panorama Inteligência Política"><path class="lw" d="M220.17,108.43v25.33h-9.3V52.42h29.52c17.43,0,29.05,13.01,29.05,27.89s-11.62,28.12-29.05,28.12h-20.22ZM239.46,100.42c13.48,0,20.8-9.88,20.8-20.1s-7.32-19.87-20.8-19.87h-19.29v39.97h19.29Z"/><path class="lw" d="M330.81,76.59v57.17h-8.72v-11.5c-3.49,6.39-12.32,12.9-23.94,12.9-17.55,0-29.28-14.18-29.28-29.98s11.74-29.98,29.28-29.98c11.62,0,20.68,6.39,23.82,13.01v-11.62h8.83ZM299.66,127.72c11.04,0,22.08-8.13,22.08-22.54s-11.04-22.54-22.08-22.54c-13.25,0-21.73,10.34-21.73,22.54s8.48,22.54,21.73,22.54Z"/><path class="lw" d="M351.5,133.77h-9.06v-57.17h8.72v11.16c3.02-8.13,11.27-12.55,21.38-12.55,13.94,0,22.78,10.92,22.78,25.8v32.77h-9.06v-31.03c0-11.27-4.88-19.41-16.5-19.41-10.69,0-18.24,8.37-18.24,19.17v31.26Z"/><path class="lw" d="M402.29,105.18c0-15.69,11.97-29.98,30.91-29.98s30.91,14.29,30.91,29.98-11.97,29.98-30.91,29.98-30.91-14.29-30.91-29.98ZM411.12,105.18c0,11.62,8.37,22.43,22.08,22.43s22.08-10.81,22.08-22.43-8.25-22.43-22.08-22.43-22.08,10.92-22.08,22.43Z"/><path class="lw" d="M503.39,84.73h-2.44c-12.55,0-20.22,8.48-20.22,21.96v27.08h-9.06v-57.17h8.72v14.18c2.79-10.34,11.74-14.64,23.01-14.64v8.6Z"/><path class="lw" d="M564.64,76.59v57.17h-8.72v-11.5c-3.49,6.39-12.32,12.9-23.94,12.9-17.55,0-29.28-14.18-29.28-29.98s11.74-29.98,29.28-29.98c11.62,0,20.68,6.39,23.82,13.01v-11.62h8.83ZM533.49,127.72c11.04,0,22.08-8.13,22.08-22.54s-11.04-22.54-22.08-22.54c-13.25,0-21.73,10.34-21.73,22.54s8.48,22.54,21.73,22.54Z"/><path class="lw" d="M585.33,133.77h-9.06v-57.17h8.72v11.16c2.9-8.13,10.57-12.55,20.45-12.55,9.3,0,16.04,5.11,19.64,13.36,3.84-8.13,11.5-13.36,22.43-13.36,13.6,0,22.19,10.92,22.19,25.8v32.77h-8.95v-31.03c0-11.27-4.65-19.41-15.8-19.41-10.11,0-17.43,7.79-17.43,18.71v31.72h-8.95v-31.03c0-11.27-4.65-19.41-15.8-19.41-10.34,0-17.43,8.37-17.43,19.17v31.26Z"/><path class="lw" d="M738.62,76.59v57.17h-8.72v-11.5c-3.49,6.39-12.32,12.9-23.94,12.9-17.55,0-29.28-14.18-29.28-29.98s11.74-29.98,29.28-29.98c11.62,0,20.68,6.39,23.82,13.01v-11.62h8.83ZM707.48,127.72c11.04,0,22.08-8.13,22.08-22.54s-11.04-22.54-22.08-22.54c-13.25,0-21.73,10.34-21.73,22.54s8.48,22.54,21.73,22.54Z"/><path class="lg" d="M491.7,43.45h3.3v17.76h-3.3v-17.76Z"/><path class="lg" d="M502.08,61.21h-3.2v-12.66h3.1v2.16c.58-1.47,2.23-2.46,4.21-2.46,3.04,0,4.75,2.23,4.75,5.38v7.59h-3.2v-7.05c0-1.8-.81-3.12-2.72-3.12-1.75,0-2.94,1.27-2.94,3.1v7.08Z"/><path class="lg" d="M515.26,44.77h3.2v3.78h3.27v2.64h-3.27v5.76c0,1.32.51,1.9,1.75,1.9.53,0,.96-.1,1.4-.23v2.56c-.41.15-1.42.33-2.23.33-2.99,0-4.11-1.8-4.11-4.72v-5.61h-2.36v-2.64h2.36v-3.78Z"/><path class="lg" d="M526.56,55.96c.2,1.9,1.42,3.2,3.68,3.2,1.55,0,2.74-.69,3.35-1.65h2.97c-.86,2.26-3.3,4.01-6.32,4.01-4.31,0-6.83-2.87-6.83-6.65s2.77-6.62,6.67-6.62,6.65,2.77,6.65,6.67v1.04h-10.18ZM526.53,53.85h7.16c-.2-1.95-1.5-3.32-3.55-3.32s-3.35,1.27-3.6,3.32Z"/><path class="lg" d="M539.48,61.21v-18.53h3.2v18.53h-3.2Z"/><path class="lg" d="M547.88,42.66c1.09,0,1.9.84,1.9,1.88s-.81,1.88-1.9,1.88-1.9-.81-1.9-1.88.84-1.88,1.9-1.88ZM546.28,61.21v-12.66h3.2v12.66h-3.2Z"/><path class="lg" d="M563.06,50.78v-2.23h3.15v12.49c0,3.27-2.97,5.76-6.9,5.76-3.27,0-5.84-1.45-6.8-4.34h3.17c.61,1.22,1.8,1.88,3.6,1.88,2.18,0,3.73-1.19,3.73-3.3v-2.46c-.74,1.27-2.36,2.33-4.44,2.33-3.76,0-6.27-2.82-6.27-6.32s2.51-6.34,6.27-6.34c2.18,0,3.88,1.12,4.49,2.54ZM563.01,54.59c0-2.23-1.73-3.7-3.83-3.7-2.26,0-3.7,1.57-3.7,3.7s1.45,3.68,3.7,3.68c2.11,0,3.83-1.47,3.83-3.68Z"/><path class="lg" d="M572.07,55.96c.2,1.9,1.42,3.2,3.68,3.2,1.55,0,2.74-.69,3.35-1.65h2.97c-.86,2.26-3.3,4.01-6.32,4.01-4.31,0-6.83-2.87-6.83-6.65s2.77-6.62,6.67-6.62,6.65,2.77,6.65,6.67v1.04h-10.18ZM580.47,46.9h-3.1l-1.47-1.75-1.47,1.75h-3.1l3.37-3.83h2.39l3.38,3.83ZM572.05,53.85h7.16c-.2-1.95-1.5-3.32-3.55-3.32s-3.35,1.27-3.6,3.32Z"/><path class="lg" d="M588.19,61.21h-3.2v-12.66h3.1v2.16c.58-1.47,2.23-2.46,4.21-2.46,3.04,0,4.75,2.23,4.75,5.38v7.59h-3.2v-7.05c0-1.8-.81-3.12-2.72-3.12-1.75,0-2.94,1.27-2.94,3.1v7.08Z"/><path class="lg" d="M613.17,53.07h-3.1c-.53-1.17-1.62-2.16-3.5-2.16-2.41,0-3.76,1.85-3.76,3.98s1.34,3.96,3.76,3.96c1.88,0,2.97-.94,3.5-2.16h3.1c-.66,2.64-3.12,4.82-6.57,4.82-4.21,0-6.95-2.89-6.95-6.62s2.74-6.65,6.95-6.65c3.45,0,5.91,2.18,6.57,4.82Z"/><path class="lg" d="M617.54,42.66c1.09,0,1.9.84,1.9,1.88s-.81,1.88-1.9,1.88-1.9-.81-1.9-1.88.84-1.88,1.9-1.88ZM615.94,61.21v-12.66h3.2v12.66h-3.2Z"/><path class="lg" d="M636.04,48.55v12.66h-3.07v-2.18c-.74,1.29-2.41,2.49-4.62,2.49-3.76,0-6.4-2.99-6.4-6.62s2.64-6.65,6.4-6.65c2.21,0,3.93,1.14,4.57,2.49v-2.18h3.12ZM628.96,58.88c2.11,0,3.88-1.55,3.88-3.98s-1.78-4.01-3.88-4.01c-2.28,0-3.81,1.8-3.81,4.01s1.52,3.98,3.81,3.98Z"/><path class="lg" d="M649.19,56.21v5h-3.3v-17.76h7.51c3.78,0,6.45,2.87,6.45,6.37s-2.66,6.39-6.45,6.39h-4.21ZM652.97,53.37c2.18,0,3.58-1.6,3.58-3.55s-1.4-3.53-3.58-3.53h-3.78v7.08h3.78Z"/><path class="lg" d="M661.15,54.89c0-3.45,2.59-6.65,6.95-6.65s6.95,3.2,6.95,6.65-2.59,6.62-6.95,6.62-6.95-3.2-6.95-6.62ZM664.27,54.89c0,2.06,1.37,3.96,3.83,3.96s3.83-1.9,3.83-3.96-1.37-3.98-3.83-3.98-3.83,1.93-3.83,3.98Z"/><path class="lg" d="M677.78,61.21v-18.53h3.2v18.53h-3.2Z"/><path class="lg" d="M684.58,61.21v-12.66h3.2v12.66h-3.2ZM684.81,46.9l2.01-3.83h4.16l-3.07,3.83h-3.1Z"/><path class="lg" d="M692.32,44.77h3.2v3.78h3.27v2.64h-3.27v5.76c0,1.32.51,1.9,1.75,1.9.53,0,.96-.1,1.4-.23v2.56c-.41.15-1.42.33-2.23.33-2.99,0-4.11-1.8-4.11-4.72v-5.61h-2.36v-2.64h2.36v-3.78Z"/><path class="lg" d="M702.96,42.66c1.09,0,1.9.84,1.9,1.88s-.81,1.88-1.9,1.88-1.9-.81-1.9-1.88.84-1.88,1.9-1.88ZM701.36,61.21v-12.66h3.2v12.66h-3.2Z"/><path class="lg" d="M720.9,53.07h-3.1c-.53-1.17-1.62-2.16-3.5-2.16-2.41,0-3.76,1.85-3.76,3.98s1.34,3.96,3.76,3.96c1.88,0,2.97-.94,3.5-2.16h3.1c-.66,2.64-3.12,4.82-6.57,4.82-4.21,0-6.95-2.89-6.95-6.62s2.74-6.65,6.95-6.65c3.45,0,5.91,2.18,6.57,4.82Z"/><path class="lg" d="M736.87,48.55v12.66h-3.07v-2.18c-.74,1.29-2.41,2.49-4.62,2.49-3.76,0-6.4-2.99-6.4-6.62s2.64-6.65,6.4-6.65c2.21,0,3.93,1.14,4.57,2.49v-2.18h3.12ZM729.79,58.88c2.11,0,3.88-1.55,3.88-3.98s-1.78-4.01-3.88-4.01c-2.28,0-3.81,1.8-3.81,4.01s1.52,3.98,3.81,3.98Z"/><path class="lg" d="M81.76,0h0C81.76,45.15,45.15,81.76,0,81.76h0v6.29h88.05V0h-6.29Z"/><path class="lg" d="M94.34,176.09h0c0-45.15,36.6-81.76,81.76-81.76h0v-6.29h-88.05v88.05h6.29Z"/><path class="lg" d="M163.52,75.47c-4.58-12.95-16.93-22.23-31.45-22.23s-26.87,9.28-31.45,22.23h62.89Z"/><path class="lg" d="M12.58,100.63c4.58,12.95,16.93,22.23,31.45,22.23s26.87-9.28,31.45-22.23H12.58Z"/></svg></a>
+    <a class="brand" href="#inicio" aria-label="Panorama, início"><svg class="logo" viewBox="0 0 738.62 176.09" role="img" aria-label="Panorama Inteligência Política"><path class="lw" d="M220.17,108.43v25.33h-9.3V52.42h29.52c17.43,0,29.05,13.01,29.05,27.89s-11.62,28.12-29.05,28.12h-20.22ZM239.46,100.42c13.48,0,20.8-9.88,20.8-20.1s-7.32-19.87-20.8-19.87h-19.29v39.97h19.29Z"/><path class="lw" d="M330.81,76.59v57.17h-8.72v-11.5c-3.49,6.39-12.32,12.9-23.94,12.9-17.55,0-29.28-14.18-29.28-29.98s11.74-29.98,29.28-29.98c11.62,0,20.68,6.39,23.82,13.01v-11.62h8.83ZM299.66,127.72c11.04,0,22.08-8.13,22.08-22.54s-11.04-22.54-22.08-22.54c-13.25,0-21.73,10.34-21.73,22.54s8.48,22.54,21.73,22.54Z"/><path class="lw" d="M351.5,133.77h-9.06v-57.17h8.72v11.16c3.02-8.13,11.27-12.55,21.38-12.55,13.94,0,22.78,10.92,22.78,25.8v32.77h-9.06v-31.03c0-11.27-4.88-19.41-16.5-19.41-10.69,0-18.24,8.37-18.24,19.17v31.26Z"/><path class="lw" d="M402.29,105.18c0-15.69,11.97-29.98,30.91-29.98s30.91,14.29,30.91,29.98-11.97,29.98-30.91,29.98-30.91-14.29-30.91-29.98ZM411.12,105.18c0,11.62,8.37,22.43,22.08,22.43s22.08-10.81,22.08-22.43-8.25-22.43-22.08-22.43-22.08,10.92-22.08,22.43Z"/><path class="lw" d="M503.39,84.73h-2.44c-12.55,0-20.22,8.48-20.22,21.96v27.08h-9.06v-57.17h8.72v14.18c2.79-10.34,11.74-14.64,23.01-14.64v8.6Z"/><path class="lw" d="M564.64,76.59v57.17h-8.72v-11.5c-3.49,6.39-12.32,12.9-23.94,12.9-17.55,0-29.28-14.18-29.28-29.98s11.74-29.98,29.28-29.98c11.62,0,20.68,6.39,23.82,13.01v-11.62h8.83ZM533.49,127.72c11.04,0,22.08-8.13,22.08-22.54s-11.04-22.54-22.08-22.54c-13.25,0-21.73,10.34-21.73,22.54s8.48,22.54,21.73,22.54Z"/><path class="lw" d="M585.33,133.77h-9.06v-57.17h8.72v11.16c2.9-8.13,10.57-12.55,20.45-12.55,9.3,0,16.04,5.11,19.64,13.36,3.84-8.13,11.5-13.36,22.43-13.36,13.6,0,22.19,10.92,22.19,25.8v32.77h-8.95v-31.03c0-11.27-4.65-19.41-15.8-19.41-10.11,0-17.43,7.79-17.43,18.71v31.72h-8.95v-31.03c0-11.27-4.65-19.41-15.8-19.41-10.34,0-17.43,8.37-17.43,19.17v31.26Z"/><path class="lw" d="M738.62,76.59v57.17h-8.72v-11.5c-3.49,6.39-12.32,12.9-23.94,12.9-17.55,0-29.28-14.18-29.28-29.98s11.74-29.98,29.28-29.98c11.62,0,20.68,6.39,23.82,13.01v-11.62h8.83ZM707.48,127.72c11.04,0,22.08-8.13,22.08-22.54s-11.04-22.54-22.08-22.54c-13.25,0-21.73,10.34-21.73,22.54s8.48,22.54,21.73,22.54Z"/><path class="lg" d="M491.7,43.45h3.3v17.76h-3.3v-17.76Z"/><path class="lg" d="M502.08,61.21h-3.2v-12.66h3.1v2.16c.58-1.47,2.23-2.46,4.21-2.46,3.04,0,4.75,2.23,4.75,5.38v7.59h-3.2v-7.05c0-1.8-.81-3.12-2.72-3.12-1.75,0-2.94,1.27-2.94,3.1v7.08Z"/><path class="lg" d="M515.26,44.77h3.2v3.78h3.27v2.64h-3.27v5.76c0,1.32.51,1.9,1.75,1.9.53,0,.96-.1,1.4-.23v2.56c-.41.15-1.42.33-2.23.33-2.99,0-4.11-1.8-4.11-4.72v-5.61h-2.36v-2.64h2.36v-3.78Z"/><path class="lg" d="M526.56,55.96c.2,1.9,1.42,3.2,3.68,3.2,1.55,0,2.74-.69,3.35-1.65h2.97c-.86,2.26-3.3,4.01-6.32,4.01-4.31,0-6.83-2.87-6.83-6.65s2.77-6.62,6.67-6.62,6.65,2.77,6.65,6.67v1.04h-10.18ZM526.53,53.85h7.16c-.2-1.95-1.5-3.32-3.55-3.32s-3.35,1.27-3.6,3.32Z"/><path class="lg" d="M539.48,61.21v-18.53h3.2v18.53h-3.2Z"/><path class="lg" d="M547.88,42.66c1.09,0,1.9.84,1.9,1.88s-.81,1.88-1.9,1.88-1.9-.81-1.9-1.88.84-1.88,1.9-1.88ZM546.28,61.21v-12.66h3.2v12.66h-3.2Z"/><path class="lg" d="M563.06,50.78v-2.23h3.15v12.49c0,3.27-2.97,5.76-6.9,5.76-3.27,0-5.84-1.45-6.8-4.34h3.17c.61,1.22,1.8,1.88,3.6,1.88,2.18,0,3.73-1.19,3.73-3.3v-2.46c-.74,1.27-2.36,2.33-4.44,2.33-3.76,0-6.27-2.82-6.27-6.32s2.51-6.34,6.27-6.34c2.18,0,3.88,1.12,4.49,2.54ZM563.01,54.59c0-2.23-1.73-3.7-3.83-3.7-2.26,0-3.7,1.57-3.7,3.7s1.45,3.68,3.7,3.68c2.11,0,3.83-1.47,3.83-3.68Z"/><path class="lg" d="M572.07,55.96c.2,1.9,1.42,3.2,3.68,3.2,1.55,0,2.74-.69,3.35-1.65h2.97c-.86,2.26-3.3,4.01-6.32,4.01-4.31,0-6.83-2.87-6.83-6.65s2.77-6.62,6.67-6.62,6.65,2.77,6.65,6.67v1.04h-10.18ZM580.47,46.9h-3.1l-1.47-1.75-1.47,1.75h-3.1l3.37-3.83h2.39l3.38,3.83ZM572.05,53.85h7.16c-.2-1.95-1.5-3.32-3.55-3.32s-3.35,1.27-3.6,3.32Z"/><path class="lg" d="M588.19,61.21h-3.2v-12.66h3.1v2.16c.58-1.47,2.23-2.46,4.21-2.46,3.04,0,4.75,2.23,4.75,5.38v7.59h-3.2v-7.05c0-1.8-.81-3.12-2.72-3.12-1.75,0-2.94,1.27-2.94,3.1v7.08Z"/><path class="lg" d="M613.17,53.07h-3.1c-.53-1.17-1.62-2.16-3.5-2.16-2.41,0-3.76,1.85-3.76,3.98s1.34,3.96,3.76,3.96c1.88,0,2.97-.94,3.5-2.16h3.1c-.66,2.64-3.12,4.82-6.57,4.82-4.21,0-6.95-2.89-6.95-6.62s2.74-6.65,6.95-6.65c3.45,0,5.91,2.18,6.57,4.82Z"/><path class="lg" d="M617.54,42.66c1.09,0,1.9.84,1.9,1.88s-.81,1.88-1.9,1.88-1.9-.81-1.9-1.88.84-1.88,1.9-1.88ZM615.94,61.21v-12.66h3.2v12.66h-3.2Z"/><path class="lg" d="M636.04,48.55v12.66h-3.07v-2.18c-.74,1.29-2.41,2.49-4.62,2.49-3.76,0-6.4-2.99-6.4-6.62s2.64-6.65,6.4-6.65c2.21,0,3.93,1.14,4.57,2.49v-2.18h3.12ZM628.96,58.88c2.11,0,3.88-1.55,3.88-3.98s-1.78-4.01-3.88-4.01c-2.28,0-3.81,1.8-3.81,4.01s1.52,3.98,3.81,3.98Z"/><path class="lg" d="M649.19,56.21v5h-3.3v-17.76h7.51c3.78,0,6.45,2.87,6.45,6.37s-2.66,6.39-6.45,6.39h-4.21ZM652.97,53.37c2.18,0,3.58-1.6,3.58-3.55s-1.4-3.53-3.58-3.53h-3.78v7.08h3.78Z"/><path class="lg" d="M661.15,54.89c0-3.45,2.59-6.65,6.95-6.65s6.95,3.2,6.95,6.65-2.59,6.62-6.95,6.62-6.95-3.2-6.95-6.62ZM664.27,54.89c0,2.06,1.37,3.96,3.83,3.96s3.83-1.9,3.83-3.96-1.37-3.98-3.83-3.98-3.83,1.93-3.83,3.98Z"/><path class="lg" d="M677.78,61.21v-18.53h3.2v18.53h-3.2Z"/><path class="lg" d="M684.58,61.21v-12.66h3.2v12.66h-3.2ZM684.81,46.9l2.01-3.83h4.16l-3.07,3.83h-3.1Z"/><path class="lg" d="M692.32,44.77h3.2v3.78h3.27v2.64h-3.27v5.76c0,1.32.51,1.9,1.75,1.9.53,0,.96-.1,1.4-.23v2.56c-.41.15-1.42.33-2.23.33-2.99,0-4.11-1.8-4.11-4.72v-5.61h-2.36v-2.64h2.36v-3.78Z"/><path class="lg" d="M702.96,42.66c1.09,0,1.9.84,1.9,1.88s-.81,1.88-1.9,1.88-1.9-.81-1.9-1.88.84-1.88,1.9-1.88ZM701.36,61.21v-12.66h3.2v12.66h-3.2Z"/><path class="lg" d="M720.9,53.07h-3.1c-.53-1.17-1.62-2.16-3.5-2.16-2.41,0-3.76,1.85-3.76,3.98s1.34,3.96,3.76,3.96c1.88,0,2.97-.94,3.5-2.16h3.1c-.66,2.64-3.12,4.82-6.57,4.82-4.21,0-6.95-2.89-6.95-6.62s2.74-6.65,6.95-6.65c3.45,0,5.91,2.18,6.57,4.82Z"/><path class="lg" d="M736.87,48.55v12.66h-3.07v-2.18c-.74,1.29-2.41,2.49-4.62,2.49-3.76,0-6.4-2.99-6.4-6.62s2.64-6.65,6.4-6.65c2.21,0,3.93,1.14,4.57,2.49v-2.18h3.12ZM729.79,58.88c2.11,0,3.88-1.55,3.88-3.98s-1.78-4.01-3.88-4.01c-2.28,0-3.81,1.8-3.81,4.01s1.52,3.98,3.81,3.98Z"/><path class="lg" d="M81.76,0h0C81.76,45.15,45.15,81.76,0,81.76h0v6.29h88.05V0h-6.29Z"/><path class="lg" d="M94.34,176.09h0c0-45.15,36.6-81.76,81.76-81.76h0v-6.29h-88.05v88.05h6.29Z"/><path class="lg" d="M163.52,75.47c-4.58-12.95-16.93-22.23-31.45-22.23s-26.87,9.28-31.45,22.23h62.89Z"/><path class="lg" d="M12.58,100.63c4.58,12.95,16.93,22.23,31.45,22.23s26.87-9.28,31.45-22.23H12.58Z"/></svg></a>
     <nav class="nav" aria-label="Seções">
       <a href="#quem-somos">Quem somos</a>
+      <a href="#por-que">Por que atuar</a>
       <a href="#servicos">Serviços</a>
       <a href="#setores">Setores</a>
-      <a class="cta" href="#contato">Fale conosco</a>
     </nav>
+    <a class="cta" href="#contato">Fale conosco</a>
   </div>
+  <span class="progress" aria-hidden="true"></span>
 </header>
 
 <main id="inicio" lang="pt-BR">
@@ -236,7 +317,7 @@ footer .padrao { width: 130px; }
       </div>
     </div>
     <div class="hero-art">
-      <svg class="padrao c-tr" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf2" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph2"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl2" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf2" x="0" y="0" class="pg"/><use href="#pl2" x="100" y="0" class="pg"/><use href="#ph2" x="200" y="0"/><use href="#pl2" x="300" y="0" class="pg"/><use href="#ph2" x="400" y="0"/><use href="#pl2" x="500" y="0" class="pg"/><use href="#ph2" x="600" y="0"/><use href="#pl2" x="700" y="0" class="pg"/><use href="#pf2" x="100" y="100" class="pg"/><use href="#pl2" x="200" y="100" class="pg"/><use href="#ph2" x="300" y="100"/><use href="#pl2" x="400" y="100" class="pg"/><use href="#ph2" x="500" y="100"/><use href="#pl2" x="600" y="100" class="pg"/><use href="#ph2" x="700" y="100"/><use href="#pf2" x="200" y="200" class="pg"/><use href="#pl2" x="300" y="200" class="pg"/><use href="#ph2" x="400" y="200"/><use href="#pl2" x="500" y="200" class="pg"/><use href="#ph2" x="600" y="200"/><use href="#pl2" x="700" y="200" class="pg"/><use href="#pf2" x="300" y="300" class="pg"/><use href="#pl2" x="400" y="300" class="pg"/><use href="#ph2" x="500" y="300"/><use href="#pl2" x="600" y="300" class="pg"/><use href="#ph2" x="700" y="300"/><use href="#pf2" x="400" y="400" class="pg"/><use href="#pl2" x="500" y="400" class="pg"/><use href="#ph2" x="600" y="400"/><use href="#pl2" x="700" y="400" class="pg"/><use href="#pf2" x="500" y="500" class="pg"/><use href="#pl2" x="600" y="500" class="pg"/><use href="#ph2" x="700" y="500"/></svg>
+      <svg class="padrao c-tr" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf2" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph2"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl2" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf2" x="0" y="0" class="pg" style="--k:7"/><use href="#pl2" x="100" y="0" class="pg" style="--k:6"/><use href="#ph2" x="200" y="0" style="--k:5"/><use href="#pl2" x="300" y="0" class="pg" style="--k:4"/><use href="#ph2" x="400" y="0" style="--k:3"/><use href="#pl2" x="500" y="0" class="pg" style="--k:2"/><use href="#ph2" x="600" y="0" style="--k:1"/><use href="#pl2" x="700" y="0" class="pg" style="--k:0"/><use href="#pf2" x="100" y="100" class="pg" style="--k:7"/><use href="#pl2" x="200" y="100" class="pg" style="--k:6"/><use href="#ph2" x="300" y="100" style="--k:5"/><use href="#pl2" x="400" y="100" class="pg" style="--k:4"/><use href="#ph2" x="500" y="100" style="--k:3"/><use href="#pl2" x="600" y="100" class="pg" style="--k:2"/><use href="#ph2" x="700" y="100" style="--k:1"/><use href="#pf2" x="200" y="200" class="pg" style="--k:7"/><use href="#pl2" x="300" y="200" class="pg" style="--k:6"/><use href="#ph2" x="400" y="200" style="--k:5"/><use href="#pl2" x="500" y="200" class="pg" style="--k:4"/><use href="#ph2" x="600" y="200" style="--k:3"/><use href="#pl2" x="700" y="200" class="pg" style="--k:2"/><use href="#pf2" x="300" y="300" class="pg" style="--k:7"/><use href="#pl2" x="400" y="300" class="pg" style="--k:6"/><use href="#ph2" x="500" y="300" style="--k:5"/><use href="#pl2" x="600" y="300" class="pg" style="--k:4"/><use href="#ph2" x="700" y="300" style="--k:3"/><use href="#pf2" x="400" y="400" class="pg" style="--k:7"/><use href="#pl2" x="500" y="400" class="pg" style="--k:6"/><use href="#ph2" x="600" y="400" style="--k:5"/><use href="#pl2" x="700" y="400" class="pg" style="--k:4"/><use href="#pf2" x="500" y="500" class="pg" style="--k:7"/><use href="#pl2" x="600" y="500" class="pg" style="--k:6"/><use href="#ph2" x="700" y="500" style="--k:5"/></svg>
       <img src="assets/brasilia.jpg" width="1300" height="701" alt="Congresso Nacional, Palácio do Planalto e espelho d'água em Brasília, recortados nas formas do símbolo do Panorama">
     </div>
   </section>
@@ -269,11 +350,12 @@ footer .padrao { width: 130px; }
   </section>
 
   <section class="block navy why" id="por-que">
-    <svg class="padrao c-tl" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf3" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph3"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl3" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf3" x="0" y="0" class="pg"/><use href="#pl3" x="100" y="0" class="pg"/><use href="#ph3" x="200" y="0"/><use href="#pl3" x="300" y="0" class="pg"/><use href="#ph3" x="400" y="0"/><use href="#pl3" x="500" y="0" class="pg"/><use href="#ph3" x="600" y="0"/><use href="#pl3" x="700" y="0" class="pg"/><use href="#pf3" x="100" y="100" class="pg"/><use href="#pl3" x="200" y="100" class="pg"/><use href="#ph3" x="300" y="100"/><use href="#pl3" x="400" y="100" class="pg"/><use href="#ph3" x="500" y="100"/><use href="#pl3" x="600" y="100" class="pg"/><use href="#ph3" x="700" y="100"/><use href="#pf3" x="200" y="200" class="pg"/><use href="#pl3" x="300" y="200" class="pg"/><use href="#ph3" x="400" y="200"/><use href="#pl3" x="500" y="200" class="pg"/><use href="#ph3" x="600" y="200"/><use href="#pl3" x="700" y="200" class="pg"/><use href="#pf3" x="300" y="300" class="pg"/><use href="#pl3" x="400" y="300" class="pg"/><use href="#ph3" x="500" y="300"/><use href="#pl3" x="600" y="300" class="pg"/><use href="#ph3" x="700" y="300"/><use href="#pf3" x="400" y="400" class="pg"/><use href="#pl3" x="500" y="400" class="pg"/><use href="#ph3" x="600" y="400"/><use href="#pl3" x="700" y="400" class="pg"/><use href="#pf3" x="500" y="500" class="pg"/><use href="#pl3" x="600" y="500" class="pg"/><use href="#ph3" x="700" y="500"/></svg>
+    <img class="why-bg" src="assets/brasilia.jpg" alt="" aria-hidden="true">
+    <svg class="padrao c-tl" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf3" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph3"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl3" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf3" x="0" y="0" class="pg" style="--k:7"/><use href="#pl3" x="100" y="0" class="pg" style="--k:6"/><use href="#ph3" x="200" y="0" style="--k:5"/><use href="#pl3" x="300" y="0" class="pg" style="--k:4"/><use href="#ph3" x="400" y="0" style="--k:3"/><use href="#pl3" x="500" y="0" class="pg" style="--k:2"/><use href="#ph3" x="600" y="0" style="--k:1"/><use href="#pl3" x="700" y="0" class="pg" style="--k:0"/><use href="#pf3" x="100" y="100" class="pg" style="--k:7"/><use href="#pl3" x="200" y="100" class="pg" style="--k:6"/><use href="#ph3" x="300" y="100" style="--k:5"/><use href="#pl3" x="400" y="100" class="pg" style="--k:4"/><use href="#ph3" x="500" y="100" style="--k:3"/><use href="#pl3" x="600" y="100" class="pg" style="--k:2"/><use href="#ph3" x="700" y="100" style="--k:1"/><use href="#pf3" x="200" y="200" class="pg" style="--k:7"/><use href="#pl3" x="300" y="200" class="pg" style="--k:6"/><use href="#ph3" x="400" y="200" style="--k:5"/><use href="#pl3" x="500" y="200" class="pg" style="--k:4"/><use href="#ph3" x="600" y="200" style="--k:3"/><use href="#pl3" x="700" y="200" class="pg" style="--k:2"/><use href="#pf3" x="300" y="300" class="pg" style="--k:7"/><use href="#pl3" x="400" y="300" class="pg" style="--k:6"/><use href="#ph3" x="500" y="300" style="--k:5"/><use href="#pl3" x="600" y="300" class="pg" style="--k:4"/><use href="#ph3" x="700" y="300" style="--k:3"/><use href="#pf3" x="400" y="400" class="pg" style="--k:7"/><use href="#pl3" x="500" y="400" class="pg" style="--k:6"/><use href="#ph3" x="600" y="400" style="--k:5"/><use href="#pl3" x="700" y="400" class="pg" style="--k:4"/><use href="#pf3" x="500" y="500" class="pg" style="--k:7"/><use href="#pl3" x="600" y="500" class="pg" style="--k:6"/><use href="#ph3" x="700" y="500" style="--k:5"/></svg>
     <div class="wrap">
       <div class="head center">
         <p class="eyebrow">Por que atuar</p>
-        <h2>Decisões de governo mudam o ambiente de negócios. Quem acompanha de perto se antecipa</h2>
+        <h2 class="statement">Decisões de governo mudam o ambiente de negócios. Quem acompanha de perto se antecipa</h2>
         <p>Atuar na defesa dos seus interesses protege a sua organização e contribui para um ambiente político mais transparente e alinhado às necessidades da sociedade.</p>
       </div>
       <ul class="reasons">
@@ -364,16 +446,16 @@ footer .padrao { width: 130px; }
         <p>Nossos consultores atendem associações e entidades representativas que atuam junto ao Congresso Nacional e ao Executivo Federal.</p>
       </div>
       <div class="sectors">
-        <div class="sector"><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><b>Sistema de Justiça</b><span>Entidades representativas do meio jurídico.</span></div>
-        <div class="sector"><svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.730-93.94,66.42h187.88Z"/></svg><b>Segurança Pública</b><span>Entidades representativas da área de segurança.</span></div>
-        <div class="sector"><svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg><b>Serviços Financeiros</b><span>Empresas e entidades do setor financeiro.</span></div>
-        <div class="sector"><svg class="mark" viewBox="263 263 263 263" aria-hidden="true"><path d="M281.82,526.07c0-134.89,109.35-244.25,244.25-244.25v-18.79h-263.03v263.03h18.79Z"/></svg><b>Comércio Exterior e Logística</b><span>Empresas e entidades do comércio internacional e da logística.</span></div>
+        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf6" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph6"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl6" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf6" x="0" y="0" class="pg" style="--k:4"/><use href="#pl6" x="100" y="0" class="pg" style="--k:3"/><use href="#ph6" x="200" y="0" style="--k:2"/><use href="#pl6" x="300" y="0" class="pg" style="--k:1"/><use href="#ph6" x="400" y="0" style="--k:0"/><use href="#pf6" x="100" y="100" class="pg" style="--k:4"/><use href="#pl6" x="200" y="100" class="pg" style="--k:3"/><use href="#ph6" x="300" y="100" style="--k:2"/><use href="#pl6" x="400" y="100" class="pg" style="--k:1"/><use href="#pf6" x="200" y="200" class="pg" style="--k:4"/><use href="#pl6" x="300" y="200" class="pg" style="--k:3"/><use href="#ph6" x="400" y="200" style="--k:2"/><use href="#pf6" x="300" y="300" class="pg" style="--k:4"/><use href="#pl6" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><b>Sistema de Justiça</b><span>Entidades representativas do meio jurídico.</span></div>
+        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf7" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph7"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl7" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf7" x="0" y="0" class="pg" style="--k:4"/><use href="#pl7" x="100" y="0" class="pg" style="--k:3"/><use href="#ph7" x="200" y="0" style="--k:2"/><use href="#pl7" x="300" y="0" class="pg" style="--k:1"/><use href="#ph7" x="400" y="0" style="--k:0"/><use href="#pf7" x="100" y="100" class="pg" style="--k:4"/><use href="#pl7" x="200" y="100" class="pg" style="--k:3"/><use href="#ph7" x="300" y="100" style="--k:2"/><use href="#pl7" x="400" y="100" class="pg" style="--k:1"/><use href="#pf7" x="200" y="200" class="pg" style="--k:4"/><use href="#pl7" x="300" y="200" class="pg" style="--k:3"/><use href="#ph7" x="400" y="200" style="--k:2"/><use href="#pf7" x="300" y="300" class="pg" style="--k:4"/><use href="#pl7" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.730-93.94,66.42h187.88Z"/></svg><b>Segurança Pública</b><span>Entidades representativas da área de segurança.</span></div>
+        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf8" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph8"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl8" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf8" x="0" y="0" class="pg" style="--k:4"/><use href="#pl8" x="100" y="0" class="pg" style="--k:3"/><use href="#ph8" x="200" y="0" style="--k:2"/><use href="#pl8" x="300" y="0" class="pg" style="--k:1"/><use href="#ph8" x="400" y="0" style="--k:0"/><use href="#pf8" x="100" y="100" class="pg" style="--k:4"/><use href="#pl8" x="200" y="100" class="pg" style="--k:3"/><use href="#ph8" x="300" y="100" style="--k:2"/><use href="#pl8" x="400" y="100" class="pg" style="--k:1"/><use href="#pf8" x="200" y="200" class="pg" style="--k:4"/><use href="#pl8" x="300" y="200" class="pg" style="--k:3"/><use href="#ph8" x="400" y="200" style="--k:2"/><use href="#pf8" x="300" y="300" class="pg" style="--k:4"/><use href="#pl8" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg><b>Serviços Financeiros</b><span>Empresas e entidades do setor financeiro.</span></div>
+        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf9" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph9"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl9" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf9" x="0" y="0" class="pg" style="--k:4"/><use href="#pl9" x="100" y="0" class="pg" style="--k:3"/><use href="#ph9" x="200" y="0" style="--k:2"/><use href="#pl9" x="300" y="0" class="pg" style="--k:1"/><use href="#ph9" x="400" y="0" style="--k:0"/><use href="#pf9" x="100" y="100" class="pg" style="--k:4"/><use href="#pl9" x="200" y="100" class="pg" style="--k:3"/><use href="#ph9" x="300" y="100" style="--k:2"/><use href="#pl9" x="400" y="100" class="pg" style="--k:1"/><use href="#pf9" x="200" y="200" class="pg" style="--k:4"/><use href="#pl9" x="300" y="200" class="pg" style="--k:3"/><use href="#ph9" x="400" y="200" style="--k:2"/><use href="#pf9" x="300" y="300" class="pg" style="--k:4"/><use href="#pl9" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="263 263 263 263" aria-hidden="true"><path d="M281.82,526.07c0-134.89,109.35-244.25,244.25-244.25v-18.79h-263.03v263.03h18.79Z"/></svg><b>Comércio Exterior e Logística</b><span>Empresas e entidades do comércio internacional e da logística.</span></div>
       </div>
     </div>
   </section>
 
   <section class="navy contact" id="contato">
-    <svg class="padrao c-bl" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf5" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph5"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl5" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf5" x="0" y="0" class="pg"/><use href="#pl5" x="100" y="0" class="pg"/><use href="#ph5" x="200" y="0"/><use href="#pl5" x="300" y="0" class="pg"/><use href="#ph5" x="400" y="0"/><use href="#pl5" x="500" y="0" class="pg"/><use href="#ph5" x="600" y="0"/><use href="#pl5" x="700" y="0" class="pg"/><use href="#pf5" x="100" y="100" class="pg"/><use href="#pl5" x="200" y="100" class="pg"/><use href="#ph5" x="300" y="100"/><use href="#pl5" x="400" y="100" class="pg"/><use href="#ph5" x="500" y="100"/><use href="#pl5" x="600" y="100" class="pg"/><use href="#ph5" x="700" y="100"/><use href="#pf5" x="200" y="200" class="pg"/><use href="#pl5" x="300" y="200" class="pg"/><use href="#ph5" x="400" y="200"/><use href="#pl5" x="500" y="200" class="pg"/><use href="#ph5" x="600" y="200"/><use href="#pl5" x="700" y="200" class="pg"/><use href="#pf5" x="300" y="300" class="pg"/><use href="#pl5" x="400" y="300" class="pg"/><use href="#ph5" x="500" y="300"/><use href="#pl5" x="600" y="300" class="pg"/><use href="#ph5" x="700" y="300"/><use href="#pf5" x="400" y="400" class="pg"/><use href="#pl5" x="500" y="400" class="pg"/><use href="#ph5" x="600" y="400"/><use href="#pl5" x="700" y="400" class="pg"/><use href="#pf5" x="500" y="500" class="pg"/><use href="#pl5" x="600" y="500" class="pg"/><use href="#ph5" x="700" y="500"/></svg>
+    <svg class="padrao c-bl" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf5" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph5"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl5" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf5" x="0" y="0" class="pg" style="--k:7"/><use href="#pl5" x="100" y="0" class="pg" style="--k:6"/><use href="#ph5" x="200" y="0" style="--k:5"/><use href="#pl5" x="300" y="0" class="pg" style="--k:4"/><use href="#ph5" x="400" y="0" style="--k:3"/><use href="#pl5" x="500" y="0" class="pg" style="--k:2"/><use href="#ph5" x="600" y="0" style="--k:1"/><use href="#pl5" x="700" y="0" class="pg" style="--k:0"/><use href="#pf5" x="100" y="100" class="pg" style="--k:7"/><use href="#pl5" x="200" y="100" class="pg" style="--k:6"/><use href="#ph5" x="300" y="100" style="--k:5"/><use href="#pl5" x="400" y="100" class="pg" style="--k:4"/><use href="#ph5" x="500" y="100" style="--k:3"/><use href="#pl5" x="600" y="100" class="pg" style="--k:2"/><use href="#ph5" x="700" y="100" style="--k:1"/><use href="#pf5" x="200" y="200" class="pg" style="--k:7"/><use href="#pl5" x="300" y="200" class="pg" style="--k:6"/><use href="#ph5" x="400" y="200" style="--k:5"/><use href="#pl5" x="500" y="200" class="pg" style="--k:4"/><use href="#ph5" x="600" y="200" style="--k:3"/><use href="#pl5" x="700" y="200" class="pg" style="--k:2"/><use href="#pf5" x="300" y="300" class="pg" style="--k:7"/><use href="#pl5" x="400" y="300" class="pg" style="--k:6"/><use href="#ph5" x="500" y="300" style="--k:5"/><use href="#pl5" x="600" y="300" class="pg" style="--k:4"/><use href="#ph5" x="700" y="300" style="--k:3"/><use href="#pf5" x="400" y="400" class="pg" style="--k:7"/><use href="#pl5" x="500" y="400" class="pg" style="--k:6"/><use href="#ph5" x="600" y="400" style="--k:5"/><use href="#pl5" x="700" y="400" class="pg" style="--k:4"/><use href="#pf5" x="500" y="500" class="pg" style="--k:7"/><use href="#pl5" x="600" y="500" class="pg" style="--k:6"/><use href="#ph5" x="700" y="500" style="--k:5"/></svg>
     <div class="wrap">
       <div class="contact-intro">
         <p class="eyebrow">Contato</p>
@@ -396,7 +478,7 @@ footer .padrao { width: 130px; }
 </main>
 
 <footer class="on-white">
-  <svg class="padrao c-br" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf4" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph4"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl4" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf4" x="0" y="0" class="pg"/><use href="#pl4" x="100" y="0" class="pg"/><use href="#ph4" x="200" y="0"/><use href="#pl4" x="300" y="0" class="pg"/><use href="#ph4" x="400" y="0"/><use href="#pl4" x="500" y="0" class="pg"/><use href="#ph4" x="600" y="0"/><use href="#pl4" x="700" y="0" class="pg"/><use href="#pf4" x="100" y="100" class="pg"/><use href="#pl4" x="200" y="100" class="pg"/><use href="#ph4" x="300" y="100"/><use href="#pl4" x="400" y="100" class="pg"/><use href="#ph4" x="500" y="100"/><use href="#pl4" x="600" y="100" class="pg"/><use href="#ph4" x="700" y="100"/><use href="#pf4" x="200" y="200" class="pg"/><use href="#pl4" x="300" y="200" class="pg"/><use href="#ph4" x="400" y="200"/><use href="#pl4" x="500" y="200" class="pg"/><use href="#ph4" x="600" y="200"/><use href="#pl4" x="700" y="200" class="pg"/><use href="#pf4" x="300" y="300" class="pg"/><use href="#pl4" x="400" y="300" class="pg"/><use href="#ph4" x="500" y="300"/><use href="#pl4" x="600" y="300" class="pg"/><use href="#ph4" x="700" y="300"/><use href="#pf4" x="400" y="400" class="pg"/><use href="#pl4" x="500" y="400" class="pg"/><use href="#ph4" x="600" y="400"/><use href="#pl4" x="700" y="400" class="pg"/><use href="#pf4" x="500" y="500" class="pg"/><use href="#pl4" x="600" y="500" class="pg"/><use href="#ph4" x="700" y="500"/></svg>
+  <svg class="padrao c-br" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf4" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph4"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl4" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf4" x="0" y="0" class="pg" style="--k:7"/><use href="#pl4" x="100" y="0" class="pg" style="--k:6"/><use href="#ph4" x="200" y="0" style="--k:5"/><use href="#pl4" x="300" y="0" class="pg" style="--k:4"/><use href="#ph4" x="400" y="0" style="--k:3"/><use href="#pl4" x="500" y="0" class="pg" style="--k:2"/><use href="#ph4" x="600" y="0" style="--k:1"/><use href="#pl4" x="700" y="0" class="pg" style="--k:0"/><use href="#pf4" x="100" y="100" class="pg" style="--k:7"/><use href="#pl4" x="200" y="100" class="pg" style="--k:6"/><use href="#ph4" x="300" y="100" style="--k:5"/><use href="#pl4" x="400" y="100" class="pg" style="--k:4"/><use href="#ph4" x="500" y="100" style="--k:3"/><use href="#pl4" x="600" y="100" class="pg" style="--k:2"/><use href="#ph4" x="700" y="100" style="--k:1"/><use href="#pf4" x="200" y="200" class="pg" style="--k:7"/><use href="#pl4" x="300" y="200" class="pg" style="--k:6"/><use href="#ph4" x="400" y="200" style="--k:5"/><use href="#pl4" x="500" y="200" class="pg" style="--k:4"/><use href="#ph4" x="600" y="200" style="--k:3"/><use href="#pl4" x="700" y="200" class="pg" style="--k:2"/><use href="#pf4" x="300" y="300" class="pg" style="--k:7"/><use href="#pl4" x="400" y="300" class="pg" style="--k:6"/><use href="#ph4" x="500" y="300" style="--k:5"/><use href="#pl4" x="600" y="300" class="pg" style="--k:4"/><use href="#ph4" x="700" y="300" style="--k:3"/><use href="#pf4" x="400" y="400" class="pg" style="--k:7"/><use href="#pl4" x="500" y="400" class="pg" style="--k:6"/><use href="#ph4" x="600" y="400" style="--k:5"/><use href="#pl4" x="700" y="400" class="pg" style="--k:4"/><use href="#pf4" x="500" y="500" class="pg" style="--k:7"/><use href="#pl4" x="600" y="500" class="pg" style="--k:6"/><use href="#ph4" x="700" y="500" style="--k:5"/></svg>
   <div class="wrap">
     <span class="item"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.300.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3Z"/></svg>+55 61 4042-9203</span>
     <span class="item"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm9 7.2L20 7H4l8 5.2ZM4 9.2V17h16V9.2l-8 5.2-8-5.2Z"/></svg>panorama@panoramaip.com.br</span>
@@ -418,6 +500,137 @@ footer .padrao { width: 130px; }
     window.location.href = 'mailto:panorama@panoramaip.com.br?subject=' + encodeURIComponent(assunto) + '&body=' + encodeURIComponent(corpo);
     note.textContent = 'Abrimos o seu e-mail com a mensagem pronta. Se nada abriu, escreva para panorama@panoramaip.com.br.';
   });
+
+  // Movimento ao rolar a página
+  (function () {
+    var root = document.documentElement;
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var hasIO = 'IntersectionObserver' in window;
+    var header = document.querySelector('.top');
+    var bar = document.querySelector('.progress');
+    window.__mov = true;
+
+    // Destaca no menu a seção que está na tela
+    var links = [].slice.call(document.querySelectorAll('.nav a[href^="#"]:not(.cta)'));
+    if (hasIO) {
+      var spy = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          links.forEach(function (a) { a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id); });
+        });
+      }, { rootMargin: '-45% 0px -50% 0px' });
+      document.querySelectorAll('main section').forEach(function (s) { spy.observe(s); });
+    }
+
+    var words = [], statement = document.querySelector('.statement');
+    var bg = document.querySelector('.why-bg'), why = document.querySelector('.why');
+    var heroImg = document.querySelector('.hero-art img');
+    var bands = [].slice.call(document.querySelectorAll('.why, .contact'));
+    var stairs = [].slice.call(document.querySelectorAll('.why > .padrao, .contact > .padrao')).map(function (svg) {
+      svg.classList.add('scrub');
+      return { svg: svg, cells: [].map.call(svg.querySelectorAll('use'), function (u) { return { el: u, k: +u.style.getPropertyValue('--k') }; }) };
+    });
+
+    if (reduce || !hasIO) {
+      root.classList.remove('js');
+    } else {
+      // Entradas: cada grupo aparece em sequência, um item depois do outro
+      var groups = [
+        ['.hero-text > *'], ['.hero-art img', 'rv-zoom'], ['.head > :not(.statement)'], ['.about-side > :not(svg)'],
+        ['.about-text > *'], ['.facts > div'], ['.values > li'], ['.reasons > li'], ['.axis'], ['.products > li'],
+        ['.axes-note'], ['.sector'], ['.contact-intro > *'], ['#contact-form'], ['footer .item']
+      ];
+      groups.forEach(function (g) {
+        document.querySelectorAll(g[0]).forEach(function (el) {
+          var sibs = [].filter.call(el.parentNode.children, function (c) { return c.matches(g[0]); });
+          el.classList.add('rv');
+          if (g[1]) el.classList.add(g[1]);
+          el.style.setProperty('--i', Math.min(sibs.indexOf(el), 6));
+        });
+      });
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var el = e.target;
+          el.classList.add('in');
+          io.unobserve(el);
+          if (!el.classList.contains('rv')) return;
+          el.addEventListener('transitionend', function done(ev) {
+            if (ev.target !== el || ev.propertyName !== 'transform') return;
+            el.classList.remove('rv', 'rv-zoom', 'in');
+            el.style.removeProperty('--i');
+            el.removeEventListener('transitionend', done);
+          });
+        });
+      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          document.querySelectorAll('.rv, .padrao:not(.scrub), .simbolo, .rule').forEach(function (el) { io.observe(el); });
+        });
+      });
+
+      // A frase de "Por que atuar" acende palavra por palavra
+      if (statement) {
+        var parts = statement.textContent.trim().split(/\s+/);
+        statement.textContent = '';
+        parts.forEach(function (t, i) {
+          var s = document.createElement('span');
+          s.className = 'w';
+          s.textContent = t;
+          statement.appendChild(s);
+          if (i < parts.length - 1) statement.appendChild(document.createTextNode(' '));
+          words.push(s);
+        });
+      }
+    }
+
+    var ticking = false;
+    function clamp(v) { return Math.max(0, Math.min(1, v)); }
+    function frame() {
+      ticking = false;
+      var y = window.scrollY, vh = window.innerHeight, vw = window.innerWidth;
+      var max = root.scrollHeight - vh;
+      header.classList.toggle('scrolled', y > 8);
+      if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? Math.min(1, y / max) : 0) + ')';
+      if (reduce || !hasIO) return;
+
+      // No fim da página, mostra o que ainda faltava (o rodapé fica rente à borda)
+      if (y >= max - 4) document.querySelectorAll('.rv:not(.in), .padrao:not(.in):not(.scrub)').forEach(function (el) { el.classList.add('in'); });
+      if (heroImg) heroImg.style.setProperty('--py', Math.min(y * 0.12, 80).toFixed(1) + 'px');
+
+      if (words.length) {
+        var r = statement.getBoundingClientRect();
+        var p = clamp((vh * 0.9 - r.top) / (vh * 0.55)) * words.length;
+        words.forEach(function (w, i) { w.style.opacity = (0.18 + 0.82 * clamp(p - i)).toFixed(3); });
+      }
+      if (bg && why) {
+        var wr = why.getBoundingClientRect();
+        bg.style.setProperty('--py', ((wr.top + wr.height / 2 - vh / 2) * -0.12).toFixed(1) + 'px');
+      }
+      // A escada das faixas azuis se monta a partir do canto, no ritmo da rolagem
+      stairs.forEach(function (s) {
+        var seen = vh - s.svg.getBoundingClientRect().top;
+        var span = Math.min(vh * 0.6, (seen + max - y) * 0.9);
+        var t = span > 0 ? clamp(seen / span) * 9 : 0;
+        s.cells.forEach(function (c) {
+          var o = clamp(t - c.k);
+          c.el.style.opacity = o.toFixed(2);
+          c.el.style.transform = o >= 1 ? 'none' : 'scale(' + (0.45 + 0.55 * o).toFixed(3) + ')';
+        });
+      });
+      // As faixas azuis se abrem conforme entram na tela
+      bands.forEach(function (b) {
+        var e = clamp((vh - b.getBoundingClientRect().top) / (vh * 0.55));
+        if (e >= 1) { b.style.clipPath = ''; return; }
+        var x = (1 - e) * Math.min(48, vw * 0.05), rad = (1 - e) * 28;
+        b.style.clipPath = 'inset(0 ' + x.toFixed(1) + 'px round ' + rad.toFixed(1) + 'px)';
+      });
+    }
+    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(frame); } }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    frame();
+  })();
 </script>
 </body>
 </html>
