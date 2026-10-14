@@ -28,16 +28,8 @@
   --t-sm: .8125rem; --t-base: 1rem; --t-lg: 1.1875rem; --t-h3: 1.3rem; --t-h2: clamp(1.75rem, 3.4vw, 2.5rem); --t-h1: clamp(2.2rem, 5vw, 3.6rem);
   --wrap: 74rem;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --gold-text: #d4b27c; --bg: #111a2e; --surface: #17233d; --text: #e8ecf3; --muted: #a3afc4; --line: #283754;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --gold-text: #d4b27c; --bg: #111a2e; --surface: #17233d; --text: #e8ecf3; --muted: #a3afc4; --line: #283754;
-  color-scheme: dark;
-}
+/* O site é sempre claro, como a papelaria da marca: não segue o modo escuro do aparelho. */
+:root { color-scheme: light; }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -65,7 +57,6 @@ a { color: inherit; }
 .nav a { text-decoration: none; color: var(--muted); }
 .nav a:hover { color: var(--text); }
 .nav a.cta { color: #fff; background: var(--navy); padding: .5rem 1rem; border-radius: 999px; }
-:root:not([data-theme="light"]) .nav a.cta { background: var(--navy); }
 @media (max-width: 780px) { .nav a:not(.cta) { display: none; } .top .logo { width: 140px; } }
 
 /* Faixas azuis */
