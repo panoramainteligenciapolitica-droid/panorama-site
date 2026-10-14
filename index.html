@@ -107,7 +107,7 @@ a { color: inherit; }
 
 /* Quem somos, com a linha dourada da assinatura de e-mail */
 .about { display: grid; grid-template-columns: minmax(0, 4fr) 2px minmax(0, 7fr); gap: clamp(1.5rem, 5vw, 4rem); align-items: stretch; }
-.about-side { display: grid; align-content: start; gap: 1.5rem; }
+.about-side { display: grid; align-content: start; justify-items: center; text-align: center; gap: 1.5rem; }
 .about-side .simbolo { width: clamp(120px, 16vw, 190px); height: auto; }
 .rule { background: var(--gold); border-radius: 2px; }
 .about-text { display: grid; gap: 1rem; color: var(--muted); font-size: 1.02rem; }
@@ -148,7 +148,7 @@ a { color: inherit; }
 .products b { font-weight: 500; font-size: .97rem; }
 .products p { grid-column: 1 / -1; color: var(--muted); font-size: .9rem; }
 .freq { font-size: .72rem; font-weight: 500; color: var(--gold-text); border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent); border-radius: 999px; padding: .12rem .6rem; white-space: nowrap; }
-.axes-note { margin-top: 1.75rem; color: var(--muted); font-size: .95rem; max-width: 46rem; }
+.axes-note { margin: 1.75rem auto 0; text-align: center; color: var(--muted); font-size: .95rem; max-width: 46rem; }
 @media (max-width: 860px) { .axis { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 480px) { .products li { grid-template-columns: minmax(0, 1fr); } .freq { justify-self: start; } }
 
@@ -175,7 +175,7 @@ a { color: inherit; }
 
 /* Contato: formulário na faixa azul; os dados de contato ficam só no rodapé */
 .contact .wrap { display: grid; grid-template-columns: minmax(0, 5fr) 3px minmax(0, 6fr); gap: clamp(1.5rem, 5vw, 4rem); align-items: stretch; padding-block: clamp(3.5rem, 8vw, 6rem); position: relative; z-index: 1; }
-.contact-intro { display: grid; gap: 1rem; align-content: center; }
+.contact-intro { display: grid; gap: 1rem; align-content: center; justify-items: center; text-align: center; }
 .contact h2 { font-size: var(--t-h2); }
 .contact .padrao { width: clamp(140px, 20vw, 280px); }
 form { display: grid; gap: 1rem; align-content: start; background: #263a66; border: 1px solid rgba(255,255,255,.14); box-shadow: 0 20px 40px -24px rgba(0,0,0,.5); border-radius: 6px; padding: clamp(1.25rem, 3vw, 2rem); }
@@ -279,7 +279,7 @@ footer .padrao { width: 130px; }
 
   <section class="block" id="servicos">
     <div class="wrap">
-      <div class="head">
+      <div class="head center">
         <p class="eyebrow">Serviços</p>
         <h2>Quatro eixos de trabalho, montados sob medida</h2>
         <p>Cada eixo pode ser contratado separadamente. Recomendamos combiná-los com o eixo de monitoramento, que dá base a todo o resto.</p>
@@ -349,7 +349,7 @@ footer .padrao { width: 130px; }
 
   <section class="block surface" id="setores">
     <div class="wrap">
-      <div class="head">
+      <div class="head center">
         <p class="eyebrow">Setores</p>
         <h2>Experiência com entidades de setores estratégicos do país</h2>
         <p>Nossos consultores atendem associações e entidades representativas que atuam junto ao Congresso Nacional e ao Executivo Federal.</p>
@@ -365,7 +365,7 @@ footer .padrao { width: 130px; }
 
   <section class="block on-white" id="socios">
     <div class="wrap">
-      <div class="head">
+      <div class="head center">
         <p class="eyebrow">Sócios</p>
         <h2>Quem está à frente da Panorama</h2>
       </div>
