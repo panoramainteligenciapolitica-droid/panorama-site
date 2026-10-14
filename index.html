@@ -112,10 +112,10 @@ a { color: inherit; }
 .rule { background: var(--gold); border-radius: 2px; }
 .about-text { display: grid; gap: 1rem; color: var(--muted); font-size: 1.02rem; }
 .about-text strong { color: var(--text); }
-.facts { display: flex; flex-wrap: wrap; gap: 2.5rem; }
-.facts div { display: grid; }
-.facts b { font-size: 2.1rem; font-weight: 400; color: var(--gold-text); line-height: 1.1; font-variant-numeric: tabular-nums; }
-.facts span { font-size: .85rem; color: var(--muted); }
+.facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.25rem clamp(1.75rem, 6vw, 4rem); margin-block: .5rem; }
+.facts div { display: grid; justify-items: center; text-align: center; }
+.facts b { font-size: clamp(3rem, 7vw, 4.25rem); font-weight: 400; color: var(--gold-text); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.facts span { font-size: .95rem; margin-top: .2rem; color: var(--muted); }
 .values { list-style: none; margin: 1.75rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 2rem; }
 .values li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: .8rem; }
 .values .mark { width: 28px; height: 28px; margin-top: .15rem; }
@@ -123,6 +123,7 @@ a { color: inherit; }
 .values p { color: var(--muted); font-size: .92rem; }
 @media (max-width: 860px) { .about { grid-template-columns: minmax(0, 1fr); } .rule { height: 2px; width: 64px; } }
 @media (max-width: 560px) { .values { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .facts { gap: 1rem 1.5rem; } .facts span { font-size: .8rem; } }
 
 /* Por que atuar: faixa azul como a pasta */
 .why .wrap { position: relative; z-index: 1; }
@@ -192,6 +193,14 @@ form { display: grid; gap: 1rem; align-content: start; background: #263a66; bord
 }
 @media (max-width: 520px) { .row2 { grid-template-columns: minmax(0, 1fr); } }
 
+/* Títulos centralizados e textos corridos justificados */
+h1, h2 { text-align: center; }
+.hero-text { justify-items: center; text-align: center; }
+.hero .lead, .head p, .about-text p, .reasons p, .axis-head p, .products p, .values p, .sector span, .contact-intro p, .axes-note {
+  text-align: justify; hyphens: auto; -webkit-hyphens: auto;
+}
+.hero .actions { justify-content: center; }
+
 /* Rodapé, como o pé do papel timbrado */
 footer { position: relative; overflow: hidden; border-top: 1px solid var(--line); }
 footer .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: .9rem 2rem; padding-block: 2rem; padding-right: max(150px, env(safe-area-inset-right, 0px)); font-size: .85rem; color: var(--navy-ink); position: relative; z-index: 1; }
@@ -215,11 +224,11 @@ footer .padrao { width: 130px; }
   </div>
 </header>
 
-<main id="inicio">
+<main id="inicio" lang="pt-BR">
   <section class="hero">
     <div class="hero-text">
       <p class="eyebrow">Relações institucionais e governamentais</p>
-      <h1>Decodificando dados, <span>direcionando decisões.</span></h1>
+      <h1>Decodificando dados, <span>direcionando decisões</span></h1>
       <p class="lead">Ajudamos empresas, entidades e associações de classe a atuar com segurança no Congresso Nacional e no Poder Executivo Federal, para que nenhuma oportunidade passe despercebida e nenhum problema fique sem solução.</p>
       <div class="actions">
         <a class="btn btn-navy" href="#contato">Fale com a Panorama</a>
@@ -264,7 +273,7 @@ footer .padrao { width: 130px; }
     <div class="wrap">
       <div class="head center">
         <p class="eyebrow">Por que atuar</p>
-        <h2>Decisões de governo mudam o ambiente de negócios. Quem acompanha de perto se antecipa.</h2>
+        <h2>Decisões de governo mudam o ambiente de negócios. Quem acompanha de perto se antecipa</h2>
         <p>Atuar na defesa dos seus interesses protege a sua organização e contribui para um ambiente político mais transparente e alinhado às necessidades da sociedade.</p>
       </div>
       <ul class="reasons">
