@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="assets/simbolo.svg" type="image/svg+xml">
+<title>Panorama Inteligência Política</title>
+<meta name="description" content="Panorama Inteligência Política: consultoria em relações institucionais e governamentais no Congresso Nacional e no Executivo Federal. Decodificando dados, direcionando decisões.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap">
+<style>
+/* Layout: faixas alternadas de azul Panorama e branco; o padrão geométrico da marca sobe pelos cantos, como na papelaria. */
+:root {
+  --navy: #22355f;        /* fundo das peças (LinkedIn, pasta, assinatura) */
+  --navy-ink: #1b2e53;    /* azul do logotipo */
+  --gold: #c59d61;        /* dourado do símbolo */
+  --gold-text: #8a6630;   /* dourado escurecido para texto sobre branco */
+  --bg: #ffffff;
+  --surface: #f1f3f7;
+  --text: #1b2e53;
+  --muted: #59657c;
+  --line: #dde2ea;
+  --on-navy: #ffffff;
+  --on-navy-muted: #b9c3d6;
+
+  --f: "Poppins", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --t-sm: .8125rem; --t-base: 1rem; --t-lg: 1.1875rem; --t-h3: 1.3rem; --t-h2: clamp(1.75rem, 3.4vw, 2.5rem); --t-h1: clamp(2.2rem, 5vw, 3.6rem);
+  --wrap: 74rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --gold-text: #d4b27c; --bg: #111a2e; --surface: #17233d; --text: #e8ecf3; --muted: #a3afc4; --line: #283754;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --gold-text: #d4b27c; --bg: #111a2e; --surface: #17233d; --text: #e8ecf3; --muted: #a3afc4; --line: #283754;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--f); font-size: var(--t-base); font-weight: 300; line-height: 1.65; }
+h1, h2, h3 { margin: 0; font-weight: 400; line-height: 1.18; letter-spacing: -.01em; text-wrap: balance; }
+p { margin: 0; }
+strong, b { font-weight: 500; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.wrap { max-width: var(--wrap); margin-inline: auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.eyebrow { font-size: var(--t-sm); font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-text); }
+.navy .eyebrow { color: var(--gold); }
+
+/* Logo */
+.logo { display: block; height: auto; }
+.logo .lw { fill: currentColor; }
+.logo .lg, .simbolo .lg, .simbolo-peq .lg { fill: var(--gold); }
+
+/* Topo */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: .9rem; }
+.top .logo { width: 172px; color: var(--text); }
+.nav { display: flex; align-items: center; gap: 1.6rem; font-size: .92rem; font-weight: 400; }
+.nav a { text-decoration: none; color: var(--muted); }
+.nav a:hover { color: var(--text); }
+.nav a.cta { color: #fff; background: var(--navy); padding: .5rem 1rem; border-radius: 999px; }
+:root:not([data-theme="light"]) .nav a.cta { background: var(--navy); }
+@media (max-width: 780px) { .nav a:not(.cta) { display: none; } .top .logo { width: 140px; } }
+
+/* Faixas azuis */
+.navy { background: var(--navy); color: var(--on-navy); position: relative; overflow: hidden; }
+.navy p { color: var(--on-navy-muted); }
+
+/* Hero */
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: center; gap: clamp(1.5rem, 4vw, 3rem); padding-block: clamp(2.5rem, 6vw, 4.5rem); }
+.hero-text { display: grid; gap: 1.25rem; }
+.hero h1 { font-size: var(--t-h1); font-weight: 300; }
+.hero h1 span { color: var(--gold); font-weight: 400; }
+.hero .lead { font-size: var(--t-lg); max-width: 34rem; }
+.actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .5rem; }
+.btn { display: inline-block; font: 500 .95rem var(--f); padding: .85rem 1.5rem; border-radius: 999px; text-decoration: none; cursor: pointer; border: 1px solid transparent; }
+.btn-gold { background: var(--gold); color: var(--navy-ink); }
+.btn-gold:hover { background: #d3af78; }
+.btn-line { border-color: rgba(255,255,255,.45); color: #fff; }
+.btn-line:hover { border-color: #fff; }
+.hero-photo { display: block; width: 100%; max-width: 100%; height: auto; aspect-ratio: 1300 / 701; }
+@media (max-width: 860px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); } .hero-photo { order: -1; margin-inline: -20px; width: calc(100% + 40px); max-width: none; } }
+
+/* Seções */
+.block .wrap { padding-block: clamp(3.5rem, 8vw, 6rem); }
+.head { display: grid; gap: .75rem; max-width: 46rem; margin-bottom: clamp(2rem, 5vw, 3.25rem); }
+.head h2 { font-size: var(--t-h2); }
+.head p { color: var(--muted); font-size: 1.05rem; }
+.surface { background: var(--surface); }
+.split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(2rem, 5vw, 4.5rem); align-items: start; }
+@media (max-width: 900px) { .split { grid-template-columns: minmax(0, 1fr); } }
+.split .head { margin-bottom: 0; }
+.mark { width: 34px; height: 34px; flex: none; }
+.mark path { fill: var(--gold); }
+
+/* Quem somos */
+.about-text { display: grid; gap: 1rem; color: var(--muted); font-size: 1.02rem; max-width: 40rem; }
+.about-text strong { color: var(--text); }
+.since { display: flex; gap: 2.5rem; flex-wrap: wrap; margin-top: 1.25rem; }
+.since div { display: grid; }
+.since b { font-size: 2rem; font-weight: 400; color: var(--gold-text); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.since span { font-size: .85rem; color: var(--muted); }
+.values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: 2.5rem; }
+.value { background: var(--bg); padding: 1.4rem 1.5rem; display: grid; gap: .35rem; align-content: start; }
+.value h3 { font-size: 1.05rem; font-weight: 500; }
+.value p { color: var(--muted); font-size: .93rem; }
+@media (max-width: 600px) { .values { grid-template-columns: minmax(0, 1fr); } }
+
+/* Por que */
+.reasons { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.reasons li { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); gap: 1rem; padding: 1.25rem 0; border-top: 1px solid var(--line); }
+.reasons li:last-child { border-bottom: 1px solid var(--line); }
+.reasons .mark { width: 28px; height: 28px; margin-top: .2rem; }
+.reasons h3 { font-size: 1.1rem; font-weight: 500; margin-bottom: .25rem; }
+.reasons p { color: var(--muted); font-size: .95rem; }
+
+/* Eixos de serviço */
+.axes { display: grid; gap: clamp(1.25rem, 3vw, 2rem); }
+.axis { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: clamp(1.25rem, 4vw, 3.5rem); padding: clamp(1.5rem, 3.5vw, 2.5rem); border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+@media (max-width: 860px) { .axis { grid-template-columns: minmax(0, 1fr); } }
+.axis-head { display: grid; gap: .7rem; align-content: start; }
+.axis-head .n { font-size: .8rem; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-text); }
+.axis-head h3 { font-size: var(--t-h3); font-weight: 500; }
+.axis-head p { color: var(--muted); font-size: .95rem; }
+.badge { justify-self: start; font-size: .72rem; font-weight: 500; color: var(--navy-ink); background: var(--gold); padding: .2rem .7rem; border-radius: 999px; }
+.products { list-style: none; margin: 0; padding: 0; }
+.products li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .35rem 1.25rem; align-items: baseline; padding: .9rem 0; border-top: 1px solid var(--line); }
+.products li:first-child { border-top: 0; padding-top: 0; }
+.products b { font-weight: 500; font-size: .98rem; }
+.products p { grid-column: 1 / -1; color: var(--muted); font-size: .9rem; }
+.freq { font-size: .72rem; font-weight: 500; letter-spacing: .03em; color: var(--gold-text); border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent); border-radius: 999px; padding: .12rem .6rem; white-space: nowrap; }
+.axes-note { margin-top: 1.75rem; color: var(--muted); font-size: .95rem; max-width: 46rem; }
+@media (max-width: 480px) { .products li { grid-template-columns: minmax(0, 1fr); } .freq { justify-self: start; } }
+
+/* Setores */
+.clients { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.5rem; }
+.client { display: grid; gap: .45rem; align-content: start; padding: 1.5rem 0 0; border-top: 2px solid var(--gold); }
+.client b { font-size: 1.2rem; font-weight: 500; line-height: 1.3; }
+.client span { color: var(--muted); font-size: .92rem; }
+@media (max-width: 900px) { .clients { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 2rem; } }
+@media (max-width: 520px) { .clients { grid-template-columns: minmax(0, 1fr); } }
+
+/* Sócios */
+.team { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+.person { border: 1px solid var(--line); border-radius: 6px; padding: 1.5rem; display: grid; gap: 1rem; align-content: start; }
+.avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--navy); color: var(--gold); display: grid; place-items: center; font-weight: 500; font-size: 1.15rem; letter-spacing: .04em; }
+.person h3 { font-size: 1.08rem; font-weight: 500; }
+.person .role { color: var(--gold-text); font-size: .88rem; font-weight: 400; }
+.person .mail { margin-top: .5rem; font-size: .82rem; color: var(--muted); overflow-wrap: anywhere; }
+@media (max-width: 900px) { .team { grid-template-columns: minmax(0, 1fr); max-width: 30rem; } }
+
+/* Contato */
+.contact .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 4.5rem); padding-block: clamp(3.5rem, 8vw, 6rem); position: relative; z-index: 1; }
+@media (max-width: 900px) { .contact .wrap { grid-template-columns: minmax(0, 1fr); } }
+.contact h2 { font-size: var(--t-h2); margin-top: .6rem; }
+.contact .intro { margin-top: 1rem; max-width: 30rem; }
+.channels { display: grid; gap: 1.1rem; margin-top: 2rem; }
+.channel { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: .8rem; align-items: start; }
+.channel svg { width: 22px; height: 22px; fill: var(--gold); margin-top: .2rem; }
+.channel span { display: block; font-size: .78rem; color: var(--on-navy-muted); letter-spacing: .06em; text-transform: uppercase; }
+.channel strong { font-weight: 400; font-size: 1.08rem; color: #fff; user-select: all; overflow-wrap: anywhere; }
+form { display: grid; gap: 1rem; align-content: start; background: #263a66; border: 1px solid rgba(255,255,255,.14); box-shadow: 0 20px 40px -24px rgba(0,0,0,.5); border-radius: 6px; padding: clamp(1.25rem, 3vw, 2rem); }
+.field { display: grid; gap: .35rem; }
+.field label { font-size: .85rem; color: var(--on-navy-muted); }
+.field input, .field textarea { font: inherit; color: #fff; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.22); border-radius: 4px; padding: .7rem .85rem; width: 100%; }
+.field textarea { min-height: 7.5rem; resize: vertical; }
+.row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; }
+@media (max-width: 520px) { .row2 { grid-template-columns: minmax(0, 1fr); } }
+.form-note { font-size: .88rem; color: var(--gold) !important; min-height: 1.4em; }
+.padrao { position: absolute; top: 0; right: 0; width: clamp(180px, 26vw, 360px); height: auto; pointer-events: none; }
+.padrao .pg { fill: var(--gold); }
+.padrao .pn { fill: var(--navy); }
+.contact .padrao { opacity: .9; }
+@media (max-width: 900px) { .contact .padrao { width: 150px; opacity: .35; } }
+
+footer { background: var(--navy-ink); color: var(--on-navy-muted); }
+footer .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1.75rem; font-size: .85rem; }
+footer .logo { width: 150px; color: #fff; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a href="#inicio" aria-label="Panorama, início"><svg class="logo" viewBox="0 0 738.62 176.09" role="img" aria-label="Panorama Inteligência Política"><path class="lw" d="M220.17,108.43v25.33h-9.3V52.42h29.52c17.43,0,29.05,13.01,29.05,27.89s-11.62,28.12-29.05,28.12h-20.22ZM239.46,100.42c13.48,0,20.8-9.88,20.8-20.1s-7.32-19.87-20.8-19.87h-19.29v39.97h19.29Z"/><path class="lw" d="M330.81,76.59v57.17h-8.72v-11.5c-3.49,6.39-12.32,12.9-23.94,12.9-17.55,0-29.28-14.18-29.28-29.98s11.74-29.98,29.28-29.98c11.62,0,20.68,6.39,23.82,13.01v-11.62h8.83ZM299.66,127.72c11.04,0,22.08-8.13,22.08-22.54s-11.04-22.54-22.08-22.54c-13.25,0-21.73,10.34-21.73,22.54s8.48,22.54,21.73,22.54Z"/><path class="lw" d="M351.5,133.77h-9.06v-57.17h8.72v11.16c3.02-8.13,11.27-12.55,21.38-12.55,13.94,0,22.78,10.92,22.78,25.8v32.77h-9.06v-31.03c0-11.27-4.88-19.41-16.5-19.41-10.69,0-18.24,8.37-18.24,19.17v31.26Z"/><path class="lw" d="M402.29,105.18c0-15.69,11.97-29.98,30.91-29.98s30.91,14.29,30.91,29.98-11.97,29.98-30.91,29.98-30.91-14.29-30.91-29.98ZM411.12,105.18c0,11.62,8.37,22.43,22.08,22.43s22.08-10.81,22.08-22.43-8.25-22.43-22.08-22.43-22.08,10.92-22.08,22.43Z"/><path class="lw" d="M503.39,84.73h-2.44c-12.55,0-20.22,8.48-20.22,21.96v27.08h-9.06v-57.17h8.72v14.18c2.79-10.34,11.74-14.64,23.01-14.64v8.6Z"/><path class="lw" d="M564.64,76.59v57.17h-8.72v-11.5c-3.49,6.39-12.32,12.9-23.94,12.9-17.55,0-29.28-14.18-29.28-29.98s11.74-29.98,29.28-29.98c11.62,0,20.68,6.39,23.82,13.01v-11.62h8.83ZM533.49,127.72c11.04,0,22.08-8.13,22.08-22.54s-11.04-22.54-22.08-22.54c-13.25,0-21.73,10.34-21.73,22.54s8.48,22.54,21.73,22.54Z"/><path class="lw" d="M585.33,133.77h-9.06v-57.17h8.72v11.16c2.9-8.13,10.57-12.55,20.45-12.55,9.3,0,16.04,5.11,19.64,13.36,3.84-8.13,11.5-13.36,22.43-13.36,13.6,0,22.19,10.92,22.19,25.8v32.77h-8.95v-31.03c0-11.27-4.65-19.41-15.8-19.41-10.11,0-17.43,7.79-17.43,18.71v31.72h-8.95v-31.03c0-11.27-4.65-19.41-15.8-19.41-10.34,0-17.43,8.37-17.43,19.17v31.26Z"/><path class="lw" d="M738.62,76.59v57.17h-8.72v-11.5c-3.49,6.39-12.32,12.9-23.94,12.9-17.55,0-29.28-14.18-29.28-29.98s11.74-29.98,29.28-29.98c11.62,0,20.68,6.39,23.82,13.01v-11.62h8.83ZM707.48,127.72c11.04,0,22.08-8.13,22.08-22.54s-11.04-22.54-22.08-22.54c-13.25,0-21.73,10.34-21.73,22.54s8.48,22.54,21.73,22.54Z"/><path class="lg" d="M491.7,43.45h3.3v17.76h-3.3v-17.76Z"/><path class="lg" d="M502.08,61.21h-3.2v-12.66h3.1v2.16c.58-1.47,2.23-2.46,4.21-2.46,3.04,0,4.75,2.23,4.75,5.38v7.59h-3.2v-7.05c0-1.8-.81-3.12-2.72-3.12-1.75,0-2.94,1.27-2.94,3.1v7.08Z"/><path class="lg" d="M515.26,44.77h3.2v3.78h3.27v2.64h-3.27v5.76c0,1.32.51,1.9,1.75,1.9.53,0,.96-.1,1.4-.23v2.56c-.41.15-1.42.33-2.23.33-2.99,0-4.11-1.8-4.11-4.72v-5.61h-2.36v-2.64h2.36v-3.78Z"/><path class="lg" d="M526.56,55.96c.2,1.9,1.42,3.2,3.68,3.2,1.55,0,2.74-.69,3.35-1.65h2.97c-.86,2.26-3.3,4.01-6.32,4.01-4.31,0-6.83-2.87-6.83-6.65s2.77-6.62,6.67-6.62,6.65,2.77,6.65,6.67v1.04h-10.18ZM526.53,53.85h7.16c-.2-1.95-1.5-3.32-3.55-3.32s-3.35,1.27-3.6,3.32Z"/><path class="lg" d="M539.48,61.21v-18.53h3.2v18.53h-3.2Z"/><path class="lg" d="M547.88,42.66c1.09,0,1.9.84,1.9,1.88s-.81,1.88-1.9,1.88-1.9-.81-1.9-1.88.84-1.88,1.9-1.88ZM546.28,61.21v-12.66h3.2v12.66h-3.2Z"/><path class="lg" d="M563.06,50.78v-2.23h3.15v12.49c0,3.27-2.97,5.76-6.9,5.76-3.27,0-5.84-1.45-6.8-4.34h3.17c.61,1.22,1.8,1.88,3.6,1.88,2.18,0,3.73-1.19,3.73-3.3v-2.46c-.74,1.27-2.36,2.33-4.44,2.33-3.76,0-6.27-2.82-6.27-6.32s2.51-6.34,6.27-6.34c2.18,0,3.88,1.12,4.49,2.54ZM563.01,54.59c0-2.23-1.73-3.7-3.83-3.7-2.26,0-3.7,1.57-3.7,3.7s1.45,3.68,3.7,3.68c2.11,0,3.83-1.47,3.83-3.68Z"/><path class="lg" d="M572.07,55.96c.2,1.9,1.42,3.2,3.68,3.2,1.55,0,2.74-.69,3.35-1.65h2.97c-.86,2.26-3.3,4.01-6.32,4.01-4.31,0-6.83-2.87-6.83-6.65s2.77-6.62,6.67-6.62,6.65,2.77,6.65,6.67v1.04h-10.18ZM580.47,46.9h-3.1l-1.47-1.75-1.47,1.75h-3.1l3.37-3.83h2.39l3.38,3.83ZM572.05,53.85h7.16c-.2-1.95-1.5-3.32-3.55-3.32s-3.35,1.27-3.6,3.32Z"/><path class="lg" d="M588.19,61.21h-3.2v-12.66h3.1v2.16c.58-1.47,2.23-2.46,4.21-2.46,3.04,0,4.75,2.23,4.75,5.38v7.59h-3.2v-7.05c0-1.8-.81-3.12-2.72-3.12-1.75,0-2.94,1.27-2.94,3.1v7.08Z"/><path class="lg" d="M613.17,53.07h-3.1c-.53-1.17-1.62-2.16-3.5-2.16-2.41,0-3.76,1.85-3.76,3.98s1.34,3.96,3.76,3.96c1.88,0,2.97-.94,3.5-2.16h3.1c-.66,2.64-3.12,4.82-6.57,4.82-4.21,0-6.95-2.89-6.95-6.62s2.74-6.65,6.95-6.65c3.45,0,5.91,2.18,6.57,4.82Z"/><path class="lg" d="M617.54,42.66c1.09,0,1.9.84,1.9,1.88s-.81,1.88-1.9,1.88-1.9-.81-1.9-1.88.84-1.88,1.9-1.88ZM615.94,61.21v-12.66h3.2v12.66h-3.2Z"/><path class="lg" d="M636.04,48.55v12.66h-3.07v-2.18c-.74,1.29-2.41,2.49-4.62,2.49-3.76,0-6.4-2.99-6.4-6.62s2.64-6.65,6.4-6.65c2.21,0,3.93,1.14,4.57,2.49v-2.18h3.12ZM628.96,58.88c2.11,0,3.88-1.55,3.88-3.98s-1.78-4.01-3.88-4.01c-2.28,0-3.81,1.8-3.81,4.01s1.52,3.98,3.81,3.98Z"/><path class="lg" d="M649.19,56.21v5h-3.3v-17.76h7.51c3.78,0,6.45,2.87,6.45,6.37s-2.66,6.39-6.45,6.39h-4.21ZM652.97,53.37c2.18,0,3.58-1.6,3.58-3.55s-1.4-3.53-3.58-3.53h-3.78v7.08h3.78Z"/><path class="lg" d="M661.15,54.89c0-3.45,2.59-6.65,6.95-6.65s6.95,3.2,6.95,6.65-2.59,6.62-6.95,6.62-6.95-3.2-6.95-6.62ZM664.27,54.89c0,2.06,1.37,3.96,3.83,3.96s3.83-1.9,3.83-3.96-1.37-3.98-3.83-3.98-3.83,1.93-3.83,3.98Z"/><path class="lg" d="M677.78,61.21v-18.53h3.2v18.53h-3.2Z"/><path class="lg" d="M684.58,61.21v-12.66h3.2v12.66h-3.2ZM684.81,46.9l2.01-3.83h4.16l-3.07,3.83h-3.1Z"/><path class="lg" d="M692.32,44.77h3.2v3.78h3.27v2.64h-3.27v5.76c0,1.32.51,1.9,1.75,1.9.53,0,.96-.1,1.4-.23v2.56c-.41.15-1.42.33-2.23.33-2.99,0-4.11-1.8-4.11-4.72v-5.61h-2.36v-2.64h2.36v-3.78Z"/><path class="lg" d="M702.96,42.66c1.09,0,1.9.84,1.9,1.88s-.81,1.88-1.9,1.88-1.9-.81-1.9-1.88.84-1.88,1.9-1.88ZM701.36,61.21v-12.66h3.2v12.66h-3.2Z"/><path class="lg" d="M720.9,53.07h-3.1c-.53-1.17-1.62-2.16-3.5-2.16-2.41,0-3.76,1.85-3.76,3.98s1.34,3.96,3.76,3.96c1.88,0,2.97-.94,3.5-2.16h3.1c-.66,2.64-3.12,4.82-6.57,4.82-4.21,0-6.95-2.89-6.95-6.62s2.74-6.65,6.95-6.65c3.45,0,5.91,2.18,6.57,4.82Z"/><path class="lg" d="M736.87,48.55v12.66h-3.07v-2.18c-.74,1.29-2.41,2.49-4.62,2.49-3.76,0-6.4-2.99-6.4-6.62s2.64-6.65,6.4-6.65c2.21,0,3.93,1.14,4.57,2.49v-2.18h3.12ZM729.79,58.88c2.11,0,3.88-1.55,3.88-3.98s-1.78-4.01-3.88-4.01c-2.28,0-3.81,1.8-3.81,4.01s1.52,3.98,3.81,3.98Z"/><path class="lg" d="M81.76,0h0C81.76,45.15,45.15,81.76,0,81.76h0v6.29h88.05V0h-6.29Z"/><path class="lg" d="M94.34,176.09h0c0-45.15,36.6-81.76,81.76-81.76h0v-6.29h-88.05v88.05h6.29Z"/><path class="lg" d="M163.52,75.47c-4.58-12.95-16.93-22.23-31.45-22.23s-26.87,9.28-31.45,22.23h62.89Z"/><path class="lg" d="M12.58,100.63c4.58,12.95,16.93,22.23,31.45,22.23s26.87-9.28,31.45-22.23H12.58Z"/></svg></a>
+    <nav class="nav" aria-label="Seções">
+      <a href="#quem-somos">Quem somos</a>
+      <a href="#servicos">Serviços</a>
+      <a href="#setores">Setores</a>
+      <a class="cta" href="#contato">Fale conosco</a>
+    </nav>
+  </div>
+</header>
+
+<main id="inicio">
+  <section class="hero navy">
+    <div class="wrap">
+      <div class="hero-text">
+        <p class="eyebrow">Relações institucionais e governamentais</p>
+        <h1>Decodificando dados, <span>direcionando decisões.</span></h1>
+        <p class="lead">Ajudamos empresas, entidades e associações de classe a atuar com segurança no Congresso Nacional e no Poder Executivo Federal, para que nenhuma oportunidade passe despercebida e nenhum problema fique sem solução.</p>
+        <div class="actions">
+          <a class="btn btn-gold" href="#contato">Fale com a Panorama</a>
+          <a class="btn btn-line" href="#servicos">Conheça os serviços</a>
+        </div>
+      </div>
+      <img class="hero-photo" src="assets/brasilia.jpg" width="1300" height="701" alt="Congresso Nacional, Palácio do Planalto e espelho d'água em Brasília, recortados nas formas do símbolo do Panorama">
+    </div>
+  </section>
+
+  <section class="block" id="quem-somos">
+    <div class="wrap split">
+      <div class="head">
+        <p class="eyebrow">Quem somos</p>
+        <h2>Uma empresa jovem, com experiência de quem conhece Brasília por dentro</h2>
+      </div>
+      <div>
+        <div class="about-text">
+          <p>A Panorama nasceu de uma constatação clara para quem tem experiência no mercado de relações institucionais e governamentais: <strong>faltava transparência, ética e compromisso com os serviços prestados</strong>.</p>
+          <p>Nossa missão é ajudar empresas, entidades e associações de classe a navegar pelo ambiente político do Poder Executivo Federal e do Poder Legislativo, com orientação sólida e bem informada em um cenário que muda o tempo todo.</p>
+        </div>
+        <div class="since">
+          <div><b>2018</b><span>início da atuação</span></div>
+          <div><b>2024</b><span>nova estrutura da empresa</span></div>
+        </div>
+        <div class="values">
+          <div class="value"><h3>Criatividade e inovação</h3><p>Buscamos novas abordagens para os desafios políticos de cada cliente.</p></div>
+          <div class="value"><h3>Informação confiável</h3><p>Transparência e precisão são a base de relações de confiança.</p></div>
+          <div class="value"><h3>Ética e compromisso</h3><p>Atuação responsável, dentro das regras e com entregas de qualidade.</p></div>
+          <div class="value"><h3>Atendimento próximo</h3><p>Ouvimos suas necessidades e tratamos cada cliente como parceiro.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block surface" id="por-que">
+    <div class="wrap split">
+      <div class="head">
+        <p class="eyebrow">Por que atuar</p>
+        <h2>Decisões de governo mudam o ambiente de negócios. Quem acompanha de perto se antecipa.</h2>
+        <p>Atuar na defesa dos seus interesses protege a sua organização e contribui para um ambiente político mais transparente e alinhado às necessidades da sociedade.</p>
+      </div>
+      <ul class="reasons">
+        <li><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><div><h3>Influência nas políticas públicas</h3><p>Participe da elaboração de políticas que afetam o seu setor e aproxime a regulação da realidade de quem opera.</p></div></li>
+        <li><svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.73-93.94,66.42h187.88Z"/></svg><div><h3>Proteção de interesses</h3><p>Antecipe-se a medidas adversas e garanta um ambiente mais estável para crescer.</p></div></li>
+        <li><svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg><div><h3>Acesso a recursos e oportunidades</h3><p>Programas de incentivo, parcerias estratégicas e contratos públicos ficam ao alcance de quem participa.</p></div></li>
+        <li><svg class="mark" viewBox="263 263 263 263" aria-hidden="true"><path d="M281.82,526.07c0-134.89,109.35-244.25,244.25-244.25v-18.79h-263.03v263.03h18.79Z"/></svg><div><h3>Gestão de riscos</h3><p>O ambiente político muda rápido. Quem monitora está preparado para mitigar impactos.</p></div></li>
+        <li><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><div><h3>Reputação e legitimidade</h3><p>Organizações que participam de forma construtiva são vistas como atores responsáveis perante a sociedade.</p></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="block" id="servicos">
+    <div class="wrap">
+      <div class="head">
+        <p class="eyebrow">Serviços</p>
+        <h2>Quatro eixos de trabalho, montados sob medida</h2>
+        <p>Cada eixo pode ser contratado separadamente. Recomendamos combiná-los com o eixo de monitoramento, que dá base a todo o resto.</p>
+      </div>
+      <div class="axes">
+        <article class="axis">
+          <div class="axis-head">
+            <svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg>
+            <span class="n">Eixo 1</span>
+            <h3>Monitoramento e Informação Legislativa</h3>
+            <p>Acompanhamento diário do Legislativo e do Executivo Federais, para você saber primeiro o que pode afetar seus interesses.</p>
+            <span class="badge">Base recomendada</span>
+          </div>
+          <ul class="products">
+            <li><b>Monitoramento e alertas de temas de interesse</b><span class="freq">Diário, em tempo real</span><p>Matérias do Legislativo e do Executivo Federais acompanhadas de perto.</p></li>
+            <li><b>Mapeamento de proposições legislativas</b><span class="freq">No início e sob demanda</span><p>Visão detalhada dos projetos de lei e proposições relevantes nas Casas Legislativas.</p></li>
+            <li><b>Novas proposições da semana</b><span class="freq">Semanal</span><p>Resumo das novas proposições apresentadas que interessam à sua organização.</p></li>
+            <li><b>Em pauta no Legislativo Federal</b><span class="freq">Semanal</span><p>As principais discussões, votações e temas previstos na semana.</p></li>
+            <li><b>Pauta de interesse e resultado da semana</b><span class="freq">Semanal</span><p>Pauta personalizada com os itens que podem afetar diretamente seus interesses.</p></li>
+            <li><b>Diário Oficial da União: leitura e alertas</b><span class="freq">Diário ou semanal</span><p>As publicações oficiais do governo que trazem oportunidades ou desafios para você.</p></li>
+            <li><b>Agendas públicas de autoridades</b><span class="freq">Diário</span><p>Os compromissos dos principais tomadores de decisão do seu setor.</p></li>
+          </ul>
+        </article>
+        <article class="axis">
+          <div class="axis-head">
+            <svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.73-93.94,66.42h187.88Z"/></svg>
+            <span class="n">Eixo 2</span>
+            <h3>Suporte Operacional e Imagem Institucional</h3>
+            <p>Apoio para a sua organização ser vista e lembrada no Congresso Nacional.</p>
+          </div>
+          <ul class="products">
+            <li><b>Eventos institucionais</b><span class="freq">Sob demanda</span><p>Seminários, audiências públicas, workshops, cafés e jantares nas duas Casas do Congresso.</p></li>
+            <li><b>Boletim de atuação da semana</b><span class="freq">Semanal</span><p>Resumo das ações da sua organização no Legislativo e no Executivo, pronto para divulgação interna.</p></li>
+            <li><b>Clipping de notícias</b><span class="freq">Semanal</span><p>Seleção das notícias mais relevantes para a sua atuação estratégica.</p></li>
+          </ul>
+        </article>
+        <article class="axis">
+          <div class="axis-head">
+            <svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg>
+            <span class="n">Eixo 3</span>
+            <h3>Articulação Política</h3>
+            <p>Contato direto com quem decide, com preparo e estratégia.</p>
+          </div>
+          <ul class="products">
+            <li><b>Reuniões com políticos e autoridades</b><span class="freq">Sob demanda</span><p>Agendamos e organizamos encontros para você apresentar suas demandas e ser ouvido.</p></li>
+            <li><b>Previsões e aconselhamento estratégico</b><span class="freq">Sob demanda</span><p>Recomendações para antecipar tendências e posicionar sua organização.</p></li>
+            <li><b>Mapeamento de stakeholders</b><span class="freq">Sob demanda</span><p>Quem são e como se posicionam os atores que influenciam as decisões do seu setor.</p></li>
+          </ul>
+        </article>
+        <article class="axis">
+          <div class="axis-head">
+            <svg class="mark" viewBox="263 263 263 263" aria-hidden="true"><path d="M281.82,526.07c0-134.89,109.35-244.25,244.25-244.25v-18.79h-263.03v263.03h18.79Z"/></svg>
+            <span class="n">Eixo 4</span>
+            <h3>Inteligência Política</h3>
+            <p>Análise para decidir com informação, não com intuição.</p>
+          </div>
+          <ul class="products">
+            <li><b>Análise de cenários políticos e econômicos</b><span class="freq">Sob demanda</span><p>Avaliação das tendências e das oportunidades em evolução.</p></li>
+            <li><b>Mapas de tramitação legislativa</b><span class="freq">Sob demanda</span><p>Status e próximos passos das proposições de seu interesse, de forma visual.</p></li>
+            <li><b>Estratégias de atuação</b><span class="freq">Sob demanda</span><p>Planos de ação claros no Legislativo e no Executivo para alcançar seus objetivos.</p></li>
+          </ul>
+        </article>
+      </div>
+      <p class="axes-note">Precisa de outro formato, como um eixo completo mais um produto de outro eixo? Fale com a gente e montamos a melhor combinação para você.</p>
+    </div>
+  </section>
+
+  <section class="block surface" id="setores">
+    <div class="wrap">
+      <div class="head">
+        <p class="eyebrow">Setores</p>
+        <h2>Experiência com entidades de setores estratégicos do país</h2>
+        <p>Nossos consultores atendem associações e entidades representativas que atuam junto ao Congresso Nacional e ao Executivo Federal.</p>
+      </div>
+      <div class="clients">
+        <div class="client"><b>Sistema de Justiça</b><span>Entidades representativas do meio jurídico.</span></div>
+        <div class="client"><b>Segurança Pública</b><span>Entidades representativas da área de segurança.</span></div>
+        <div class="client"><b>Serviços Financeiros</b><span>Empresas e entidades do setor financeiro.</span></div>
+        <div class="client"><b>Comércio Exterior e Logística</b><span>Empresas e entidades do comércio internacional e da logística.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="socios">
+    <div class="wrap">
+      <div class="head">
+        <p class="eyebrow">Sócios</p>
+        <h2>Quem está à frente da Panorama</h2>
+      </div>
+      <div class="team">
+        <div class="person"><div class="avatar" aria-hidden="true">CT</div><div><h3>Carolina Teixeira</h3><p class="role">Sócia-Diretora</p><p class="mail">carolina.teixeira@panoramaip.com.br</p></div></div>
+        <div class="person"><div class="avatar" aria-hidden="true">EB</div><div><h3>Emanuella Bandeira</h3><p class="role">Sócia-Diretora</p><p class="mail">emanuella.bandeira@panoramaip.com.br</p></div></div>
+        <div class="person"><div class="avatar" aria-hidden="true">FA</div><div><h3>Fernando Araújo</h3><p class="role">Sócio-Diretor</p><p class="mail">fernando.araujo@panoramaip.com.br</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="contact navy" id="contato">
+    <svg class="padrao" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf" x="0" y="0" class="pg"/><use href="#pl" x="100" y="0" class="pg"/><use href="#ph" x="200" y="0"/><use href="#pl" x="300" y="0" class="pg"/><use href="#ph" x="400" y="0"/><use href="#pl" x="500" y="0" class="pg"/><use href="#ph" x="600" y="0"/><use href="#pl" x="700" y="0" class="pg"/><use href="#pf" x="100" y="100" class="pg"/><use href="#pl" x="200" y="100" class="pg"/><use href="#ph" x="300" y="100"/><use href="#pl" x="400" y="100" class="pg"/><use href="#ph" x="500" y="100"/><use href="#pl" x="600" y="100" class="pg"/><use href="#ph" x="700" y="100"/><use href="#pf" x="200" y="200" class="pg"/><use href="#pl" x="300" y="200" class="pg"/><use href="#ph" x="400" y="200"/><use href="#pl" x="500" y="200" class="pg"/><use href="#ph" x="600" y="200"/><use href="#pl" x="700" y="200" class="pg"/><use href="#pf" x="300" y="300" class="pg"/><use href="#pl" x="400" y="300" class="pg"/><use href="#ph" x="500" y="300"/><use href="#pl" x="600" y="300" class="pg"/><use href="#ph" x="700" y="300"/><use href="#pf" x="400" y="400" class="pg"/><use href="#pl" x="500" y="400" class="pg"/><use href="#ph" x="600" y="400"/><use href="#pl" x="700" y="400" class="pg"/><use href="#pf" x="500" y="500" class="pg"/><use href="#pl" x="600" y="500" class="pg"/><use href="#ph" x="700" y="500"/></svg>
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">Contato</p>
+        <h2>Vamos conversar sobre o seu cenário</h2>
+        <p class="intro">Conte em poucas linhas o que a sua organização acompanha. Ficaremos felizes em encontrar o melhor formato para te atender.</p>
+        <div class="channels">
+          <div class="channel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3Z"/></svg><div><span>Telefone e WhatsApp</span><strong>+55 61 4042-9203</strong></div></div>
+          <div class="channel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm9 7.2L20 7H4l8 5.2ZM4 9.2V17h16V9.2l-8 5.2-8-5.2Z"/></svg><div><span>E-mail</span><strong>panorama@panoramaip.com.br</strong></div></div>
+          <div class="channel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm2.5 7v7.5h2.6V10H6.5Zm1.3-4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm3.4 4v7.5h2.6v-3.9c0-1 .2-2 1.5-2s1.3 1.2 1.3 2.1v3.8h2.6v-4.3c0-2.1-.5-3.7-2.9-3.7a2.6 2.6 0 0 0-2.4 1.3V10h-2.7Z"/></svg><div><span>LinkedIn</span><strong>Panoramaip</strong></div></div>
+        </div>
+      </div>
+      <form id="contact-form" novalidate>
+        <div class="row2">
+          <div class="field"><label for="f-nome">Nome</label><input id="f-nome" name="nome" autocomplete="name" required></div>
+          <div class="field"><label for="f-org">Organização</label><input id="f-org" name="organizacao" autocomplete="organization"></div>
+        </div>
+        <div class="field"><label for="f-email">E-mail</label><input id="f-email" name="email" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="f-msg">Mensagem</label><textarea id="f-msg" name="mensagem" required></textarea></div>
+        <div><button class="btn btn-gold" type="submit">Escrever mensagem</button></div>
+        <p class="form-note" id="form-note" role="status"></p>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <svg class="logo" viewBox="0 0 738.62 176.09" role="img" aria-label="Panorama Inteligência Política"><path class="lw" d="M220.17,108.43v25.33h-9.3V52.42h29.52c17.43,0,29.05,13.01,29.05,27.89s-11.62,28.12-29.05,28.12h-20.22ZM239.46,100.42c13.48,0,20.8-9.88,20.8-20.1s-7.32-19.87-20.8-19.87h-19.29v39.97h19.29Z"/><path class="lw" d="M330.81,76.59v57.17h-8.72v-11.5c-3.49,6.39-12.32,12.9-23.94,12.9-17.55,0-29.28-14.18-29.28-29.98s11.74-29.98,29.28-29.98c11.62,0,20.68,6.39,23.82,13.01v-11.62h8.83ZM299.66,127.72c11.04,0,22.08-8.13,22.08-22.54s-11.04-22.54-22.08-22.54c-13.25,0-21.73,10.34-21.73,22.54s8.48,22.54,21.73,22.54Z"/><path class="lw" d="M351.5,133.77h-9.06v-57.17h8.72v11.16c3.02-8.13,11.27-12.55,21.38-12.55,13.94,0,22.78,10.92,22.78,25.8v32.77h-9.06v-31.03c0-11.27-4.88-19.41-16.5-19.41-10.69,0-18.24,8.37-18.24,19.17v31.26Z"/><path class="lw" d="M402.29,105.18c0-15.69,11.97-29.98,30.91-29.98s30.91,14.29,30.91,29.98-11.97,29.98-30.91,29.98-30.91-14.29-30.91-29.98ZM411.12,105.18c0,11.62,8.37,22.43,22.08,22.43s22.08-10.81,22.08-22.43-8.25-22.43-22.08-22.43-22.08,10.92-22.08,22.43Z"/><path class="lw" d="M503.39,84.73h-2.44c-12.55,0-20.22,8.48-20.22,21.96v27.08h-9.06v-57.17h8.72v14.18c2.79-10.34,11.74-14.64,23.01-14.64v8.6Z"/><path class="lw" d="M564.64,76.59v57.17h-8.72v-11.5c-3.49,6.39-12.32,12.9-23.94,12.9-17.55,0-29.28-14.18-29.28-29.98s11.74-29.98,29.28-29.98c11.62,0,20.68,6.39,23.82,13.01v-11.62h8.83ZM533.49,127.72c11.04,0,22.08-8.13,22.08-22.54s-11.04-22.54-22.08-22.54c-13.25,0-21.73,10.34-21.73,22.54s8.48,22.54,21.73,22.54Z"/><path class="lw" d="M585.33,133.77h-9.06v-57.17h8.72v11.16c2.9-8.13,10.57-12.55,20.45-12.55,9.3,0,16.04,5.11,19.64,13.36,3.84-8.13,11.5-13.36,22.43-13.36,13.6,0,22.19,10.92,22.19,25.8v32.77h-8.95v-31.03c0-11.27-4.65-19.41-15.8-19.41-10.11,0-17.43,7.79-17.43,18.71v31.72h-8.95v-31.03c0-11.27-4.65-19.41-15.8-19.41-10.34,0-17.43,8.37-17.43,19.17v31.26Z"/><path class="lw" d="M738.62,76.59v57.17h-8.72v-11.5c-3.49,6.39-12.32,12.9-23.94,12.9-17.55,0-29.28-14.18-29.28-29.98s11.74-29.98,29.28-29.98c11.62,0,20.68,6.39,23.82,13.01v-11.62h8.83ZM707.48,127.72c11.04,0,22.08-8.13,22.08-22.54s-11.04-22.54-22.08-22.54c-13.25,0-21.73,10.34-21.73,22.54s8.48,22.54,21.73,22.54Z"/><path class="lg" d="M491.7,43.45h3.3v17.76h-3.3v-17.76Z"/><path class="lg" d="M502.08,61.21h-3.2v-12.66h3.1v2.16c.58-1.47,2.23-2.46,4.21-2.46,3.04,0,4.75,2.23,4.75,5.38v7.59h-3.2v-7.05c0-1.8-.81-3.12-2.72-3.12-1.75,0-2.94,1.27-2.94,3.1v7.08Z"/><path class="lg" d="M515.26,44.77h3.2v3.78h3.27v2.64h-3.27v5.76c0,1.32.51,1.9,1.75,1.9.53,0,.96-.1,1.4-.23v2.56c-.41.15-1.42.33-2.23.33-2.99,0-4.11-1.8-4.11-4.72v-5.61h-2.36v-2.64h2.36v-3.78Z"/><path class="lg" d="M526.56,55.96c.2,1.9,1.42,3.2,3.68,3.2,1.55,0,2.74-.69,3.35-1.65h2.97c-.86,2.26-3.3,4.01-6.32,4.01-4.31,0-6.83-2.87-6.83-6.65s2.77-6.62,6.67-6.62,6.65,2.77,6.65,6.67v1.04h-10.18ZM526.53,53.85h7.16c-.2-1.95-1.5-3.32-3.55-3.32s-3.35,1.27-3.6,3.32Z"/><path class="lg" d="M539.48,61.21v-18.53h3.2v18.53h-3.2Z"/><path class="lg" d="M547.88,42.66c1.09,0,1.9.84,1.9,1.88s-.81,1.88-1.9,1.88-1.9-.81-1.9-1.88.84-1.88,1.9-1.88ZM546.28,61.21v-12.66h3.2v12.66h-3.2Z"/><path class="lg" d="M563.06,50.78v-2.23h3.15v12.49c0,3.27-2.97,5.76-6.9,5.76-3.27,0-5.84-1.45-6.8-4.34h3.17c.61,1.22,1.8,1.88,3.6,1.88,2.18,0,3.73-1.19,3.73-3.3v-2.46c-.74,1.27-2.36,2.33-4.44,2.33-3.76,0-6.27-2.82-6.27-6.32s2.51-6.34,6.27-6.34c2.18,0,3.88,1.12,4.49,2.54ZM563.01,54.59c0-2.23-1.73-3.7-3.83-3.7-2.26,0-3.7,1.57-3.7,3.7s1.45,3.68,3.7,3.68c2.11,0,3.83-1.47,3.83-3.68Z"/><path class="lg" d="M572.07,55.96c.2,1.9,1.42,3.2,3.68,3.2,1.55,0,2.74-.69,3.35-1.65h2.97c-.86,2.26-3.3,4.01-6.32,4.01-4.31,0-6.83-2.87-6.83-6.65s2.77-6.62,6.67-6.62,6.65,2.77,6.65,6.67v1.04h-10.18ZM580.47,46.9h-3.1l-1.47-1.75-1.47,1.75h-3.1l3.37-3.83h2.39l3.38,3.83ZM572.05,53.85h7.16c-.2-1.95-1.5-3.32-3.55-3.32s-3.35,1.27-3.6,3.32Z"/><path class="lg" d="M588.19,61.21h-3.2v-12.66h3.1v2.16c.58-1.47,2.23-2.46,4.21-2.46,3.04,0,4.75,2.23,4.75,5.38v7.59h-3.2v-7.05c0-1.8-.81-3.12-2.72-3.12-1.75,0-2.94,1.27-2.94,3.1v7.08Z"/><path class="lg" d="M613.17,53.07h-3.1c-.53-1.17-1.62-2.16-3.5-2.16-2.41,0-3.76,1.85-3.76,3.98s1.34,3.96,3.76,3.96c1.88,0,2.97-.94,3.5-2.16h3.1c-.66,2.64-3.12,4.82-6.57,4.82-4.21,0-6.95-2.89-6.95-6.62s2.74-6.65,6.95-6.65c3.45,0,5.91,2.18,6.57,4.82Z"/><path class="lg" d="M617.54,42.66c1.09,0,1.9.84,1.9,1.88s-.81,1.88-1.9,1.88-1.9-.81-1.9-1.88.84-1.88,1.9-1.88ZM615.94,61.21v-12.66h3.2v12.66h-3.2Z"/><path class="lg" d="M636.04,48.55v12.66h-3.07v-2.18c-.74,1.29-2.41,2.49-4.62,2.49-3.76,0-6.4-2.99-6.4-6.62s2.64-6.65,6.4-6.65c2.21,0,3.93,1.14,4.57,2.49v-2.18h3.12ZM628.96,58.88c2.11,0,3.88-1.55,3.88-3.98s-1.78-4.01-3.88-4.01c-2.28,0-3.81,1.8-3.81,4.01s1.52,3.98,3.81,3.98Z"/><path class="lg" d="M649.19,56.21v5h-3.3v-17.76h7.51c3.78,0,6.45,2.87,6.45,6.37s-2.66,6.39-6.45,6.39h-4.21ZM652.97,53.37c2.18,0,3.58-1.6,3.58-3.55s-1.4-3.53-3.58-3.53h-3.78v7.08h3.78Z"/><path class="lg" d="M661.15,54.89c0-3.45,2.59-6.65,6.95-6.65s6.95,3.2,6.95,6.65-2.59,6.62-6.95,6.62-6.95-3.2-6.95-6.62ZM664.27,54.89c0,2.06,1.37,3.96,3.83,3.96s3.83-1.9,3.83-3.96-1.37-3.98-3.83-3.98-3.83,1.93-3.83,3.98Z"/><path class="lg" d="M677.78,61.21v-18.53h3.2v18.53h-3.2Z"/><path class="lg" d="M684.58,61.21v-12.66h3.2v12.66h-3.2ZM684.81,46.9l2.01-3.83h4.16l-3.07,3.83h-3.1Z"/><path class="lg" d="M692.32,44.77h3.2v3.78h3.27v2.64h-3.27v5.76c0,1.32.51,1.9,1.75,1.9.53,0,.96-.1,1.4-.23v2.56c-.41.15-1.42.33-2.23.33-2.99,0-4.11-1.8-4.11-4.72v-5.61h-2.36v-2.64h2.36v-3.78Z"/><path class="lg" d="M702.96,42.66c1.09,0,1.9.84,1.9,1.88s-.81,1.88-1.9,1.88-1.9-.81-1.9-1.88.84-1.88,1.9-1.88ZM701.36,61.21v-12.66h3.2v12.66h-3.2Z"/><path class="lg" d="M720.9,53.07h-3.1c-.53-1.17-1.62-2.16-3.5-2.16-2.41,0-3.76,1.85-3.76,3.98s1.34,3.96,3.76,3.96c1.88,0,2.97-.94,3.5-2.16h3.1c-.66,2.64-3.12,4.82-6.57,4.82-4.21,0-6.95-2.89-6.95-6.62s2.74-6.65,6.95-6.65c3.45,0,5.91,2.18,6.57,4.82Z"/><path class="lg" d="M736.87,48.55v12.66h-3.07v-2.18c-.74,1.29-2.41,2.49-4.62,2.49-3.76,0-6.4-2.99-6.4-6.62s2.64-6.65,6.4-6.65c2.21,0,3.93,1.14,4.57,2.49v-2.18h3.12ZM729.79,58.88c2.11,0,3.88-1.55,3.88-3.98s-1.78-4.01-3.88-4.01c-2.28,0-3.81,1.8-3.81,4.01s1.52,3.98,3.81,3.98Z"/><path class="lg" d="M81.76,0h0C81.76,45.15,45.15,81.76,0,81.76h0v6.29h88.05V0h-6.29Z"/><path class="lg" d="M94.34,176.09h0c0-45.15,36.6-81.76,81.76-81.76h0v-6.29h-88.05v88.05h6.29Z"/><path class="lg" d="M163.52,75.47c-4.58-12.95-16.93-22.23-31.45-22.23s-26.87,9.28-31.45,22.23h62.89Z"/><path class="lg" d="M12.58,100.63c4.58,12.95,16.93,22.23,31.45,22.23s26.87-9.28,31.45-22.23H12.58Z"/></svg>
+    <span>© <span id="ano">2026</span> Panorama Inteligência Política · panoramaip.com.br</span>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('ano').textContent = new Date().getFullYear();
+  document.getElementById('contact-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var note = document.getElementById('form-note');
+    if (!this.checkValidity()) { note.textContent = 'Preencha nome, e-mail e mensagem para enviar.'; return; }
+    var f = this.elements;
+    var assunto = 'Contato pelo site: ' + f.nome.value + (f.organizacao.value ? ' (' + f.organizacao.value + ')' : '');
+    var corpo = f.mensagem.value + '\n\n' + f.nome.value + (f.organizacao.value ? '\n' + f.organizacao.value : '') + '\n' + f.email.value;
+    window.location.href = 'mailto:panorama@panoramaip.com.br?subject=' + encodeURIComponent(assunto) + '&body=' + encodeURIComponent(corpo);
+    note.textContent = 'Abrimos o seu e-mail com a mensagem pronta. Se nada abriu, escreva para panorama@panoramaip.com.br.';
+  });
+</script>
+</body>
+</html>
