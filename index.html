@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="assets/simbolo.svg" type="image/svg+xml">
 <title>Panorama Inteligência Política</title>
-<meta name="description" content="Panorama Inteligência Política: consultoria em relações institucionais e governamentais no Congresso Nacional e no Executivo Federal. Decodificando dados, direcionando decisões.">
+<meta name="description" content="Panorama Inteligência Política: consultoria boutique em relações institucionais e governamentais junto ao Congresso Nacional e ao Poder Executivo federal. Decodificando dados, direcionando decisões.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
@@ -167,6 +167,16 @@ main section[id] { scroll-margin-top: 4.4rem; }
 @media (max-width: 860px) { .axis { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 480px) { .products li { grid-template-columns: minmax(0, 1fr); } .freq { justify-self: start; } }
 
+/* Como trabalhamos: quatro passos com a linha dourada da assinatura */
+.method { margin-top: clamp(3.5rem, 8vw, 5rem); }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.5rem; }
+.steps li { border-top: 2px solid var(--gold); padding-top: 1rem; display: grid; gap: .45rem; align-content: start; }
+.steps .num { font-size: 1.9rem; font-weight: 300; color: var(--gold-text); line-height: 1; font-variant-numeric: tabular-nums; }
+.steps h3 { font-size: 1.05rem; font-weight: 500; }
+.steps p { color: var(--muted); font-size: .92rem; }
+@media (max-width: 860px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .steps { grid-template-columns: minmax(0, 1fr); } }
+
 /* Setores */
 .sectors { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
 .sector { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 1.5rem; display: grid; gap: .6rem; align-content: start; }
@@ -199,6 +209,7 @@ form { display: grid; gap: 1rem; align-content: start; background: #263a66; bord
 .field input, .field textarea { font: inherit; color: #fff; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.22); border-radius: 4px; padding: .7rem .85rem; width: 100%; }
 .field textarea { min-height: 7.5rem; resize: vertical; }
 .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; }
+.form-privacy { font-size: .78rem; }
 .form-note { font-size: .88rem; color: var(--gold) !important; min-height: 1.4em; }
 @media (max-width: 860px) {
   .contact .wrap { grid-template-columns: minmax(0, 1fr); }
@@ -210,7 +221,7 @@ form { display: grid; gap: 1rem; align-content: start; background: #263a66; bord
 /* Títulos centralizados e textos corridos justificados */
 h1, h2 { text-align: center; }
 .hero-text { justify-items: center; text-align: center; }
-.hero .lead, .head p, .about-text p, .reasons p, .axis-head p, .products p, .values p, .sector span, .contact-intro p, .axes-note {
+.hero .lead, .head p, .about-text p, .reasons p, .axis-head p, .products p, .values p, .sector span, .contact-intro p, .axes-note, .steps p {
   text-align: justify; hyphens: auto; -webkit-hyphens: auto;
 }
 .hero .actions { justify-content: center; }
@@ -310,7 +321,7 @@ footer .padrao { width: 130px; }
     <div class="hero-text">
       <p class="eyebrow">Relações institucionais e governamentais</p>
       <h1>Decodificando dados, <span>direcionando decisões</span></h1>
-      <p class="lead">Ajudamos empresas, entidades e associações de classe a atuar com segurança no Congresso Nacional e no Poder Executivo Federal, para que nenhuma oportunidade passe despercebida e nenhum problema fique sem solução.</p>
+      <p class="lead">Ajudamos empresas, entidades e associações de classe a participar, com técnica e transparência, das decisões do Congresso Nacional e do Poder Executivo federal, para que a sua organização se antecipe ao que afeta o seu setor.</p>
       <div class="actions">
         <a class="btn btn-navy" href="#contato">Fale com a Panorama</a>
         <a class="btn btn-line" href="#servicos">Conheça os serviços</a>
@@ -327,22 +338,22 @@ footer .padrao { width: 130px; }
       <div class="about-side">
         <svg class="simbolo" viewBox="0 0 526.07 526.07" aria-hidden="true"><path class="lg" d="M244.25,0h0C244.25,134.89,134.89,244.25,0,244.25h0v18.79h263.03V0h-18.79Z"/><path class="lg" d="M281.82,526.07h0c0-134.89,109.35-244.25,244.25-244.25h0v-18.79h-263.03v263.03h18.79Z"/><path class="lg" d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.73-93.94,66.42h187.88Z"/><path class="lg" d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg>
         <p class="eyebrow">Quem somos</p>
-        <h2 style="font-size: clamp(1.6rem, 2.6vw, 2.1rem)">Uma empresa jovem, com experiência de quem conhece Brasília por dentro</h2>
+        <h2 style="font-size: clamp(1.6rem, 2.6vw, 2.1rem)">Experiência de quem conhece Brasília por dentro</h2>
       </div>
       <div class="rule" aria-hidden="true"></div>
       <div>
         <div class="about-text">
-          <p>A Panorama nasceu de uma constatação clara para quem tem experiência no mercado de relações institucionais e governamentais: <strong>faltava transparência, ética e compromisso com os serviços prestados</strong>.</p>
-          <p>Nossa missão é ajudar empresas, entidades e associações de classe a navegar pelo ambiente político do Poder Executivo Federal e do Poder Legislativo, com orientação sólida e bem informada em um cenário que muda o tempo todo.</p>
+          <p>A Panorama é uma <strong>consultoria boutique</strong> de relações governamentais. Atendemos um cliente por setor, o que garante dedicação e evita conflito de interesses, e acreditamos que esse trabalho se faz com <strong>transparência, técnica e compromisso com a entrega</strong>.</p>
+          <p>Nossa missão é ajudar empresas, entidades e associações de classe a atuar junto ao Congresso Nacional e ao Poder Executivo federal, com informação confiável e orientação estratégica em um cenário que muda o tempo todo.</p>
           <div class="facts">
             <div><b>2018</b><span>início da atuação</span></div>
             <div><b>2024</b><span>nova estrutura da empresa</span></div>
           </div>
         </div>
         <ul class="values">
-          <li><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><div><h3>Criatividade e inovação</h3><p>Buscamos novas abordagens para os desafios políticos de cada cliente.</p></div></li>
-          <li><svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.730-93.94,66.42h187.88Z"/></svg><div><h3>Informação confiável</h3><p>Transparência e precisão são a base de relações de confiança.</p></div></li>
-          <li><svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg><div><h3>Ética e compromisso</h3><p>Atuação responsável, dentro das regras e com entregas de qualidade.</p></div></li>
+          <li><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><div><h3>Ética e transparência</h3><p>Atuação dentro das regras, com informação verificável.</p></div></li>
+          <li><svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.730-93.94,66.42h187.88Z"/></svg><div><h3>Informação confiável</h3><p>Dados checados e análise clara para decidir com segurança.</p></div></li>
+          <li><svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg><div><h3>Estratégia sob medida</h3><p>Cada plano parte dos objetivos e do contexto de cada cliente.</p></div></li>
           <li><svg class="mark" viewBox="263 263 263 263" aria-hidden="true"><path d="M281.82,526.07c0-134.89,109.35-244.25,244.25-244.25v-18.79h-263.03v263.03h18.79Z"/></svg><div><h3>Atendimento próximo</h3><p>Ouvimos suas necessidades e tratamos cada cliente como parceiro.</p></div></li>
         </ul>
       </div>
@@ -354,14 +365,14 @@ footer .padrao { width: 130px; }
     <svg class="padrao c-tl" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf3" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph3"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl3" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf3" x="0" y="0" class="pg" style="--k:7"/><use href="#pl3" x="100" y="0" class="pg" style="--k:6"/><use href="#ph3" x="200" y="0" style="--k:5"/><use href="#pl3" x="300" y="0" class="pg" style="--k:4"/><use href="#ph3" x="400" y="0" style="--k:3"/><use href="#pl3" x="500" y="0" class="pg" style="--k:2"/><use href="#ph3" x="600" y="0" style="--k:1"/><use href="#pl3" x="700" y="0" class="pg" style="--k:0"/><use href="#pf3" x="100" y="100" class="pg" style="--k:7"/><use href="#pl3" x="200" y="100" class="pg" style="--k:6"/><use href="#ph3" x="300" y="100" style="--k:5"/><use href="#pl3" x="400" y="100" class="pg" style="--k:4"/><use href="#ph3" x="500" y="100" style="--k:3"/><use href="#pl3" x="600" y="100" class="pg" style="--k:2"/><use href="#ph3" x="700" y="100" style="--k:1"/><use href="#pf3" x="200" y="200" class="pg" style="--k:7"/><use href="#pl3" x="300" y="200" class="pg" style="--k:6"/><use href="#ph3" x="400" y="200" style="--k:5"/><use href="#pl3" x="500" y="200" class="pg" style="--k:4"/><use href="#ph3" x="600" y="200" style="--k:3"/><use href="#pl3" x="700" y="200" class="pg" style="--k:2"/><use href="#pf3" x="300" y="300" class="pg" style="--k:7"/><use href="#pl3" x="400" y="300" class="pg" style="--k:6"/><use href="#ph3" x="500" y="300" style="--k:5"/><use href="#pl3" x="600" y="300" class="pg" style="--k:4"/><use href="#ph3" x="700" y="300" style="--k:3"/><use href="#pf3" x="400" y="400" class="pg" style="--k:7"/><use href="#pl3" x="500" y="400" class="pg" style="--k:6"/><use href="#ph3" x="600" y="400" style="--k:5"/><use href="#pl3" x="700" y="400" class="pg" style="--k:4"/><use href="#pf3" x="500" y="500" class="pg" style="--k:7"/><use href="#pl3" x="600" y="500" class="pg" style="--k:6"/><use href="#ph3" x="700" y="500" style="--k:5"/></svg>
     <div class="wrap">
       <div class="head center">
-        <p class="eyebrow">Por que atuar</p>
+        <p class="eyebrow">Por que investir em relações governamentais</p>
         <h2 class="statement">Decisões de governo mudam o ambiente de negócios. Quem acompanha de perto se antecipa</h2>
         <p>Atuar na defesa dos seus interesses protege a sua organização e contribui para um ambiente político mais transparente e alinhado às necessidades da sociedade.</p>
       </div>
       <ul class="reasons">
-        <li><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><h3>Influência nas políticas públicas</h3><p>Participe da elaboração de políticas que afetam o seu setor e aproxime a regulação da realidade de quem opera.</p></li>
-        <li><svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.730-93.94,66.42h187.88Z"/></svg><h3>Proteção de interesses</h3><p>Antecipe-se a medidas adversas e garanta um ambiente mais estável para crescer.</p></li>
-        <li><svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg><h3>Acesso a recursos e oportunidades</h3><p>Programas de incentivo, parcerias estratégicas e contratos públicos ficam ao alcance de quem participa.</p></li>
+        <li><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><h3>Participação nas políticas públicas</h3><p>Contribua tecnicamente para as políticas que afetam o seu setor e aproxime a regulação da realidade de quem opera.</p></li>
+        <li><svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.730-93.94,66.42h187.88Z"/></svg><h3>Proteção de interesses</h3><p>Antecipe-se a medidas adversas e construa um ambiente mais estável para crescer.</p></li>
+        <li><svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg><h3>Oportunidades no radar</h3><p>Programas de incentivo, linhas de financiamento e novas políticas públicas ficam ao alcance de quem acompanha.</p></li>
         <li><svg class="mark" viewBox="263 263 263 263" aria-hidden="true"><path d="M281.82,526.07c0-134.89,109.35-244.25,244.25-244.25v-18.79h-263.03v263.03h18.79Z"/></svg><h3>Gestão de riscos</h3><p>O ambiente político muda rápido. Quem monitora está preparado para mitigar impactos.</p></li>
         <li><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><h3>Reputação e legitimidade</h3><p>Organizações que participam de forma construtiva são vistas como atores responsáveis perante a sociedade.</p></li>
       </ul>
@@ -373,23 +384,23 @@ footer .padrao { width: 130px; }
       <div class="head center">
         <p class="eyebrow">Serviços</p>
         <h2>Quatro eixos de trabalho, montados sob medida</h2>
-        <p>Cada eixo pode ser contratado separadamente. Recomendamos combiná-los com o eixo de monitoramento, que dá base a todo o resto.</p>
+        <p>Cada eixo pode ser contratado separadamente. Recomendamos combiná-los com o monitoramento, que dá base a todo o resto.</p>
       </div>
       <div class="axes">
         <article class="axis">
           <div class="axis-head">
             <svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg>
             <span class="n">Eixo 1</span>
-            <h3>Monitoramento e Informação Legislativa</h3>
-            <p>Acompanhamento diário do Legislativo e do Executivo Federais, para você saber primeiro o que pode afetar seus interesses.</p>
+            <h3>Monitoramento legislativo e regulatório</h3>
+            <p>Acompanhamento diário do Congresso Nacional e do Poder Executivo federal, para você saber primeiro o que pode afetar seus interesses.</p>
             <span class="badge">Base recomendada</span>
           </div>
           <ul class="products">
-            <li><b>Monitoramento e alertas de temas de interesse</b><span class="freq">Diário, em tempo real</span><p>Matérias do Legislativo e do Executivo Federais acompanhadas de perto.</p></li>
+            <li><b>Monitoramento e alertas de temas de interesse</b><span class="freq">Em tempo real</span><p>Matérias do Legislativo e do Executivo acompanhadas de perto.</p></li>
             <li><b>Mapeamento de proposições legislativas</b><span class="freq">No início e sob demanda</span><p>Visão detalhada dos projetos de lei e proposições relevantes nas Casas Legislativas.</p></li>
             <li><b>Novas proposições da semana</b><span class="freq">Semanal</span><p>Resumo das novas proposições apresentadas que interessam à sua organização.</p></li>
-            <li><b>Em pauta no Legislativo Federal</b><span class="freq">Semanal</span><p>As principais discussões, votações e temas previstos na semana.</p></li>
-            <li><b>Pauta de interesse e resultado da semana</b><span class="freq">Semanal</span><p>Pauta personalizada com os itens que podem afetar diretamente seus interesses.</p></li>
+            <li><b>Em pauta no Congresso Nacional</b><span class="freq">Semanal</span><p>As principais discussões, votações e temas previstos na semana.</p></li>
+            <li><b>Pauta e resultado das votações da semana</b><span class="freq">Semanal</span><p>Pauta personalizada com os itens que podem afetar diretamente seus interesses.</p></li>
             <li><b>Diário Oficial da União: leitura e alertas</b><span class="freq">Diário ou semanal</span><p>As publicações oficiais do governo que trazem oportunidades ou desafios para você.</p></li>
             <li><b>Agendas públicas de autoridades</b><span class="freq">Diário</span><p>Os compromissos dos principais tomadores de decisão do seu setor.</p></li>
           </ul>
@@ -398,11 +409,11 @@ footer .padrao { width: 130px; }
           <div class="axis-head">
             <svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.73-93.94,66.42h187.88Z"/></svg>
             <span class="n">Eixo 2</span>
-            <h3>Suporte Operacional e Imagem Institucional</h3>
-            <p>Apoio para a sua organização ser vista e lembrada no Congresso Nacional.</p>
+            <h3>Comunicação e presença institucional</h3>
+            <p>Apoio para a sua organização ser vista e lembrada por quem decide.</p>
           </div>
           <ul class="products">
-            <li><b>Eventos institucionais</b><span class="freq">Sob demanda</span><p>Seminários, audiências públicas, workshops, cafés e jantares nas duas Casas do Congresso.</p></li>
+            <li><b>Eventos institucionais</b><span class="freq">Sob demanda</span><p>Seminários, encontros técnicos e eventos institucionais no Congresso Nacional, de acordo com as regras de cada Casa, e apoio na preparação e na participação em audiências públicas.</p></li>
             <li><b>Boletim de atuação da semana</b><span class="freq">Semanal</span><p>Resumo das ações da sua organização no Legislativo e no Executivo, pronto para divulgação interna.</p></li>
             <li><b>Clipping de notícias</b><span class="freq">Semanal</span><p>Seleção das notícias mais relevantes para a sua atuação estratégica.</p></li>
           </ul>
@@ -411,12 +422,12 @@ footer .padrao { width: 130px; }
           <div class="axis-head">
             <svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg>
             <span class="n">Eixo 3</span>
-            <h3>Articulação Política</h3>
-            <p>Contato direto com quem decide, com preparo e estratégia.</p>
+            <h3>Advocacy e articulação institucional</h3>
+            <p>Contato direto com quem decide, com preparo técnico e transparência.</p>
           </div>
           <ul class="products">
-            <li><b>Reuniões com políticos e autoridades</b><span class="freq">Sob demanda</span><p>Agendamos e organizamos encontros para você apresentar suas demandas e ser ouvido.</p></li>
-            <li><b>Previsões e aconselhamento estratégico</b><span class="freq">Sob demanda</span><p>Recomendações para antecipar tendências e posicionar sua organização.</p></li>
+            <li><b>Reuniões com parlamentares, gestores públicos e equipes técnicas</b><span class="freq">Sob demanda</span><p>Organizamos encontros para você apresentar suas propostas e ser ouvido.</p></li>
+            <li><b>Aconselhamento estratégico</b><span class="freq">Sob demanda</span><p>Recomendações para antecipar tendências e posicionar sua organização.</p></li>
             <li><b>Mapeamento de stakeholders</b><span class="freq">Sob demanda</span><p>Quem são e como se posicionam os atores que influenciam as decisões do seu setor.</p></li>
           </ul>
         </article>
@@ -424,17 +435,29 @@ footer .padrao { width: 130px; }
           <div class="axis-head">
             <svg class="mark" viewBox="263 263 263 263" aria-hidden="true"><path d="M281.82,526.07c0-134.89,109.35-244.25,244.25-244.25v-18.79h-263.03v263.03h18.79Z"/></svg>
             <span class="n">Eixo 4</span>
-            <h3>Inteligência Política</h3>
+            <h3>Inteligência política e regulatória</h3>
             <p>Análise para decidir com informação, não com intuição.</p>
           </div>
           <ul class="products">
-            <li><b>Análise de cenários políticos e econômicos</b><span class="freq">Sob demanda</span><p>Avaliação das tendências e das oportunidades em evolução.</p></li>
-            <li><b>Mapas de tramitação legislativa</b><span class="freq">Sob demanda</span><p>Status e próximos passos das proposições de seu interesse, de forma visual.</p></li>
+            <li><b>Análise de cenários e de risco político e regulatório</b><span class="freq">Sob demanda</span><p>Avaliação das tendências e das oportunidades em evolução.</p></li>
+            <li><b>Mapas de tramitação legislativa</b><span class="freq">Sob demanda</span><p>O caminho, os próximos passos e as chances de cada proposição de seu interesse, de forma visual.</p></li>
             <li><b>Estratégias de atuação</b><span class="freq">Sob demanda</span><p>Planos de ação claros no Legislativo e no Executivo para alcançar seus objetivos.</p></li>
           </ul>
         </article>
       </div>
-      <p class="axes-note">Precisa de outro formato, como um eixo completo mais um produto de outro eixo? Fale com a gente e montamos a melhor combinação para você.</p>
+      <p class="axes-note">Precisa de outro formato, como um eixo completo mais um produto de outro eixo? Fale conosco e montamos a melhor combinação para você.</p>
+      <div class="method">
+        <div class="head center">
+          <p class="eyebrow">Como trabalhamos</p>
+          <h2>Do diagnóstico ao acompanhamento</h2>
+        </div>
+        <ol class="steps">
+          <li><span class="num">01</span><h3>Diagnóstico</h3><p>Entendemos os objetivos, os riscos e a agenda do seu setor.</p></li>
+          <li><span class="num">02</span><h3>Mapeamento</h3><p>Identificamos proposições, órgãos e pessoas que influenciam o tema.</p></li>
+          <li><span class="num">03</span><h3>Estratégia</h3><p>Definimos posições, mensagens e prioridades de atuação.</p></li>
+          <li><span class="num">04</span><h3>Acompanhamento</h3><p>Monitoramos, atuamos e prestamos contas do que foi feito.</p></li>
+        </ol>
+      </div>
     </div>
   </section>
 
@@ -443,13 +466,13 @@ footer .padrao { width: 130px; }
       <div class="head center">
         <p class="eyebrow">Setores</p>
         <h2>Experiência com entidades de setores estratégicos do país</h2>
-        <p>Nossos consultores atendem associações e entidades representativas que atuam junto ao Congresso Nacional e ao Executivo Federal.</p>
+        <p>Nossa equipe atende empresas, associações e entidades representativas que atuam junto ao Congresso Nacional e ao Poder Executivo federal.</p>
       </div>
       <div class="sectors">
-        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf6" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph6"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl6" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf6" x="0" y="0" class="pg" style="--k:4"/><use href="#pl6" x="100" y="0" class="pg" style="--k:3"/><use href="#ph6" x="200" y="0" style="--k:2"/><use href="#pl6" x="300" y="0" class="pg" style="--k:1"/><use href="#ph6" x="400" y="0" style="--k:0"/><use href="#pf6" x="100" y="100" class="pg" style="--k:4"/><use href="#pl6" x="200" y="100" class="pg" style="--k:3"/><use href="#ph6" x="300" y="100" style="--k:2"/><use href="#pl6" x="400" y="100" class="pg" style="--k:1"/><use href="#pf6" x="200" y="200" class="pg" style="--k:4"/><use href="#pl6" x="300" y="200" class="pg" style="--k:3"/><use href="#ph6" x="400" y="200" style="--k:2"/><use href="#pf6" x="300" y="300" class="pg" style="--k:4"/><use href="#pl6" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><b>Sistema de Justiça</b><span>Entidades representativas do meio jurídico.</span></div>
-        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf7" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph7"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl7" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf7" x="0" y="0" class="pg" style="--k:4"/><use href="#pl7" x="100" y="0" class="pg" style="--k:3"/><use href="#ph7" x="200" y="0" style="--k:2"/><use href="#pl7" x="300" y="0" class="pg" style="--k:1"/><use href="#ph7" x="400" y="0" style="--k:0"/><use href="#pf7" x="100" y="100" class="pg" style="--k:4"/><use href="#pl7" x="200" y="100" class="pg" style="--k:3"/><use href="#ph7" x="300" y="100" style="--k:2"/><use href="#pl7" x="400" y="100" class="pg" style="--k:1"/><use href="#pf7" x="200" y="200" class="pg" style="--k:4"/><use href="#pl7" x="300" y="200" class="pg" style="--k:3"/><use href="#ph7" x="400" y="200" style="--k:2"/><use href="#pf7" x="300" y="300" class="pg" style="--k:4"/><use href="#pl7" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.730-93.94,66.42h187.88Z"/></svg><b>Segurança Pública</b><span>Entidades representativas da área de segurança.</span></div>
-        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf8" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph8"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl8" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf8" x="0" y="0" class="pg" style="--k:4"/><use href="#pl8" x="100" y="0" class="pg" style="--k:3"/><use href="#ph8" x="200" y="0" style="--k:2"/><use href="#pl8" x="300" y="0" class="pg" style="--k:1"/><use href="#ph8" x="400" y="0" style="--k:0"/><use href="#pf8" x="100" y="100" class="pg" style="--k:4"/><use href="#pl8" x="200" y="100" class="pg" style="--k:3"/><use href="#ph8" x="300" y="100" style="--k:2"/><use href="#pl8" x="400" y="100" class="pg" style="--k:1"/><use href="#pf8" x="200" y="200" class="pg" style="--k:4"/><use href="#pl8" x="300" y="200" class="pg" style="--k:3"/><use href="#ph8" x="400" y="200" style="--k:2"/><use href="#pf8" x="300" y="300" class="pg" style="--k:4"/><use href="#pl8" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg><b>Serviços Financeiros</b><span>Empresas e entidades do setor financeiro.</span></div>
-        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf9" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph9"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl9" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf9" x="0" y="0" class="pg" style="--k:4"/><use href="#pl9" x="100" y="0" class="pg" style="--k:3"/><use href="#ph9" x="200" y="0" style="--k:2"/><use href="#pl9" x="300" y="0" class="pg" style="--k:1"/><use href="#ph9" x="400" y="0" style="--k:0"/><use href="#pf9" x="100" y="100" class="pg" style="--k:4"/><use href="#pl9" x="200" y="100" class="pg" style="--k:3"/><use href="#ph9" x="300" y="100" style="--k:2"/><use href="#pl9" x="400" y="100" class="pg" style="--k:1"/><use href="#pf9" x="200" y="200" class="pg" style="--k:4"/><use href="#pl9" x="300" y="200" class="pg" style="--k:3"/><use href="#ph9" x="400" y="200" style="--k:2"/><use href="#pf9" x="300" y="300" class="pg" style="--k:4"/><use href="#pl9" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="263 263 263 263" aria-hidden="true"><path d="M281.82,526.07c0-134.89,109.35-244.25,244.25-244.25v-18.79h-263.03v263.03h18.79Z"/></svg><b>Comércio Exterior e Logística</b><span>Empresas e entidades do comércio internacional e da logística.</span></div>
+        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf6" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph6"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl6" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf6" x="0" y="0" class="pg" style="--k:4"/><use href="#pl6" x="100" y="0" class="pg" style="--k:3"/><use href="#ph6" x="200" y="0" style="--k:2"/><use href="#pl6" x="300" y="0" class="pg" style="--k:1"/><use href="#ph6" x="400" y="0" style="--k:0"/><use href="#pf6" x="100" y="100" class="pg" style="--k:4"/><use href="#pl6" x="200" y="100" class="pg" style="--k:3"/><use href="#ph6" x="300" y="100" style="--k:2"/><use href="#pl6" x="400" y="100" class="pg" style="--k:1"/><use href="#pf6" x="200" y="200" class="pg" style="--k:4"/><use href="#pl6" x="300" y="200" class="pg" style="--k:3"/><use href="#ph6" x="400" y="200" style="--k:2"/><use href="#pf6" x="300" y="300" class="pg" style="--k:4"/><use href="#pl6" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><b>Sistema de Justiça</b><span>Pautas de organização e funcionamento do sistema de Justiça.</span></div>
+        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf7" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph7"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl7" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf7" x="0" y="0" class="pg" style="--k:4"/><use href="#pl7" x="100" y="0" class="pg" style="--k:3"/><use href="#ph7" x="200" y="0" style="--k:2"/><use href="#pl7" x="300" y="0" class="pg" style="--k:1"/><use href="#ph7" x="400" y="0" style="--k:0"/><use href="#pf7" x="100" y="100" class="pg" style="--k:4"/><use href="#pl7" x="200" y="100" class="pg" style="--k:3"/><use href="#ph7" x="300" y="100" style="--k:2"/><use href="#pl7" x="400" y="100" class="pg" style="--k:1"/><use href="#pf7" x="200" y="200" class="pg" style="--k:4"/><use href="#pl7" x="300" y="200" class="pg" style="--k:3"/><use href="#ph7" x="400" y="200" style="--k:2"/><use href="#pf7" x="300" y="300" class="pg" style="--k:4"/><use href="#pl7" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.730-93.94,66.42h187.88Z"/></svg><b>Segurança pública</b><span>Pautas de estrutura, gestão e financiamento da segurança pública.</span></div>
+        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf8" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph8"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl8" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf8" x="0" y="0" class="pg" style="--k:4"/><use href="#pl8" x="100" y="0" class="pg" style="--k:3"/><use href="#ph8" x="200" y="0" style="--k:2"/><use href="#pl8" x="300" y="0" class="pg" style="--k:1"/><use href="#ph8" x="400" y="0" style="--k:0"/><use href="#pf8" x="100" y="100" class="pg" style="--k:4"/><use href="#pl8" x="200" y="100" class="pg" style="--k:3"/><use href="#ph8" x="300" y="100" style="--k:2"/><use href="#pl8" x="400" y="100" class="pg" style="--k:1"/><use href="#pf8" x="200" y="200" class="pg" style="--k:4"/><use href="#pl8" x="300" y="200" class="pg" style="--k:3"/><use href="#ph8" x="400" y="200" style="--k:2"/><use href="#pf8" x="300" y="300" class="pg" style="--k:4"/><use href="#pl8" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg><b>Serviços financeiros</b><span>Regulação, tributação e inovação no setor financeiro.</span></div>
+        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf9" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph9"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl9" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf9" x="0" y="0" class="pg" style="--k:4"/><use href="#pl9" x="100" y="0" class="pg" style="--k:3"/><use href="#ph9" x="200" y="0" style="--k:2"/><use href="#pl9" x="300" y="0" class="pg" style="--k:1"/><use href="#ph9" x="400" y="0" style="--k:0"/><use href="#pf9" x="100" y="100" class="pg" style="--k:4"/><use href="#pl9" x="200" y="100" class="pg" style="--k:3"/><use href="#ph9" x="300" y="100" style="--k:2"/><use href="#pl9" x="400" y="100" class="pg" style="--k:1"/><use href="#pf9" x="200" y="200" class="pg" style="--k:4"/><use href="#pl9" x="300" y="200" class="pg" style="--k:3"/><use href="#ph9" x="400" y="200" style="--k:2"/><use href="#pf9" x="300" y="300" class="pg" style="--k:4"/><use href="#pl9" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="263 263 263 263" aria-hidden="true"><path d="M281.82,526.07c0-134.89,109.35-244.25,244.25-244.25v-18.79h-263.03v263.03h18.79Z"/></svg><b>Comércio exterior e logística</b><span>Comércio internacional, aduana, transporte e infraestrutura logística.</span></div>
       </div>
     </div>
   </section>
@@ -460,7 +483,7 @@ footer .padrao { width: 130px; }
       <div class="contact-intro">
         <p class="eyebrow">Contato</p>
         <h2>Vamos conversar sobre o seu cenário</h2>
-        <p>Conte em poucas linhas o que a sua organização acompanha. Ficaremos felizes em encontrar o melhor formato para te atender.</p>
+        <p>Conte em poucas linhas o que a sua organização acompanha. Vamos encontrar o melhor formato para atender você.</p>
       </div>
       <div class="rule" aria-hidden="true"></div>
       <form id="contact-form" novalidate>
@@ -471,6 +494,7 @@ footer .padrao { width: 130px; }
         <div class="field"><label for="f-email">E-mail</label><input id="f-email" name="email" type="email" autocomplete="email" required></div>
         <div class="field"><label for="f-msg">Mensagem</label><textarea id="f-msg" name="mensagem" required></textarea></div>
         <div><button class="btn btn-gold" type="submit">Escrever mensagem</button></div>
+        <p class="form-privacy">Usaremos seus dados apenas para responder a este contato.</p>
         <p class="form-note" id="form-note" role="status"></p>
       </form>
     </div>
@@ -538,7 +562,7 @@ footer .padrao { width: 130px; }
       var groups = [
         ['.hero-text > *'], ['.hero-art img', 'rv-zoom'], ['.head > :not(.statement)'], ['.about-side > :not(svg)'],
         ['.about-text > *'], ['.facts > div'], ['.values > li'], ['.reasons > li'], ['.axis'], ['.products > li'],
-        ['.axes-note'], ['.sector'], ['.contact-intro > *'], ['#contact-form'], ['footer .item']
+        ['.axes-note'], ['.steps > li'], ['.sector'], ['.contact-intro > *'], ['#contact-form'], ['footer .item']
       ];
       groups.forEach(function (g) {
         document.querySelectorAll(g[0]).forEach(function (el) {
