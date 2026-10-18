@@ -532,7 +532,6 @@ footer .padrao { width: 130px; }
     var hasIO = 'IntersectionObserver' in window;
     var header = document.querySelector('.top');
     var bar = document.querySelector('.progress');
-    window.__mov = true;
 
     // Destaca no menu a seção que está na tela
     var links = [].slice.call(document.querySelectorAll('.nav a[href^="#"]:not(.cta)'));
@@ -654,6 +653,8 @@ footer .padrao { width: 130px; }
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
     frame();
+    // Só confirma o movimento depois que tudo acima rodou; se algo falhar, o conteúdo aparece sem animação
+    window.__mov = true;
   })();
 </script>
 </body>
