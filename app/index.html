@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Panorama</title>
+<meta name="description" content="Área do cliente da Panorama Inteligência Política.">
+<meta name="theme-color" content="#22355f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="../assets/simbolo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Panorama">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="barra">
+  <a class="marca" href="./" aria-label="Panorama, início">
+    <svg viewBox="0 0 526.07 526.07" aria-hidden="true"><path d="M244.25,0h0C244.25,134.89,134.89,244.25,0,244.25h0v18.79h263.03V0h-18.79Z"/><path d="M281.82,526.07h0c0-134.89,109.35-244.25,244.25-244.25h0v-18.79h-263.03v263.03h18.79Z"/><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.73-93.94,66.42h187.88Z"/><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg>
+    <span>Panorama</span>
+  </a>
+  <button class="botao-barra" id="instalar" type="button" hidden>Instalar</button>
+  <button class="botao-barra" id="sair" type="button" hidden>Sair</button>
+</header>
+
+<div class="aviso-ios" id="aviso-ios" hidden>
+  <p>Para instalar no iPhone: toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</p>
+  <button type="button" id="fechar-aviso-ios" aria-label="Fechar aviso">×</button>
+</div>
+
+<main id="conteudo">
+
+  <section class="tela" id="tela-carregando" aria-busy="true">
+    <p class="discreto">Carregando…</p>
+  </section>
+
+  <section class="tela tela-login" id="tela-login" hidden>
+    <p class="sobretitulo">Área do cliente</p>
+    <h1>Entre para ver seus alertas</h1>
+
+    <form id="form-email" novalidate>
+      <label for="email">Seu e-mail</label>
+      <input id="email" type="email" autocomplete="email" inputmode="email" required placeholder="nome@empresa.com.br">
+      <button class="botao" type="submit">Receber código de acesso</button>
+    </form>
+
+    <form id="form-codigo" hidden novalidate>
+      <p>Enviamos um código para <b id="email-enviado"></b>. Digite-o abaixo ou toque no link do e-mail.</p>
+      <label for="codigo">Código de acesso</label>
+      <input id="codigo" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="10" required>
+      <button class="botao" type="submit">Entrar</button>
+      <button class="botao-texto" type="button" id="trocar-email">Usar outro e-mail</button>
+    </form>
+
+    <p class="mensagem" id="mensagem-login" role="status"></p>
+
+    <div class="caixa-demo" id="caixa-demo" hidden>
+      <p>O login ainda não foi configurado neste app. Você pode ver como ele funciona com dados de exemplo.</p>
+      <button class="botao botao-linha" type="button" id="ver-demo">Ver demonstração</button>
+    </div>
+
+    <p class="rodape-login"><a href="/">Voltar para o site da Panorama</a></p>
+  </section>
+
+  <section class="tela" id="tela-inicio" hidden>
+    <p class="faixa-demo" id="faixa-demo" hidden>Demonstração com dados de exemplo</p>
+    <div class="abas" role="tablist" aria-label="Seções">
+      <button role="tab" type="button" id="aba-alertas" aria-selected="true" aria-controls="painel-alertas">Alertas</button>
+      <button role="tab" type="button" id="aba-recebidos" aria-selected="false" aria-controls="painel-recebidos">Recebidos</button>
+    </div>
+    <div role="tabpanel" id="painel-alertas" aria-labelledby="aba-alertas">
+      <ul class="lista" id="lista-alertas"></ul>
+    </div>
+    <div role="tabpanel" id="painel-recebidos" aria-labelledby="aba-recebidos" hidden>
+      <p class="discreto explica">Conteúdo que você compartilhou de outros apps para a Panorama aparece aqui.</p>
+      <ul class="lista" id="lista-recebidos"></ul>
+    </div>
+  </section>
+
+  <section class="tela" id="tela-alerta" hidden>
+    <button class="botao-texto voltar" type="button" data-voltar>← Voltar</button>
+    <article id="alerta"></article>
+  </section>
+
+  <section class="tela" id="tela-recebido" hidden>
+    <p class="sobretitulo">Recebido de outro app</p>
+    <h1 id="recebido-titulo">Conteúdo compartilhado</h1>
+    <p class="recebido-texto" id="recebido-texto"></p>
+    <p><a id="recebido-link" target="_blank" rel="noopener" hidden></a></p>
+    <div class="acoes">
+      <button class="botao" type="button" id="salvar-recebido">Salvar em Recebidos</button>
+      <button class="botao botao-linha" type="button" id="descartar-recebido">Descartar</button>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="vendor/supabase-2.45.4.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

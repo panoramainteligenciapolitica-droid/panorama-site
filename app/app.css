@@ -1,0 +1,95 @@
+/* Mesmas cores e tipografia do site (index.html na raiz), em versão de app: uma coluna, toques grandes */
+:root {
+  --navy: #22355f;
+  --navy-ink: #1b2e53;
+  --gold: #c59d61;
+  --gold-text: #8a6630;
+  --bg: #ffffff;
+  --surface: #f3f4f7;
+  --text: #1b2e53;
+  --muted: #5a667d;
+  --line: #dfe3ea;
+  --erro: #a3312a;
+  --f: "Poppins", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font-family: var(--f); font-weight: 300; font-size: 1rem; line-height: 1.6; }
+h1, h2 { margin: 0; font-weight: 400; line-height: 1.2; letter-spacing: -.01em; text-wrap: balance; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.05rem; font-weight: 500; }
+p { margin: 0; }
+b, strong { font-weight: 500; }
+a { color: var(--gold-text); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+[hidden] { display: none !important; }
+
+/* Barra do topo, azul como as peças da marca, respeitando o entalhe do iPhone */
+.barra { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: .5rem; background: var(--navy); color: #fff;
+  padding: calc(env(safe-area-inset-top, 0px) + .7rem) max(16px, env(safe-area-inset-right, 0px)) .7rem max(16px, env(safe-area-inset-left, 0px)); }
+.marca { display: flex; align-items: center; gap: .6rem; margin-right: auto; color: #fff; text-decoration: none; font-weight: 500; letter-spacing: .02em; }
+.marca svg { width: 26px; height: 26px; fill: var(--gold); }
+.botao-barra { background: transparent; border: 1px solid rgba(255, 255, 255, .35); color: #fff; border-radius: 999px; padding: .35rem .9rem; font-size: .85rem; cursor: pointer; }
+
+.aviso-ios { display: flex; align-items: flex-start; gap: .75rem; background: var(--surface); border-bottom: 1px solid var(--line); padding: .75rem 16px; font-size: .88rem; }
+.aviso-ios p { flex: 1; }
+.aviso-ios button { background: none; border: 0; font-size: 1.4rem; line-height: 1; cursor: pointer; color: var(--muted); padding: 0 .25rem; }
+
+main { max-width: 40rem; margin-inline: auto; padding: 1.5rem max(16px, env(safe-area-inset-right, 0px)) calc(2rem + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.tela { display: grid; gap: 1rem; }
+.discreto { color: var(--muted); }
+.sobretitulo { font-size: .78rem; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-text); }
+
+/* Login */
+.tela-login { padding-top: 1rem; }
+form { display: grid; gap: .6rem; }
+label { font-size: .9rem; font-weight: 400; }
+input { font: inherit; font-size: 1rem; padding: .8rem .9rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--text); width: 100%; }
+input:focus { border-color: var(--navy); outline: none; box-shadow: 0 0 0 3px rgba(34, 53, 95, .15); }
+#codigo { letter-spacing: .3em; font-size: 1.2rem; }
+.mensagem { min-height: 1.4em; font-size: .9rem; }
+.mensagem.erro { color: var(--erro); }
+.caixa-demo { display: grid; gap: .75rem; padding: 1rem; background: var(--surface); border-radius: 12px; font-size: .9rem; }
+.rodape-login { font-size: .88rem; }
+
+.botao { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; font-weight: 500; font-size: .95rem; padding: .8rem 1.4rem; border-radius: 999px; border: 1px solid transparent; background: var(--navy); color: #fff; cursor: pointer; text-decoration: none; }
+.botao:hover { background: var(--navy-ink); }
+.botao:disabled { opacity: .6; cursor: default; }
+.botao-linha { background: transparent; color: var(--text); border-color: var(--line); }
+.botao-linha:hover { background: transparent; border-color: var(--text); }
+.botao-texto { justify-self: start; background: none; border: 0; padding: .25rem 0; color: var(--gold-text); cursor: pointer; font-weight: 400; }
+
+/* Início */
+.faixa-demo { font-size: .82rem; color: var(--gold-text); background: #f8f1e6; border-radius: 8px; padding: .45rem .75rem; }
+.abas { display: flex; gap: 2px; padding: 3px; background: var(--surface); border-radius: 999px; }
+.abas button { flex: 1; border: 0; background: transparent; border-radius: 999px; padding: .5rem; font-size: .9rem; color: var(--muted); cursor: pointer; }
+.abas button[aria-selected="true"] { background: #fff; color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(27, 46, 83, .15); }
+.explica { font-size: .88rem; margin-top: .75rem; }
+
+.lista { list-style: none; margin: .75rem 0 0; padding: 0; display: grid; gap: .75rem; }
+.item { border: 1px solid var(--line); border-radius: 12px; padding: 1rem; display: grid; gap: .4rem; }
+.item-topo { display: flex; align-items: baseline; gap: .6rem; font-size: .78rem; color: var(--muted); }
+.tema { color: var(--gold-text); font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
+.item h2 a { color: inherit; text-decoration: none; }
+.item .resumo { font-size: .92rem; color: var(--muted); }
+.item-acoes { display: flex; gap: 1rem; margin-top: .25rem; }
+.item-acoes button { background: none; border: 0; padding: 0; color: var(--gold-text); cursor: pointer; font-size: .88rem; font-weight: 400; }
+.vazio { color: var(--muted); font-size: .92rem; padding: 1rem 0; }
+
+/* Alerta aberto */
+.voltar { margin-bottom: -.25rem; }
+article { display: grid; gap: .9rem; }
+article .corpo { white-space: pre-line; }
+article .acoes { margin-top: .5rem; }
+.acoes { display: flex; flex-wrap: wrap; gap: .6rem; }
+
+.recebido-texto { white-space: pre-line; overflow-wrap: anywhere; }
+#recebido-link { overflow-wrap: anywhere; }
+
+.toast { position: fixed; left: 50%; bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 1rem); opacity: 0; pointer-events: none;
+  background: var(--navy-ink); color: #fff; padding: .6rem 1rem; border-radius: 999px; font-size: .88rem; transition: opacity .2s, transform .2s; max-width: calc(100% - 32px); }
+.toast.visivel { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
