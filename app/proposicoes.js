@@ -49,7 +49,8 @@
   var banco = {
     listar: function (tabela) {
       if (P.estado.demo) return Promise.resolve(local()[tabela].slice());
-      var q = P.sb.from(tabela).select('*');
+      if (!P.estado.cliente) return Promise.resolve([]);
+      var q = P.sb.from(tabela).select('*').eq('cliente_id', P.estado.cliente);
       if (tabela === 'candidatas') q = q.eq('status', 'nova').order('coletado_em', { ascending: false }).limit(1000);
       return q.then(function (r) { if (r.error) throw r.error; return r.data; });
     },
@@ -58,7 +59,8 @@
         var o = Object.assign({ id: novoId('l-'), criado_em: new Date().toISOString() }, obj);
         local()[tabela].push(o); guardarLocal(); return Promise.resolve(o);
       }
-      return P.sb.from(tabela).insert(obj).select().single().then(function (r) { if (r.error) throw r.error; return r.data; });
+      if (!P.estado.cliente) return Promise.reject(new Error('Nenhum cliente escolhido'));
+      return P.sb.from(tabela).insert(Object.assign({ cliente_id: P.estado.cliente }, obj)).select().single().then(function (r) { if (r.error) throw r.error; return r.data; });
     },
     atualizar: function (tabela, id, campos) {
       if (P.estado.demo) {
@@ -99,7 +101,8 @@
     },
     ultimaBusca: function () {
       if (P.estado.demo) return Promise.resolve(local().ultima_busca);
-      return P.sb.from('candidatas').select('coletado_em').order('coletado_em', { ascending: false }).limit(1)
+      if (!P.estado.cliente) return Promise.resolve(null);
+      return P.sb.from('candidatas').select('coletado_em').eq('cliente_id', P.estado.cliente).order('coletado_em', { ascending: false }).limit(1)
         .then(function (r) { return r.data && r.data[0] ? r.data[0].coletado_em : null; });
     }
   };
@@ -107,7 +110,9 @@
   // ---------- estado da tela ----------
   var dados = { especialidades: [], palavras: [], proposicoes: [], candidatas: [] };
   var vista = 'monitoradas', filtroEsp = '', mostrarAbaixo = false;
-  function limiar() { var v = parseInt(P.ler('panorama-limiar'), 10); return isNaN(v) ? 20 : v; }
+  // A similaridade mínima vale por cliente, guardada neste aparelho
+  function chaveLimiar() { return 'panorama-limiar' + (P.estado.cliente ? '-' + P.estado.cliente : ''); }
+  function limiar() { var v = parseInt(P.ler(chaveLimiar()) || P.ler('panorama-limiar'), 10); return isNaN(v) ? 20 : v; }
 
   function carregar() {
     return Promise.all(['especialidades', 'palavras', 'proposicoes', 'candidatas'].map(function (t) { return banco.listar(t); }))
@@ -324,7 +329,7 @@
       dados.especialidades.push(o); $('nova-esp').value = ''; P.avisar('Especialidade criada'); renderFiltros();
     }, function () { P.avisar('Não foi possível criar'); });
   });
-  $('limiar').addEventListener('input', function () { $('limiar-valor').textContent = this.value + '%'; P.gravar('panorama-limiar', this.value); renderResumoSoma(); });
+  $('limiar').addEventListener('input', function () { $('limiar-valor').textContent = this.value + '%'; P.gravar(chaveLimiar(), this.value); renderResumoSoma(); });
   function renderResumoSoma() { var n = analiseDasNovas().filter(function (a) { return a.entra; }).length; $('contador-novas').textContent = n ? String(n) : ''; }
 
   ['monitoradas', 'novas', 'filtros'].forEach(function (v) {
@@ -721,6 +726,7 @@
 
   return {
     aoAbrirAba: function (nome) { if (nome === 'proposicoes') abrirPainel(); },
+    aoTrocarCliente: function () { filtroEsp = ''; if (P.estado.aba === 'proposicoes') abrirPainel(); },
     rota: function (params) {
       if (params.get('proposicao')) { renderDetalhe(params.get('proposicao')); return true; }
       if (params.get('cadastrar') || params.get('editar')) { renderForm(params); return true; }

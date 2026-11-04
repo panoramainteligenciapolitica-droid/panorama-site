@@ -35,7 +35,8 @@
   // ---------- acesso a dados ----------
   function listarAlertas() {
     if (estado.demo) return Promise.resolve(EXEMPLOS);
-    return sb.from('alertas').select('id, titulo, resumo, tema, publicado_em')
+    if (!estado.cliente) return Promise.resolve([]);
+    return sb.from('alertas').select('id, titulo, resumo, tema, publicado_em').eq('cliente_id', estado.cliente)
       .order('publicado_em', { ascending: false }).limit(100)
       .then(function (r) { if (r.error) throw r.error; return r.data; });
   }
@@ -63,6 +64,7 @@
   function mostrar(id) {
     document.querySelectorAll('main > .tela').forEach(function (t) { t.hidden = t.id !== id; });
     $('sair').hidden = !(estado.sessao || estado.demo) || id === 'tela-login';
+    $('abrir-config').hidden = !estado.sessao || estado.demo || id === 'tela-login' || id === 'tela-config';
     $('faixa-demo').hidden = !estado.demo;
     window.scrollTo(0, 0);
   }
@@ -106,10 +108,53 @@
     return copiar(url);
   }
 
+  // ---------- conta: perfil, clientes liberados e cliente escolhido ----------
+  // Cada cliente tem banco próprio; o administrador vê todos. A escolha fica guardada neste aparelho.
+  function carregarConta() {
+    if (estado.demo || !estado.sessao) return Promise.resolve();
+    var uid = estado.sessao.user.id;
+    return Promise.all([
+      sb.from('perfis').select('user_id, email, nome, admin').eq('user_id', uid).maybeSingle(),
+      sb.from('clientes').select('id, nome').order('nome')
+    ]).then(function (r) {
+      if (r[0].error) throw r[0].error;
+      if (r[1].error) throw r[1].error;
+      estado.perfil = r[0].data || { user_id: uid, email: estado.sessao.user.email, admin: false };
+      estado.clientes = r[1].data || [];
+      var guardado = ler('panorama-cliente');
+      var existe = estado.clientes.some(function (c) { return c.id === guardado; });
+      estado.cliente = existe ? guardado : (estado.clientes[0] ? estado.clientes[0].id : null);
+      estado.contaCarregada = true;
+    });
+  }
+  function nomeCliente(id) { var c = (estado.clientes || []).find(function (x) { return x.id === id; }); return c ? c.nome : ''; }
+  function renderSeletorCliente() {
+    var linha = $('linha-cliente'), sel = $('seletor-cliente');
+    var lista = estado.demo ? [] : (estado.clientes || []);
+    linha.hidden = !lista.length;
+    $('sem-cliente').hidden = estado.demo || lista.length > 0;
+    sel.replaceChildren.apply(sel, lista.map(function (c) { return el('option', { value: c.id, text: c.nome }); }));
+    if (estado.cliente) sel.value = estado.cliente;
+    sel.disabled = lista.length < 2;
+  }
+  function trocarCliente(id) {
+    estado.cliente = id;
+    gravar('panorama-cliente', id);
+    renderAlertas();
+    (modulos || []).forEach(function (m) { if (m.aoTrocarCliente) m.aoTrocarCliente(id); });
+  }
+
   // ---------- telas ----------
   function renderInicio(aba) {
     mostrar('tela-inicio');
+    renderSeletorCliente();
     selecionarAba(aba || estado.aba || 'geral');
+    renderAlertas();
+    renderRecebidos();
+  }
+
+  // Alertas do cliente escolhido
+  function renderAlertas() {
     var lista = $('lista-alertas');
     lista.replaceChildren(el('li', { class: 'vazio', text: 'Carregando alertas…' }));
     listarAlertas().then(function (alertas) {
@@ -123,7 +168,6 @@
         ]);
       }));
     }).catch(function () { lista.replaceChildren(el('li', { class: 'vazio', text: 'Não foi possível carregar os alertas. Verifique sua conexão.' })); });
-    renderRecebidos();
   }
 
   function renderRecebidos() {
@@ -206,6 +250,13 @@
       try { history.replaceState(null, '', './'); } catch (e) { /* segue pela memória */ }
     }
     if (!estado.sessao && !estado.demo) { renderLogin(); return; }
+    if (estado.sessao && !estado.demo && !estado.contaCarregada) {
+      mostrar('tela-carregando');
+      carregarConta().then(rotear, function () {
+        $('tela-carregando').replaceChildren(el('p', { class: 'discreto', text: 'Não foi possível carregar sua conta. Verifique a conexão e recarregue a página.' }));
+      });
+      return;
+    }
     var pendente = recebidoPendente();
     if (pendente) { renderRecebido(pendente); return; }
     for (var i = 0; i < (modulos || []).length; i++) if (modulos[i].rota && modulos[i].rota(params)) return;
@@ -300,6 +351,8 @@
   });
 
   // ---------- botões das telas ----------
+  $('seletor-cliente').addEventListener('change', function () { trocarCliente(this.value); });
+  $('abrir-config').addEventListener('click', function () { irPara('?config=1'); });
   $('aba-geral').addEventListener('click', function () { selecionarAba('geral'); });
   $('aba-proposicoes').addEventListener('click', function () { selecionarAba('proposicoes'); });
   $('aba-alertas').addEventListener('click', function () { selecionarAba('alertas'); });
@@ -339,7 +392,8 @@
   // Cada módulo recebe as utilidades do app e pode responder por rotas e abas próprias
   var modulos = (window.PanoramaModulos || []).map(function (iniciar) {
     return iniciar({ $: $, el: el, avisar: avisar, data: data, mostrar: mostrar, irPara: irPara, copiar: copiar,
-      ler: ler, gravar: gravar, estado: estado, sb: sb, voltar: function () { irPara(''); } });
+      ler: ler, gravar: gravar, estado: estado, sb: sb, voltar: function () { irPara(''); },
+      carregarConta: carregarConta, nomeCliente: nomeCliente, trocarCliente: trocarCliente });
   });
 
   // ---------- início ----------
@@ -348,6 +402,7 @@
   sb.auth.onAuthStateChange(function (evento, sessao) {
     var mudou = Boolean(sessao) !== Boolean(estado.sessao);
     estado.sessao = sessao;
+    if (!sessao) { estado.contaCarregada = false; estado.perfil = null; estado.clientes = []; estado.cliente = null; }
     if (evento === 'PASSWORD_RECOVERY') { estado.trocandoSenha = true; primeiro = false; renderNovaSenha(); return; }
     if (estado.trocandoSenha && sessao) return;
     if (primeiro || mudou) { primeiro = false; rotear(); }

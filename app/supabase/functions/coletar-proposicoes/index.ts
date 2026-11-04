@@ -1,4 +1,4 @@
-// Coleta as proposições apresentadas ontem e hoje na Câmara e no Senado e guarda em "candidatas".
+// Coleta as proposições apresentadas ontem e hoje na Câmara e no Senado e guarda em "candidatas", uma cópia por cliente.
 // Roda todo dia pelo agendamento (agendamento.sql) e quando alguém toca em "Buscar agora" no app.
 // Traz tudo o que foi apresentado: o app decide o que mostrar (palavras-chave e semelhança com as monitoradas).
 // Tudo o que chega também vai para "entradas", que alimenta a contagem por tipo da aba Geral.
@@ -111,33 +111,37 @@ Deno.serve(async (req) => {
     const { error } = await sb.from('entradas').upsert(entradas.slice(i, i + 500), { onConflict: 'id_externo' });
     if (error) erros.push(error.message);
   }
-  let coletadas = todas.filter(principal);
+  const coletadas = todas.filter(principal);
   if (corpo.soEntradas) {
     return new Response(JSON.stringify({ entradas: entradas.length, camara: cd.length, senado: sf.length, erros }), {
       headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
 
-  // Não traz de volta o que já é monitorado
-  const { data: monitoradas } = await sb.from('proposicoes').select('casa, sigla, numero, ano');
+  // Cada cliente recebe a sua cópia das novas, fora o que ele já monitora; o app filtra por palavra-chave e semelhança
+  const { data: clientes, error: erroClientes } = await sb.from('clientes').select('id');
+  if (erroClientes) erros.push(erroClientes.message);
   const chave = (p: any) => [p.casa, String(p.sigla).toUpperCase(), String(p.numero).replace(/^0+/, ''), p.ano].join(':');
-  const ja = new Set((monitoradas ?? []).map(chave));
-  coletadas = coletadas.filter((c) => !ja.has(chave(c)));
 
   const { data: palavras } = await sb.from('palavras').select('termo');
-  await temasDaCamara(coletadas, (palavras ?? []).map((p: any) => p.termo));
+  await temasDaCamara(coletadas, [...new Set((palavras ?? []).map((p: any) => String(p.termo)))]);
 
   let novas = 0;
-  for (let i = 0; i < coletadas.length; i += 200) {
-    const { data, error } = await sb.from('candidatas')
-      .upsert(coletadas.slice(i, i + 200), { onConflict: 'id_externo', ignoreDuplicates: true }).select('id');
-    if (error) erros.push(error.message); else novas += data?.length ?? 0;
+  for (const cliente of clientes ?? []) {
+    const { data: monitoradas } = await sb.from('proposicoes').select('casa, sigla, numero, ano').eq('cliente_id', cliente.id);
+    const ja = new Set((monitoradas ?? []).map(chave));
+    const doCliente = coletadas.filter((c) => !ja.has(chave(c))).map((c) => ({ ...c, cliente_id: cliente.id }));
+    for (let i = 0; i < doCliente.length; i += 200) {
+      const { data, error } = await sb.from('candidatas')
+        .upsert(doCliente.slice(i, i + 200), { onConflict: 'cliente_id,id_externo', ignoreDuplicates: true }).select('id');
+      if (error) erros.push(error.message); else novas += data?.length ?? 0;
+    }
   }
 
   // Limpa o que ninguém revisou em 60 dias
   await sb.from('candidatas').delete().neq('status', 'monitorada').lt('coletado_em', new Date(hoje.getTime() - 60 * 864e5).toISOString());
 
-  return new Response(JSON.stringify({ novas, camara: cd.length, senado: sf.length, erros }), {
+  return new Response(JSON.stringify({ novas, clientes: (clientes ?? []).length, camara: cd.length, senado: sf.length, erros }), {
     headers: { ...cors, 'Content-Type': 'application/json' }, status: erros.length && !novas && !cd.length && !sf.length ? 502 : 200,
   });
 });

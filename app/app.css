@@ -239,3 +239,20 @@ select { font: inherit; font-size: .95rem; padding: .6rem .7rem; border: 1px sol
 .numero-prop { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer;
   text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 4px; text-decoration-thickness: 1px; }
 .numero-prop:hover { color: var(--gold-text); }
+
+/* Cliente atual e tela de equipe */
+.linha-cliente { display: flex; align-items: center; gap: .6rem; margin-bottom: .75rem; }
+.linha-cliente label { font-size: .85rem; color: var(--muted); }
+.linha-cliente select { flex: 1; min-width: 0; font-weight: 500; }
+.aviso-sem-cliente { font-size: .9rem; background: #f8f1e6; color: var(--gold-text); border-radius: 8px; padding: .6rem .8rem; margin-bottom: .75rem; }
+.lista-pessoas { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
+.pessoa { border: 1px solid var(--line); border-radius: 12px; padding: .8rem 1rem; display: grid; gap: .5rem; }
+.pessoa-topo { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; }
+.pessoa-topo b { font-weight: 500; }
+.pessoa-topo .discreto { font-size: .85rem; overflow-wrap: anywhere; }
+.marcas { display: flex; flex-wrap: wrap; gap: .35rem 1rem; }
+.marcar { display: flex !important; align-items: center; gap: .45rem; font-size: .9rem; }
+.marcar input { width: auto; accent-color: var(--navy); }
+.pessoa-acoes { display: flex; flex-wrap: wrap; gap: 1rem; }
+.pessoa-acoes button { background: none; border: 0; padding: 0; color: var(--gold-text); cursor: pointer; font-size: .85rem; }
+.pessoa-acoes .remover { color: var(--alta); }
