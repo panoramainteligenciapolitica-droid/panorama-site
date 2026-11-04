@@ -97,6 +97,8 @@
         <button type="button" data-casa="SF" aria-pressed="false">Senado</button>
       </div>
       <div class="total-geral" id="total-geral" aria-live="polite"></div>
+      <div class="barra-geral" id="barra-geral" role="group" aria-label="Parte de cada tipo no total"></div>
+      <p class="dica-barra" id="dica-barra" aria-live="polite"></p>
       <div class="rolagem-tabela"><table class="tabela-tipos" id="tabela-geral"></table></div>
       <button class="botao-texto" type="button" id="todos-tipos" hidden></button>
       <p class="discreto nota-geral" id="nota-geral"></p>
@@ -168,6 +170,15 @@
   <section class="tela" id="tela-alerta" hidden>
     <button class="botao-texto voltar" type="button" data-voltar>← Voltar</button>
     <article id="alerta"></article>
+  </section>
+
+  <section class="tela" id="tela-entradas" hidden>
+    <button class="botao-texto voltar" type="button" data-voltar>← Voltar</button>
+    <h1 id="titulo-entradas"></h1>
+    <p class="casa-entradas" id="casa-entradas"></p>
+    <p class="discreto" id="sub-entradas" aria-live="polite"></p>
+    <ul class="lista" id="lista-entradas"></ul>
+    <button class="botao botao-linha" type="button" id="mais-entradas" hidden></button>
   </section>
 
   <section class="tela" id="tela-proposicao" hidden>

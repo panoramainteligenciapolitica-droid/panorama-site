@@ -596,10 +596,14 @@
     carregar().then(function () {
       var editar = params.get('editar'), candId = params.get('candidata');
       var base = editar ? dados.proposicoes.find(function (x) { return x.id === editar; }) : null;
-      var c = candId ? dados.candidatas.find(function (x) { return x.id === candId; }) : null;
+      var entrada = params.get('entrada');
+      var c = candId ? dados.candidatas.find(function (x) { return x.id === candId; })
+        : entrada ? dados.candidatas.find(function (x) { return x.id_externo === entrada; }) : null;
+      // Vinda da lista da aba Geral: usa a coletada, se existir, ou os dados da própria entrada
+      var daEntrada = !c && entrada && P.estado.preencher && P.estado.preencher.id_externo === entrada ? P.estado.preencher : null;
       form.editando = base; form.candidata = c;
-      var origem = base || c || {};
-      $('titulo-form-prop').textContent = base ? 'Editar ' + ident(base) : c ? 'Monitorar ' + ident(c) : 'Cadastrar proposição';
+      var origem = base || c || daEntrada || {};
+      $('titulo-form-prop').textContent = base ? 'Editar ' + ident(base) : (c || daEntrada) ? 'Monitorar ' + ident(c || daEntrada) : 'Cadastrar proposição';
       $('fp-salvar').textContent = base ? 'Salvar alterações' : 'Salvar e monitorar';
       $('fp-casa').value = origem.casa || 'CD';
       $('fp-sigla').value = origem.sigla || '';

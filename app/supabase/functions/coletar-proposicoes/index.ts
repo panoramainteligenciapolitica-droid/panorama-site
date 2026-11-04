@@ -94,7 +94,8 @@ Deno.serve(async (req) => {
 
   // Contagem da aba Geral: guarda tudo o que foi apresentado, monitorado ou não
   const entradas = coletadas.filter((c) => c.data_apresentacao)
-    .map((c) => ({ id_externo: c.id_externo, casa: c.casa, sigla: c.sigla, data_apresentacao: c.data_apresentacao }));
+    .map((c) => ({ id_externo: c.id_externo, casa: c.casa, sigla: c.sigla, numero: c.numero, ano: c.ano, ementa: c.ementa,
+      autor: c.autor ?? null, url: c.url, url_inteiro_teor: c.url_inteiro_teor ?? null, data_apresentacao: c.data_apresentacao }));
   for (let i = 0; i < entradas.length; i += 500) {
     const { error } = await sb.from('entradas').upsert(entradas.slice(i, i + 500), { onConflict: 'id_externo' });
     if (error) erros.push(error.message);

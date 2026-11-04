@@ -15,8 +15,12 @@
     PRL: 'Parecer de relator', PAR: 'Parecer', REL: 'Relatório', OF: 'Ofício', DCR: 'Denúncia por crime de responsabilidade'
   };
   var VISIVEIS = 10;
+  // Cor fixa por tipo (não muda com o período nem com o filtro); os demais tipos ficam em cinza
+  var CORES = { PL: '#2a78d6', REQ: '#eb6834', RQS: '#1baf7a', RIC: '#eda100', INC: '#e87ba4', PDL: '#008300', EMC: '#6250d6', PLP: '#e34948' };
+  var CINZA = '#b4bccb';
+  function cor(sigla) { return CORES[sigla] || CINZA; }
   var filtro = { periodo: '7', casa: '', inicio: '', fim: '', todos: false };
-  var pedido = 0;
+  var pedido = 0, atual = null;
 
   // ---------- datas (no fuso do aparelho) ----------
   function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -57,13 +61,16 @@
     for (var i = 0; i < texto.length; i++) { h ^= texto.charCodeAt(i); h = Math.imul(h, 16777619); }
     return ((h >>> 0) % 10000) / 10000;
   }
-  function exemploDoDia(dia) {
+  function quantidade(dia, casa, sigla) {
     var semana = deIso(dia).getDay(), fator = semana === 0 ? .04 : semana === 6 ? .08 : semana === 1 || semana === 5 ? .7 : 1;
+    var media = (MEDIAS[casa][sigla] || 0) * fator, r = sorteio(casa + sigla + dia);
+    return media < 1 ? (r < media ? 1 : 0) : Math.round(media * (.6 + .8 * r));
+  }
+  function exemploDoDia(dia) {
     var linhas = [];
     Object.keys(MEDIAS).forEach(function (casa) {
       Object.keys(MEDIAS[casa]).forEach(function (sigla) {
-        var media = MEDIAS[casa][sigla] * fator, r = sorteio(casa + sigla + dia);
-        var n = media < 1 ? (r < media ? 1 : 0) : Math.round(media * (.6 + .8 * r));
+        var n = quantidade(dia, casa, sigla);
         if (n) linhas.push({ casa: casa, sigla: sigla, total: n });
       });
     });
@@ -71,11 +78,57 @@
   }
   var ultimoExemplo = function () { return iso(somar(hoje(), -1)); };
 
+  // Ementas de exemplo (fictícias), montadas a partir de modelos por tipo e de assuntos variados
+  var ASSUNTOS = ['a segurança nas escolas públicas', 'o crédito consignado de aposentados', 'as tarifas portuárias', 'a proteção de dados de consumidores',
+    'o saneamento básico em municípios pequenos', 'a energia solar em residências', 'o transporte por aplicativo', 'o atendimento de urgência no SUS',
+    'a educação em tempo integral', 'as apostas esportivas on-line', 'o combate a incêndios florestais', 'a acessibilidade em prédios públicos',
+    'a agricultura familiar', 'as fintechs de crédito', 'a mediação digital nos tribunais', 'o despacho aduaneiro de exportação'];
+  var MODELOS = {
+    PL: 'Dispõe sobre {a} e dá outras providências.', PLP: 'Altera normas gerais de direito financeiro para tratar d{a}.',
+    PEC: 'Altera a Constituição Federal para dispor sobre {a}.', MPV: 'Institui medidas emergenciais sobre {a}.',
+    PDL: 'Susta os efeitos de ato do Poder Executivo que regulamenta {a}.', PRC: 'Cria frente parlamentar para acompanhar {a}.',
+    PRS: 'Institui comissão temporária para acompanhar {a}.', REQ: 'Requer a realização de audiência pública para debater {a}.',
+    RQS: 'Requer audiência pública na comissão para debater {a}.', RIC: 'Requer informações ao ministério competente sobre {a}.',
+    INC: 'Sugere ao Poder Executivo medidas sobre {a}.', EMC: 'Emenda ao projeto que trata d{a}, para ajustar prazos.', EMS: 'Emenda ao projeto que trata d{a}, para ajustar prazos.'
+  };
+  var BASE_NUMERO = { PL: 5200, PLP: 180, PEC: 40, MPV: 1310, PDL: 600, PRC: 90, PRS: 60, REQ: 3900, RQS: 800, RIC: 4100, INC: 2500, EMC: 300, EMS: 200 };
+  function itensExemplo(casa, siglas, r) {
+    var itens = [], limite = ultimoExemplo();
+    for (var d = deIso(r.fim > limite ? limite : r.fim); iso(d) >= r.inicio; d = somar(d, -1)) {
+      var dia = iso(d), ordemDia = Math.round((d - new Date(2026, 0, 1)) / 864e5);
+      (casa ? [casa] : ['CD', 'SF']).forEach(function (cs) {
+        siglas.forEach(function (sg) {
+          var n = MEDIAS[cs][sg] !== undefined ? quantidade(dia, cs, sg) : 0;
+          var porDia = Math.max(1, Math.ceil(MEDIAS[cs][sg] || 1));
+          for (var i = 0; i < n; i++) {
+            var assunto = ASSUNTOS[Math.floor(sorteio(cs + sg + dia + i) * ASSUNTOS.length)];
+            var modelo = MODELOS[sg] || 'Trata d{a}.';
+            var texto = modelo.replace('d{a}', 'd' + assunto).replace('{a}', assunto);
+            itens.push({ id_externo: cs + ':ex-' + sg + '-' + dia + '-' + i, casa: cs, sigla: sg, numero: String((BASE_NUMERO[sg] || 100) + ordemDia * porDia + i), ano: dia.slice(0, 4),
+              data_apresentacao: dia, ementa: texto, autor: '', url: '', exemplo: true });
+          }
+        });
+      });
+    }
+    return itens;
+  }
+
   var fonte = {
     ultimoDia: function () {
       if (P.estado.demo) return Promise.resolve(ultimoExemplo());
       return P.sb.from('entradas').select('data_apresentacao').order('data_apresentacao', { ascending: false }).limit(1)
         .then(function (r) { if (r.error) throw r.error; return r.data && r.data[0] ? r.data[0].data_apresentacao : ''; });
+    },
+    listar: function (casa, siglas, r, de, quantos) {
+      if (P.estado.demo) {
+        var todos = itensExemplo(casa, siglas, r);
+        return Promise.resolve({ itens: todos.slice(de, de + quantos), total: todos.length });
+      }
+      var q = P.sb.from('entradas').select('id_externo, casa, sigla, numero, ano, ementa, autor, url, url_inteiro_teor, data_apresentacao', { count: 'exact' })
+        .in('sigla', siglas).gte('data_apresentacao', r.inicio).lte('data_apresentacao', r.fim);
+      if (casa) q = q.eq('casa', casa);
+      return q.order('data_apresentacao', { ascending: false }).order('id_externo', { ascending: false }).range(de, de + quantos - 1)
+        .then(function (res) { if (res.error) throw res.error; return { itens: res.data || [], total: res.count || 0 }; });
     },
     contar: function (r) {
       if (P.estado.demo) {
@@ -105,27 +158,34 @@
 
   function renderTabela(tipos) {
     var tabela = $('tabela-geral'), ambas = !filtro.casa;
-    var maior = tipos.length ? tipos[0].total : 0;
     var mostrar = filtro.todos || tipos.length <= VISIVEIS + 1 ? tipos : tipos.slice(0, VISIVEIS);
     var resto = tipos.slice(mostrar.length);
     var cabeca = el('tr', {}, [el('th', { scope: 'col', text: 'Tipo' })].concat(
       ambas ? [el('th', { scope: 'col', class: 'num', text: 'Câmara' }), el('th', { scope: 'col', class: 'num', text: 'Senado' })] : [],
       [el('th', { scope: 'col', class: 'num', text: ambas ? 'Total' : 'Quantidade' })]));
-    function linha(t, nome, classe) {
-      var largura = maior ? Math.max(2, Math.round(t.total / maior * 100)) : 0;
-      return el('tr', { class: classe || '' }, [
-        el('th', { scope: 'row' }, [el('span', { class: 'sigla-tipo', text: t.sigla }), el('span', { class: 'nome-tipo', text: nome })])
-      ].concat(
-        ambas ? [el('td', { class: 'num', text: numero(t.CD) }), el('td', { class: 'num', text: numero(t.SF) })] : [],
-        [el('td', { class: 'num total' }, [
-          el('span', { class: 'trilho', 'aria-hidden': 'true' }, [el('span', { class: 'barra-tipo', style: 'width:' + largura + '%' })]),
-          el('span', { class: 'valor', text: numero(t.total) })
-        ])]));
+    // Tocar no tipo abre a lista de todas daquele tipo; tocar no número de uma Casa abre só as daquela Casa
+    function abrir(siglas, casa) {
+      P.irPara('?entradas=' + encodeURIComponent(siglas.join(',')) + (casa ? '&casa=' + casa : '') + '&de=' + atual.inicio + '&ate=' + atual.fim);
     }
-    var corpo = mostrar.map(function (t) { return linha(t, TIPOS[t.sigla] || ''); });
+    function numeroCasa(t, casa, siglas) {
+      if (!t[casa]) return el('td', { class: 'num zero', text: '0' });
+      return el('td', { class: 'num' }, [el('button', { type: 'button', class: 'abre-num', text: numero(t[casa]),
+        'aria-label': numero(t[casa]) + ' ' + t.sigla + ' na ' + (casa === 'CD' ? 'Câmara' : 'Senado') + ', ver a lista',
+        onclick: function () { abrir(siglas, casa); } })]);
+    }
+    function linha(t, nome, classe, siglas) {
+      return el('tr', { class: classe || '' }, [
+        el('th', { scope: 'row' }, [el('button', { type: 'button', class: 'abre-tipo', onclick: function () { abrir(siglas, filtro.casa); } },
+          [el('span', { class: 'sigla-tipo' }, [el('span', { class: 'amostra', 'aria-hidden': 'true', style: 'background:' + (siglas.length > 1 ? CINZA : cor(t.sigla)) }), document.createTextNode(t.sigla)]), el('span', { class: 'nome-tipo', text: nome })])])
+      ].concat(
+        ambas ? [numeroCasa(t, 'CD', siglas), numeroCasa(t, 'SF', siglas)] : [],
+        [el('td', { class: 'num total', text: numero(t.total) })]));
+    }
+    renderBarra(tipos);
+    var corpo = mostrar.map(function (t) { return linha(t, TIPOS[t.sigla] || '', '', [t.sigla]); });
     if (resto.length) {
       var outros = resto.reduce(function (a, t) { a.CD += t.CD; a.SF += t.SF; a.total += t.total; return a; }, { sigla: 'Outros', CD: 0, SF: 0, total: 0 });
-      corpo.push(linha(outros, resto.length + ' tipos', 'outros'));
+      corpo.push(linha(outros, resto.map(function (t) { return t.sigla; }).join(', '), 'outros', resto.map(function (t) { return t.sigla; })));
     }
     tabela.replaceChildren(el('caption', { class: 'so-leitor', text: 'Proposições apresentadas por tipo' }),
       el('thead', {}, [cabeca]), el('tbody', {}, corpo));
@@ -135,11 +195,33 @@
     botao.textContent = filtro.todos ? 'Mostrar só os principais tipos' : 'Mostrar todos os ' + tipos.length + ' tipos';
   }
 
+  // Uma barra só com todos os tipos, para comparar a parte de cada um no total
+  function renderBarra(tipos) {
+    var barra = $('barra-geral'), total = tipos.reduce(function (s, t) { return s + t.total; }, 0);
+    barra.hidden = !total;
+    if (!total) return barra.replaceChildren();
+    var coloridos = tipos.filter(function (t) { return CORES[t.sigla]; });
+    var cinzas = tipos.filter(function (t) { return !CORES[t.sigla]; });
+    var partes = coloridos.map(function (t) { return { rotulo: t.sigla + (TIPOS[t.sigla] ? ' · ' + TIPOS[t.sigla] : ''), total: t.total, cor: cor(t.sigla), siglas: [t.sigla] }; });
+    if (cinzas.length) partes.push({ rotulo: 'Outros tipos (' + cinzas.map(function (t) { return t.sigla; }).join(', ') + ')', cor: CINZA,
+      total: cinzas.reduce(function (s, t) { return s + t.total; }, 0), siglas: cinzas.map(function (t) { return t.sigla; }) });
+    var dica = $('dica-barra');
+    barra.replaceChildren.apply(barra, partes.map(function (pt) {
+      var pct = pt.total / total * 100, texto = pt.rotulo + ': ' + numero(pt.total) + ' (' + pct.toLocaleString('pt-BR', { maximumFractionDigits: pct < 10 ? 1 : 0 }) + '%)';
+      var seg = el('button', { type: 'button', class: 'segmento', style: 'flex-grow:' + pt.total + ';background:' + pt.cor, 'aria-label': texto + ', ver a lista',
+        onclick: function () { P.irPara('?entradas=' + encodeURIComponent(pt.siglas.join(',')) + (filtro.casa ? '&casa=' + filtro.casa : '') + '&de=' + atual.inicio + '&ate=' + atual.fim); } });
+      var mostrarDica = function () { dica.textContent = texto; };
+      seg.addEventListener('mouseenter', mostrarDica); seg.addEventListener('focus', mostrarDica);
+      var limpar = function () { dica.textContent = ''; }; seg.addEventListener('mouseleave', limpar); seg.addEventListener('blur', limpar);
+      return seg;
+    }));
+  }
+
   function render() {
     var meu = ++pedido;
     $('total-geral').replaceChildren(el('p', { class: 'discreto', text: 'Contando…' }));
     fonte.ultimoDia().then(function (ultimo) {
-      var r = intervalo(ultimo);
+      var r = intervalo(ultimo); atual = r;
       return fonte.contar(r).then(function (linhas) {
         if (meu !== pedido) return;
         var tipos = agrupar(linhas);
@@ -192,7 +274,64 @@
   });
   $('todos-tipos').addEventListener('click', function () { filtro.todos = !filtro.todos; render(); });
 
+  // ---------- lista de um tipo (tela-entradas) ----------
+  var POR_PAGINA = 50, lista = null;
+  function dataBr(t) { return t ? longa(String(t).slice(0, 10)) : ''; }
+  function cartao(p) {
+    var casa = p.casa === 'CD' ? 'Câmara' : 'Senado';
+    return el('li', { class: 'item item-prop' }, [
+      el('div', { class: 'item-topo' }, [el('span', { class: 'selo casa casa-' + p.casa, text: casa }), p.exemplo ? el('span', { class: 'selo exemplo', text: 'Exemplo' }) : null,
+        el('span', { text: dataBr(p.data_apresentacao) })]),
+      el('h2', { text: p.sigla + ' ' + (p.numero || '?') + '/' + (p.ano || '') }),
+      p.ementa ? el('p', { class: 'ementa', text: p.ementa }) : null,
+      p.autor ? el('p', { class: 'situacao', text: p.autor }) : null,
+      el('div', { class: 'item-acoes' }, [
+        el('button', { type: 'button', class: 'acao-forte', text: 'Monitorar', onclick: function () {
+          P.estado.preencher = p; P.irPara('?cadastrar=1&entrada=' + encodeURIComponent(p.id_externo));
+        } }),
+        p.url ? el('a', { href: p.url, target: '_blank', rel: 'noopener', text: 'Abrir na ' + casa }) : null
+      ])
+    ]);
+  }
+  function maisItens() {
+    var l = lista, botao = $('mais-entradas');
+    botao.disabled = true;
+    return fonte.listar(l.casa, l.siglas, l.r, l.itens.length, POR_PAGINA).then(function (res) {
+      if (l !== lista) return;
+      l.itens = l.itens.concat(res.itens); l.total = res.total;
+      $('lista-entradas').replaceChildren.apply($('lista-entradas'), l.itens.length ? l.itens.map(cartao)
+        : [el('li', { class: 'vazio', text: 'Nenhuma proposição deste tipo no período.' })]);
+      $('sub-entradas').textContent = numero(l.total) + (l.total === 1 ? ' proposição apresentada ' : ' proposições apresentadas ') + descrever(l.r) +
+        (l.total > l.itens.length ? '. Mostrando ' + numero(l.itens.length) + '.' : '.');
+      botao.hidden = l.itens.length >= l.total; botao.disabled = false;
+      botao.textContent = 'Mostrar mais ' + Math.min(POR_PAGINA, l.total - l.itens.length);
+    }).catch(function () {
+      if (l !== lista) return;
+      botao.disabled = false;
+      $('lista-entradas').replaceChildren(el('li', { class: 'vazio', text: 'Não foi possível carregar a lista. Verifique sua conexão.' }));
+    });
+  }
+  function renderLista(params) {
+    P.mostrar('tela-entradas');
+    var siglas = params.get('entradas').split(',').filter(Boolean), casa = params.get('casa') || '';
+    var dataOk = function (t) { return /^\d{4}-\d{2}-\d{2}$/.test(t || ''); };
+    var r = dataOk(params.get('de')) && dataOk(params.get('ate')) ? { inicio: params.get('de'), fim: params.get('ate') } : intervalo('');
+    var nome = siglas.length === 1 ? (TIPOS[siglas[0]] ? siglas[0] + ' · ' + TIPOS[siglas[0]] : siglas[0]) : 'Outros tipos (' + siglas.join(', ') + ')';
+    $('titulo-entradas').textContent = nome;
+    $('casa-entradas').textContent = casa === 'CD' ? 'Câmara dos Deputados' : casa === 'SF' ? 'Senado Federal' : 'Câmara e Senado';
+    $('sub-entradas').textContent = 'Carregando…';
+    $('lista-entradas').replaceChildren();
+    $('mais-entradas').hidden = true;
+    lista = { siglas: siglas, casa: casa, r: r, itens: [], total: 0 };
+    maisItens();
+  }
+  $('mais-entradas').addEventListener('click', maisItens);
+
   return {
-    aoAbrirAba: function (nome) { if (nome === 'geral') render(); }
+    aoAbrirAba: function (nome) { if (nome === 'geral') render(); },
+    rota: function (params) {
+      if (params.get('entradas')) { renderLista(params); return true; }
+      return false;
+    }
   };
 });

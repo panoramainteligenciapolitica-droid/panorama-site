@@ -122,6 +122,14 @@ create table if not exists public.entradas (
   coletado_em timestamptz not null default now()
 );
 create index if not exists entradas_data_idx on public.entradas (data_apresentacao);
+-- Dados para a lista que abre ao tocar num tipo ou num número da aba Geral
+alter table public.entradas add column if not exists numero text;
+alter table public.entradas add column if not exists ano text;
+alter table public.entradas add column if not exists ementa text;
+alter table public.entradas add column if not exists autor text;
+alter table public.entradas add column if not exists url text;
+alter table public.entradas add column if not exists url_inteiro_teor text;
+create index if not exists entradas_sigla_data_idx on public.entradas (sigla, data_apresentacao desc);
 alter table public.entradas enable row level security;
 drop policy if exists "Equipe com login lê entradas" on public.entradas;
 create policy "Equipe com login lê entradas" on public.entradas for select to authenticated using (true);

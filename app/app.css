@@ -215,13 +215,25 @@ select { font: inherit; font-size: .95rem; padding: .6rem .7rem; border: 1px sol
 .tabela-tipos .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tabela-tipos tbody tr:hover { background: var(--surface); }
 .sigla-tipo { display: block; font-weight: 500; }
-.nome-tipo { display: block; font-size: .76rem; color: var(--muted); line-height: 1.3; }
-.tabela-tipos .total { width: 1%; }
-.tabela-tipos .total .valor { display: inline-block; min-width: 2.6rem; font-weight: 500; }
-.trilho { display: inline-block; width: 4.5rem; height: 8px; margin-right: .5rem; vertical-align: middle; }
-.barra-tipo { display: block; height: 100%; background: var(--navy); border-radius: 0 4px 4px 0; }
+.nome-tipo { display: block; padding-left: calc(10px + .4rem); font-size: .76rem; color: var(--muted); line-height: 1.3; }
+.tabela-tipos .total { font-weight: 500; }
+.tabela-tipos .zero { color: var(--muted); }
+.abre-tipo { display: block; width: 100%; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
+.abre-tipo .sigla-tipo { color: var(--gold-text); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.abre-num { background: none; border: 0; padding: .35rem .3rem; margin: -.35rem -.3rem; font: inherit; font-variant-numeric: tabular-nums; color: var(--gold-text);
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; cursor: pointer; border-radius: 4px; }
+.abre-num:hover, .abre-tipo:hover .sigla-tipo { color: var(--text); }
+.casa-entradas { margin: .35rem 0 .1rem; font-weight: 500; }
+#sub-entradas { margin-bottom: .75rem; }
+#mais-entradas { margin-top: .75rem; }
 .outros .sigla-tipo { font-weight: 400; color: var(--muted); }
-.outros .barra-tipo { background: #9aa6bd; }
 .nota-geral { margin-top: .75rem; font-size: .8rem; }
 .so-leitor { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-@media (max-width: 380px) { .trilho { width: 2.5rem; } }
+.barra-geral { display: flex; gap: 2px; height: 16px; margin: .25rem 0 .2rem; }
+.segmento { flex-basis: 0; min-width: 3px; border: 0; padding: 0; cursor: pointer; }
+.segmento:first-child { border-radius: 4px 0 0 4px; }
+.segmento:last-child { border-radius: 0 4px 4px 0; }
+.segmento:only-child { border-radius: 4px; }
+.segmento:hover, .segmento:focus-visible { filter: brightness(.88); }
+.dica-barra { font-size: .8rem; color: var(--text); min-height: 1.2rem; }
+.amostra { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: .4rem; vertical-align: 1px; }
