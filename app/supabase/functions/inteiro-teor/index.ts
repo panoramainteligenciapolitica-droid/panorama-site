@@ -9,9 +9,9 @@ const cors = {
 const resposta = (corpo: unknown, status = 200) =>
   new Response(JSON.stringify(corpo), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
-// Só baixa das Casas, para a função não virar um proxy aberto
+// Só baixa das Casas, para a função não virar um proxy aberto. O Senado serve os PDFs em legis.senado.gov.br.
 const permitido = (u: string) => {
-  try { const h = new URL(u).hostname; return /(^|\.)camara\.leg\.br$/.test(h) || /(^|\.)senado\.leg\.br$/.test(h); } catch { return false; }
+  try { const h = new URL(u).hostname; return /(^|\.)(camara|senado)\.(leg|gov)\.br$/.test(h); } catch { return false; }
 };
 
 Deno.serve(async (req) => {

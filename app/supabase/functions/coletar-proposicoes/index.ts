@@ -22,12 +22,17 @@ const ACESSORIOS = new Set(('PRL PAR PARF PRLP PRLE PPP PEP PPR RRL REL VTS RDF 
 const principal = (c: Candidata) => !ACESSORIOS.has(c.sigla.toUpperCase().replace(/-.*$/, '')) && c.ano !== '0';
 
 const dia = (d: Date) => d.toISOString().slice(0, 10);
-const normalizar = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const normalizar = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
-async function json(url: string) {
+// A Câmara às vezes responde 504 ou 429 numa página: tenta de novo duas vezes antes de desistir
+async function json(url: string, tentativas = 3): Promise<any> {
   const r = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!r.ok) throw new Error(`${url} respondeu ${r.status}`);
-  return r.json();
+  if (r.ok) return r.json();
+  if (tentativas > 1 && (r.status >= 500 || r.status === 429)) {
+    await new Promise((ok) => setTimeout(ok, 2000));
+    return json(url, tentativas - 1);
+  }
+  throw new Error(`${url} respondeu ${r.status}`);
 }
 
 // Câmara: https://dadosabertos.camara.leg.br/swagger/api.html (paginada de 100 em 100)

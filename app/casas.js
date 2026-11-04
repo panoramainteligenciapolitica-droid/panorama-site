@@ -20,10 +20,15 @@ window.PanoramaCasas = (function () {
     return ACESSORIOS.indexOf(base) < 0 && p.ano !== '0';
   }
 
-  function json(url) {
+  // A Câmara às vezes responde 504 ou 429 numa página: tenta de novo duas vezes antes de desistir
+  function json(url, tentativas) {
+    tentativas = tentativas || 3;
     return fetch(url, { headers: { Accept: 'application/json' } }).then(function (r) {
-      if (!r.ok) throw new Error(url + ' respondeu ' + r.status);
-      return r.json();
+      if (r.ok) return r.json();
+      if (tentativas > 1 && (r.status >= 500 || r.status === 429)) {
+        return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return json(url, tentativas - 1); });
+      }
+      throw new Error(url + ' respondeu ' + r.status);
     });
   }
   function emLotes(tarefas, n) {
