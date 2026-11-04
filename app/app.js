@@ -10,7 +10,7 @@
   }) : null;
 
   var $ = function (id) { return document.getElementById(id); };
-  var estado = { demo: false, sessao: null, emailLogin: '', notasDemo: [] };
+  var estado = { demo: cfg.demo === true, sessao: null, emailLogin: '', notasDemo: [], busca: null };
 
   // ---------- armazenamento local, que pode falhar em janela privada ----------
   function ler(chave) { try { return localStorage.getItem(chave); } catch (e) { return null; } }
@@ -193,14 +193,16 @@
   function recebidoPendente() { try { return JSON.parse(ler('panorama-recebido') || 'null'); } catch (e) { return null; } }
 
   // ---------- navegação ----------
-  function irPara(busca) { history.pushState(null, '', './' + busca); rotear(); }
+  // A rota fica guardada também em memória, para o app funcionar onde o endereço não pode mudar (prévias)
+  function irPara(busca) { estado.busca = busca; try { history.pushState(null, '', './' + busca); } catch (e) { /* segue pela memória */ } rotear(); }
   function rotear() {
     document.title = 'Panorama';
-    var params = new URLSearchParams(location.search);
+    var params = new URLSearchParams(estado.busca !== null ? estado.busca : location.search);
     var compartilhado = lerCompartilhado(params);
     if (compartilhado) {
       gravar('panorama-recebido', JSON.stringify(compartilhado));
-      history.replaceState(null, '', './');
+      estado.busca = '';
+      try { history.replaceState(null, '', './'); } catch (e) { /* segue pela memória */ }
     }
     if (!estado.sessao && !estado.demo) { renderLogin(); return; }
     var pendente = recebidoPendente();
@@ -277,7 +279,7 @@
     }, function () { b.disabled = false; avisar('Não foi possível salvar. Tente de novo.'); });
   });
   $('descartar-recebido').addEventListener('click', function () { gravar('panorama-recebido', null); irPara(''); });
-  window.addEventListener('popstate', rotear);
+  window.addEventListener('popstate', function () { estado.busca = null; rotear(); });
 
   // ---------- instalação ----------
   var pedidoInstalacao = null;
