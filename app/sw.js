@@ -1,7 +1,7 @@
 // Guarda a casca do app para abrir sem internet. Só cuida dos arquivos em /app/;
 // login e dados (Supabase) passam direto pela rede.
 // Ao mudar qualquer arquivo da lista, aumente a versão para os celulares baixarem a nova.
-var VERSAO = 'panorama-app-v9';
+var VERSAO = 'panorama-app-v10';
 var CASCA = [
   './',
   'app.css',
@@ -18,7 +18,10 @@ var CASCA = [
 ];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(VERSAO).then(function (c) { return c.addAll(CASCA); }).then(function () { return self.skipWaiting(); }));
+  // cache: 'reload' pula o cache do navegador (o GitHub Pages guarda por 10 minutos), para não misturar versões
+  e.waitUntil(caches.open(VERSAO).then(function (c) {
+    return c.addAll(CASCA.map(function (u) { return new Request(u, { cache: 'reload' }); }));
+  }).then(function () { return self.skipWaiting(); }));
 });
 
 self.addEventListener('activate', function (e) {
@@ -33,17 +36,14 @@ self.addEventListener('fetch', function (e) {
   var url = new URL(req.url);
   if (url.origin !== location.origin || url.pathname.indexOf('/app/') !== 0) return;
 
-  // Páginas: rede primeiro, para pegar a versão nova; sem rede, a casca guardada
-  if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).catch(function () { return caches.match('./', { ignoreSearch: true }); }));
-    return;
-  }
-  // Arquivos: responde do guardado na hora e atualiza em segundo plano
-  e.respondWith(caches.open(VERSAO).then(function (c) {
-    return c.match(req).then(function (guardado) {
-      var daRede = fetch(req).then(function (r) { if (r.ok) c.put(req, r.clone()); return r; });
-      if (guardado) { daRede.catch(function () {}); return guardado; }
-      return daRede;
-    });
+  // Tudo pela rede primeiro, para a página e os scripts serem sempre da mesma versão;
+  // sem rede, usa o que está guardado (a casca do app abre offline)
+  // (uma navegação não aceita opções extras: refaz o pedido pelo endereço)
+  var daRede = req.mode === 'navigate' ? fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }) : fetch(req, { cache: 'no-cache' });
+  e.respondWith(daRede.then(function (r) {
+    if (r.ok && req.mode !== 'navigate') { var copia = r.clone(); caches.open(VERSAO).then(function (c) { c.put(req, copia); }); }
+    return r;
+  }).catch(function () {
+    return caches.match(req.mode === 'navigate' ? './' : req, { ignoreSearch: req.mode === 'navigate' });
   }));
 });
