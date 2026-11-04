@@ -15,6 +15,12 @@ type Candidata = {
   autor?: string; situacao?: string; data_apresentacao: string | null; url: string; tema_casa?: string; url_inteiro_teor?: string;
 };
 
+// Documentos de tramitação da Câmara (pareceres, emendas, substitutivos, redações, requerimentos de pauta, atas):
+// entram em "entradas" para a aba Geral poder incluí-los, mas não viram candidatas. Mesma lista de app/casas.js.
+const ACESSORIOS = new Set(('PRL PAR PARF PRLP PRLE PPP PEP PPR RRL REL VTS RDF ERD DTQ RPD RPDR SBT SBE SBR SSP ' +
+  'EMC EMP EMS EMR EMA EML EMD EMO ESB EMRP ATA DOC AVN OF').split(' '));
+const principal = (c: Candidata) => !ACESSORIOS.has(c.sigla.toUpperCase().replace(/-.*$/, '')) && c.ano !== '0';
+
 const dia = (d: Date) => d.toISOString().slice(0, 10);
 const normalizar = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -90,16 +96,17 @@ Deno.serve(async (req) => {
     camara(inicio, fim).catch((e) => { erros.push(String(e)); return []; }),
     senado(inicio, fim).catch((e) => { erros.push(String(e)); return []; }),
   ]);
-  let coletadas = [...cd, ...sf];
+  const todas = [...cd, ...sf];
 
   // Contagem da aba Geral: guarda tudo o que foi apresentado, monitorado ou não
-  const entradas = coletadas.filter((c) => c.data_apresentacao)
+  const entradas = todas.filter((c) => c.data_apresentacao)
     .map((c) => ({ id_externo: c.id_externo, casa: c.casa, sigla: c.sigla, numero: c.numero, ano: c.ano, ementa: c.ementa,
       autor: c.autor ?? null, url: c.url, url_inteiro_teor: c.url_inteiro_teor ?? null, data_apresentacao: c.data_apresentacao }));
   for (let i = 0; i < entradas.length; i += 500) {
     const { error } = await sb.from('entradas').upsert(entradas.slice(i, i + 500), { onConflict: 'id_externo' });
     if (error) erros.push(error.message);
   }
+  let coletadas = todas.filter(principal);
   if (corpo.soEntradas) {
     return new Response(JSON.stringify({ entradas: entradas.length, camara: cd.length, senado: sf.length, erros }), {
       headers: { ...cors, 'Content-Type': 'application/json' },

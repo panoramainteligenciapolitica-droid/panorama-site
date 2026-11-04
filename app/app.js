@@ -236,6 +236,8 @@
       if (r.error) {
         var semCadastro = /signup|not allowed|not found/i.test(r.error.message || '');
         mensagem(semCadastro ? 'Este e-mail não tem acesso. Fale com a Panorama para liberar.' : 'Não foi possível enviar agora. Tente de novo em instantes.', true);
+        // Se o servidor de login não responde, deixa testar o app com os dados das Casas, guardados neste aparelho
+        if (!semCadastro) $('caixa-demo').hidden = false;
         return;
       }
       estado.emailLogin = email;

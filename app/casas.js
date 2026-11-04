@@ -10,6 +10,16 @@ window.PanoramaCasas = (function () {
   var VALIDADE = 10 * 60 * 1000, PARALELO = 6, MAX_DIAS = 62;
   var guardado = {};
 
+  // Documentos de tramitação que a Câmara publica junto com as proposições (pareceres, emendas, substitutivos,
+  // redações, destaques, requerimentos de pauta, atas, ofícios). Não são proposições novas: ficam fora das contas
+  // e da busca de novas, a menos que se peça para incluir. Variantes como SBT-A e EMC-A seguem a sigla base.
+  var ACESSORIOS = ('PRL PAR PARF PRLP PRLE PPP PEP PPR RRL REL VTS RDF ERD DTQ RPD RPDR SBT SBE SBR SSP ' +
+    'EMC EMP EMS EMR EMA EML EMD EMO ESB EMRP ATA DOC AVN OF').split(' ');
+  function principal(p) {
+    var base = String(p.sigla || '').toUpperCase().replace(/-.*$/, '');
+    return ACESSORIOS.indexOf(base) < 0 && p.ano !== '0';
+  }
+
   function json(url) {
     return fetch(url, { headers: { Accept: 'application/json' } }).then(function (r) {
       if (!r.ok) throw new Error(url + ' respondeu ' + r.status);
@@ -92,5 +102,5 @@ window.PanoramaCasas = (function () {
     return json(CAMARA + '/proposicoes/' + m[1]).then(function (j) { return (j.dados && j.dados.urlInteiroTeor) || ''; }).catch(function () { return ''; });
   }
 
-  return { periodo: periodo, urlInteiroTeor: urlInteiroTeor, MAX_DIAS: MAX_DIAS };
+  return { periodo: periodo, urlInteiroTeor: urlInteiroTeor, principal: principal, MAX_DIAS: MAX_DIAS };
 })();

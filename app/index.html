@@ -62,15 +62,15 @@
     <p class="mensagem" id="mensagem-login" role="status"></p>
 
     <div class="caixa-demo" id="caixa-demo" hidden>
-      <p>O login ainda não foi configurado neste app. Você pode ver como ele funciona com dados de exemplo.</p>
-      <button class="botao botao-linha" type="button" id="ver-demo">Ver demonstração</button>
+      <p>O login ainda não foi configurado neste app. Você pode testar o app com as proposições reais da Câmara e do Senado.</p>
+      <button class="botao botao-linha" type="button" id="ver-demo">Testar o app</button>
     </div>
 
     <p class="rodape-login"><a href="/">Voltar para o site da Panorama</a></p>
   </section>
 
   <section class="tela" id="tela-inicio" hidden>
-    <p class="faixa-demo" id="faixa-demo" hidden>Demonstração com dados de exemplo</p>
+    <p class="faixa-demo" id="faixa-demo" hidden>Modo de teste: proposições reais das Casas, guardadas só neste aparelho</p>
     <div class="abas" role="tablist" aria-label="Seções">
       <button role="tab" type="button" id="aba-geral" aria-selected="true" aria-controls="painel-geral">Geral</button>
       <button role="tab" type="button" id="aba-proposicoes" aria-selected="false" aria-controls="painel-proposicoes">Proposições</button>
@@ -101,6 +101,7 @@
       <p class="dica-barra" id="dica-barra" aria-live="polite"></p>
       <div class="rolagem-tabela"><table class="tabela-tipos" id="tabela-geral"></table></div>
       <button class="botao-texto" type="button" id="todos-tipos" hidden></button>
+      <button class="botao-texto" type="button" id="incluir-docs" hidden></button>
       <p class="discreto nota-geral" id="nota-geral"></p>
     </div>
     <div role="tabpanel" id="painel-proposicoes" aria-labelledby="aba-proposicoes" hidden>

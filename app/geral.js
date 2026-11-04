@@ -12,14 +12,22 @@
     REQ: 'Requerimento', RQS: 'Requerimento do Senado', RIC: 'Requerimento de Informação', RCP: 'Requerimento de CPI',
     INC: 'Indicação', INS: 'Indicação', EMC: 'Emenda em comissão', EMP: 'Emenda de Plenário', EMS: 'Emenda no Senado',
     PFC: 'Proposta de Fiscalização e Controle', SUG: 'Sugestão', MSC: 'Mensagem', SBT: 'Substitutivo',
-    PRL: 'Parecer de relator', PAR: 'Parecer', REL: 'Relatório', OF: 'Ofício', DCR: 'Denúncia por crime de responsabilidade'
+    PRL: 'Parecer de relator', PAR: 'Parecer de comissão', REL: 'Relatório', OF: 'Ofício', DCR: 'Denúncia por crime de responsabilidade',
+    PET: 'Petição', REC: 'Recurso', PDS: 'Projeto de Decreto Legislativo do Senado', TVR: 'Ato de concessão de rádio e TV',
+    // documentos de tramitação (só aparecem ao incluí-los)
+    RPD: 'Requerimento de pauta ou votação', RPDR: 'Requerimento de pauta ou votação', PARF: 'Parecer para redação final',
+    RDF: 'Redação final', ERD: 'Emenda de redação', DTQ: 'Destaque', VTS: 'Voto em separado', ATA: 'Ata', DOC: 'Documento', AVN: 'Aviso',
+    'SBT-A': 'Substitutivo adotado pela comissão', 'EMC-A': 'Emenda adotada pela comissão', 'SBE-A': 'Subemenda adotada pela comissão',
+    SBE: 'Subemenda', SBR: 'Subemenda de relator', SSP: 'Subemenda substitutiva de Plenário', EMR: 'Emenda de relator',
+    PRLP: 'Parecer preliminar', PPP: 'Parecer proferido em Plenário', PRLE: 'Parecer preliminar às emendas de Plenário',
+    PEP: 'Parecer às emendas de Plenário', RRL: 'Relatório do relator (CMO)'
   };
   var VISIVEIS = 10;
   // Cor fixa por tipo (não muda com o período nem com o filtro); os demais tipos ficam em cinza
   var CORES = { PL: '#2a78d6', REQ: '#eb6834', RQS: '#1baf7a', RIC: '#eda100', INC: '#e87ba4', PDL: '#008300', EMC: '#6250d6', PLP: '#e34948' };
   var CINZA = '#b4bccb';
   function cor(sigla) { return CORES[sigla] || CINZA; }
-  var filtro = { periodo: '7', casa: '', inicio: '', fim: '', todos: false };
+  var filtro = { periodo: '7', casa: '', inicio: '', fim: '', todos: false, docs: false };
   var pedido = 0, atual = null;
 
   // ---------- datas (no fuso do aparelho) ----------
@@ -85,10 +93,21 @@
     },
     contar: function (r) {
       return aoVivo(r).then(function (itens) {
-        return itens.map(function (p) { return { casa: p.casa, sigla: p.sigla, total: 1 }; });
+        var fora = 0;
+        var linhas = itens.filter(function (p) { var ok = filtro.docs || C.principal(p); if (!ok && (!filtro.casa || p.casa === filtro.casa)) fora++; return ok; })
+          .map(function (p) { return { casa: p.casa, sigla: p.sigla, total: 1 }; });
+        linhas.fora = fora;
+        return linhas;
       }).catch(function (e) {
         if (!doBanco()) throw e;
-        return P.sb.rpc('contar_entradas', { inicio: r.inicio, fim: r.fim }).then(function (res) { if (res.error) throw res.error; return res.data || []; });
+        return P.sb.rpc('contar_entradas', { inicio: r.inicio, fim: r.fim }).then(function (res) {
+          if (res.error) throw res.error;
+          var fora = 0, linhas = (res.data || []).filter(function (l) {
+            var ok = filtro.docs || C.principal(l); if (!ok && (!filtro.casa || l.casa === filtro.casa)) fora += Number(l.total) || 0; return ok;
+          });
+          linhas.fora = fora;
+          return linhas;
+        });
       });
     }
   };
@@ -173,7 +192,7 @@
     var meu = ++pedido;
     var aviso = function (texto) {
       $('total-geral').replaceChildren(el('p', { class: 'discreto', text: texto }));
-      $('barra-geral').hidden = true; $('tabela-geral').hidden = true; $('todos-tipos').hidden = true; $('nota-geral').textContent = '';
+      $('barra-geral').hidden = true; $('tabela-geral').hidden = true; $('todos-tipos').hidden = true; $('incluir-docs').hidden = true; $('nota-geral').textContent = '';
     };
     var previo = intervalo('');
     if ((deIso(previo.fim) - deIso(previo.inicio)) / 864e5 + 1 > C.MAX_DIAS) { aviso('Escolha um período de até ' + C.MAX_DIAS + ' dias.'); return; }
@@ -187,14 +206,18 @@
         var casa = filtro.casa === 'CD' ? ' na Câmara' : filtro.casa === 'SF' ? ' no Senado' : '';
         $('total-geral').replaceChildren(
           el('b', { text: numero(total) }),
-          el('span', { text: (total === 1 ? ' proposição apresentada' : ' proposições apresentadas') + casa + ' ' + descrever(r) })
+          el('span', { text: (filtro.docs ? (total === 1 ? ' proposição ou documento apresentado' : ' proposições e documentos apresentados') : (total === 1 ? ' proposição apresentada' : ' proposições apresentadas')) + casa + ' ' + descrever(r) })
         );
         renderTabela(tipos);
         var notas = [];
         if (faltou.length === 1) notas.push((faltou[0] === 'CD' ? 'A Câmara' : 'O Senado') + ' não respondeu agora; os números são só ' + (faltou[0] === 'CD' ? 'do Senado.' : 'da Câmara.'));
         if (!total) notas.push('Nada apresentado neste período.');
+        if (linhas.fora) notas.push('Fora da conta: ' + numero(linhas.fora) + ' documentos de tramitação (pareceres, emendas, substitutivos, redações e requerimentos de pauta).');
         if (filtro.periodo === 'dia' && ultimo && ultimo !== iso(hoje())) notas.push('Último dia com proposições apresentadas: ' + longa(ultimo) + '.');
-        notas.push('Fonte: dados abertos da Câmara e do Senado, consultados agora. Inclui requerimentos, emendas e demais tipos.');
+        notas.push('Fonte: dados abertos da Câmara e do Senado, consultados agora.');
+        var docs = $('incluir-docs');
+        docs.hidden = !linhas.fora && !filtro.docs;
+        docs.textContent = filtro.docs ? 'Contar só as proposições' : 'Incluir os documentos de tramitação';
         $('nota-geral').textContent = notas.join(' ');
       });
     }).catch(function () {
@@ -230,6 +253,7 @@
     render();
   });
   $('todos-tipos').addEventListener('click', function () { filtro.todos = !filtro.todos; render(); });
+  $('incluir-docs').addEventListener('click', function () { filtro.docs = !filtro.docs; filtro.todos = false; render(); });
 
   // ---------- lista de um tipo (tela-entradas) ----------
   var POR_PAGINA = 50, lista = null;

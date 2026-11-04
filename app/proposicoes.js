@@ -1,6 +1,6 @@
 // Monitoramento de proposições da Câmara e do Senado: cadastro manual, coleta diária (palavras-chave e
 // semelhança com o que já é monitorado), especialidades e campos de análise de relações governamentais.
-// Os dados ficam no Supabase; na demonstração, ficam neste navegador com exemplos.
+// Os dados ficam no Supabase; no modo de teste, ficam neste navegador (as proposições vêm das Casas).
 (window.PanoramaModulos = window.PanoramaModulos || []).push(function (P) {
   'use strict';
 
@@ -11,7 +11,7 @@
   var ORIGENS = { app: 'indicada pelo app', casa: 'tema da Casa', manual: 'escolhida por você' };
   var ordemPrioridade = { alta: 0, media: 1, baixa: 2 };
 
-  // ---------- exemplos da demonstração (números fictícios) ----------
+  // ---------- ponto de partida do modo de teste: especialidades e palavras-chave sugeridas (sem proposições inventadas) ----------
   var ESP_EXEMPLO = [
     { id: 'esp-seguranca', nome: 'Segurança pública' },
     { id: 'esp-financeiro', nome: 'Serviços financeiros' },
@@ -25,33 +25,6 @@
     { id: 'pc-4', termo: 'aduaneiro', especialidade_id: 'esp-comercio' },
     { id: 'pc-5', termo: 'cabotagem', especialidade_id: 'esp-comercio' }
   ];
-  function ex(o) { return Object.assign({ exemplo: true, origem_especialidade: 'manual', autor: '', url: '', notas: '', proximo_passo: '', criado_em: '2026-10-20T12:00:00Z' }, o); }
-  var PROPOSICOES_EXEMPLO = [
-    ex({ id: 'p-1', casa: 'CD', sigla: 'PL', numero: '1101', ano: '2026', especialidade_id: 'esp-seguranca', prioridade: 'alta', posicionamento: 'favoravel', data_apresentacao: '2026-09-15', autor: 'Exemplo de autoria',
-      ementa: 'Cria o Fundo de Modernização das Polícias Estaduais e define critérios de repasse de recursos da União para equipamentos e tecnologia de segurança pública.',
-      situacao: 'Aguardando parecer do relator na Comissão de Segurança Pública', proximo_passo: 'Levar nota técnica ao relator' }),
-    ex({ id: 'p-2', casa: 'SF', sigla: 'PL', numero: '2204', ano: '2026', especialidade_id: 'esp-seguranca', prioridade: 'media', posicionamento: 'acompanhar', data_apresentacao: '2026-08-02',
-      ementa: 'Estabelece regras para o compartilhamento de dados entre os órgãos de segurança pública e o sistema prisional, com integração das bases de inteligência.',
-      situacao: 'Aguardando designação de relator' }),
-    ex({ id: 'p-3', casa: 'CD', sigla: 'PLP', numero: '310', ano: '2026', especialidade_id: 'esp-financeiro', prioridade: 'alta', posicionamento: 'contrario', data_apresentacao: '2026-07-21',
-      ementa: 'Regulamenta a cobrança de tarifas no crédito consignado e fixa limites de juros para operações com aposentados e pensionistas.',
-      situacao: 'Pronta para pauta no Plenário', proximo_passo: 'Mapear votos das lideranças' }),
-    ex({ id: 'p-4', casa: 'SF', sigla: 'PL', numero: '1877', ano: '2026', especialidade_id: 'esp-financeiro', prioridade: 'media', posicionamento: 'analise', data_apresentacao: '2026-06-10',
-      ementa: 'Disciplina o funcionamento das fintechs de crédito e das sociedades de empréstimo entre pessoas, com regras de capital mínimo.',
-      situacao: 'Em análise na Comissão de Assuntos Econômicos' }),
-    ex({ id: 'p-5', casa: 'CD', sigla: 'PL', numero: '905', ano: '2026', especialidade_id: 'esp-comercio', prioridade: 'alta', posicionamento: 'favoravel', data_apresentacao: '2026-05-05',
-      ementa: 'Simplifica o despacho aduaneiro de importação e exportação e amplia o uso do Portal Único de Comércio Exterior.',
-      situacao: 'Aprovado na comissão de mérito; segue para a CCJ' }),
-    ex({ id: 'p-6', casa: 'SF', sigla: 'PL', numero: '3020', ano: '2026', especialidade_id: 'esp-comercio', prioridade: 'baixa', posicionamento: 'acompanhar', data_apresentacao: '2026-09-30',
-      ementa: 'Cria incentivos à cabotagem e ao transporte multimodal de cargas, com redução de tarifas portuárias.',
-      situacao: 'Aguardando designação de relator' }),
-    ex({ id: 'p-7', casa: 'CD', sigla: 'PL', numero: '1450', ano: '2026', especialidade_id: 'esp-justica', prioridade: 'media', posicionamento: 'favoravel', data_apresentacao: '2026-04-18',
-      ementa: 'Altera o Código de Processo Civil para ampliar a conciliação e a mediação digitais nos tribunais e reduzir prazos processuais.',
-      situacao: 'Aguardando parecer na CCJ' }),
-    ex({ id: 'p-8', casa: 'SF', sigla: 'PEC', numero: '12', ano: '2026', especialidade_id: 'esp-justica', prioridade: 'alta', posicionamento: 'acompanhar', data_apresentacao: '2026-03-12',
-      ementa: 'Altera a Constituição para dispor sobre a autonomia orçamentária das Defensorias Públicas e a organização do sistema de Justiça.',
-      situacao: 'Pronta para votação em primeiro turno' })
-  ];
 
   // ---------- dados: Supabase ou, na demonstração, este navegador ----------
   var CHAVE_LOCAL = 'panorama-demo-proposicoes-v1';
@@ -62,12 +35,13 @@
     if (!memoria) {
       var agora = new Date().toISOString();
       memoria = {
-        especialidades: ESP_EXEMPLO.slice(), palavras: PALAVRAS_EXEMPLO.slice(), proposicoes: PROPOSICOES_EXEMPLO.slice(),
+        especialidades: ESP_EXEMPLO.slice(), palavras: PALAVRAS_EXEMPLO.slice(), proposicoes: [],
         candidatas: [], ultima_busca: null
       };
     }
-    // Versões antigas da demonstração guardavam coletadas de exemplo: agora a coleta é real
-    memoria.candidatas = memoria.candidatas.filter(function (c) { return !c.exemplo; });
+    // Versões antigas do modo de teste traziam proposições e coletadas de exemplo: agora tudo vem das Casas
+    memoria.candidatas = memoria.candidatas.filter(function (c) { return !c.exemplo && window.PanoramaCasas.principal(c); });
+    memoria.proposicoes = memoria.proposicoes.filter(function (p) { return !p.exemplo; });
     return memoria;
   }
   function guardarLocal() { P.gravar(CHAVE_LOCAL, JSON.stringify(memoria)); }
@@ -111,7 +85,7 @@
         m.proposicoes.forEach(function (p) { conhecidas[chave(p)] = true; });
         return window.PanoramaCasas.periodo(dia(new Date(agora - 864e5)), dia(agora)).then(function (res) {
           if (res.erros.length === 2) throw new Error('As Casas não responderam');
-          var ineditas = res.itens.filter(function (c) { return !conhecidas[c.id_externo] && !conhecidas[chave(c)]; });
+          var ineditas = res.itens.filter(function (c) { return window.PanoramaCasas.principal(c) && !conhecidas[c.id_externo] && !conhecidas[chave(c)]; });
           var analise = S.analisar(ineditas, m.proposicoes, m.palavras);
           var novas = analise.filter(function (a) { return a.palavras.length || (a.maisParecida && S.percentual(a.maisParecida.valor) >= 5); })
             .map(function (a) { return Object.assign({ id: novoId('c-'), coletado_em: agora.toISOString(), status: 'nova' }, a.candidata); });
@@ -435,28 +409,9 @@
   }
 
   // ---------- inteiro teor: janela com leitura, download e compartilhamento ----------
-  var TIPOS = { PL: 'PROJETO DE LEI', PLP: 'PROJETO DE LEI COMPLEMENTAR', PEC: 'PROPOSTA DE EMENDA À CONSTITUIÇÃO', PDL: 'PROJETO DE DECRETO LEGISLATIVO', MPV: 'MEDIDA PROVISÓRIA', REQ: 'REQUERIMENTO' };
-  function teorExemplo(p) {
-    var cabeca = (TIPOS[p.sigla] || p.sigla) + ' Nº ' + p.numero + ', DE ' + p.ano;
-    var aviso = '(Texto de exemplo, criado para a demonstração do app)';
-    if (p.sigla === 'REQ') {
-      return [cabeca, aviso, 'Senhor Presidente,', 'Requeiro, nos termos regimentais, ' + p.ementa.replace(/^Requer /, '').replace(/^a /, 'a ') ,
-        'JUSTIFICAÇÃO', 'O tema exige debate com o setor produtivo, os órgãos de governo e especialistas, para subsidiar a análise das proposições em tramitação.',
-        'Sala das Sessões, em ' + dataCurta(p.data_apresentacao) + '.'].join('\n\n');
-    }
-    var objeto = p.ementa.charAt(0).toLowerCase() + p.ementa.slice(1).replace(/\.$/, '');
-    return [cabeca, aviso, '(' + p.ementa + ')', (p.sigla === 'PEC' ? 'As Mesas da Câmara dos Deputados e do Senado Federal, nos termos do § 3º do art. 60 da Constituição Federal, promulgam a seguinte Emenda ao texto constitucional:' : 'O CONGRESSO NACIONAL decreta:'),
-      'Art. 1º Esta ' + (p.sigla === 'PEC' ? 'Emenda Constitucional' : 'Lei') + ' ' + objeto + '.',
-      'Art. 2º O Poder Executivo regulamentará o disposto nesta ' + (p.sigla === 'PEC' ? 'Emenda' : 'Lei') + ' no prazo de cento e oitenta dias.',
-      'Art. 3º Esta ' + (p.sigla === 'PEC' ? 'Emenda Constitucional' : 'Lei') + ' entra em vigor na data de sua publicação.',
-      'JUSTIFICAÇÃO', 'A proposta busca dar segurança jurídica ao tema e atualizar a legislação diante das mudanças recentes no setor.',
-      'Sala das Sessões, em ' + dataCurta(p.data_apresentacao) + '.'].join('\n\n');
-  }
-
   // No app real, a função inteiro-teor no Supabase baixa o PDF da Casa e extrai o texto; o texto fica guardado
   function obterTeor(p, tabela) {
     if (p.inteiro_teor) return Promise.resolve({ texto: p.inteiro_teor, url: p.url_inteiro_teor || '' });
-    if (p.exemplo) return Promise.resolve({ texto: teorExemplo(p), url: p.url_inteiro_teor || '' });
     // Sem o Supabase não há como extrair o texto do PDF: mostra a ementa e o link do PDF oficial
     if (P.estado.demo) return window.PanoramaCasas.urlInteiroTeor(p).then(function (url) {
       return { texto: ident(p) + ' (' + CASAS[p.casa] + ')\n\nEmenta: ' + (p.ementa || '') + '\n\nO texto completo está no PDF oficial da Casa' +
