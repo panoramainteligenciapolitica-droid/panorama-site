@@ -4,7 +4,7 @@ import re, sys
 raiz, saida = sys.argv[1], sys.argv[2]
 html = open(raiz + '/app/index.html').read()
 css = open(raiz + '/app/app.css').read()
-js = open(raiz + '/app/app.js').read()
+js = ''.join(open(raiz + '/app/' + f).read() + '\n' for f in ['similaridade.js', 'proposicoes.js', 'app.js'])
 corpo = re.search(r'<body>(.*?)<script src="vendor', html, re.S).group(1)
 css = css.replace('.barra { position: sticky; top: 0;', '.barra { position: sticky; top: env(safe-area-inset-top, 0px);')
 css = css.replace('padding: calc(env(safe-area-inset-top, 0px) + .7rem)', 'padding: .7rem')

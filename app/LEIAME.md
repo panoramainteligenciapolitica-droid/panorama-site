@@ -20,6 +20,22 @@ Sem o Supabase configurado, o app abre em modo de demonstração com dados de ex
 7. Para liberar um cliente: Authentication > Users > Invite user (ou Add user).
 8. Para publicar um alerta: Table Editor > alertas > Insert row.
 
+## Proposições (Câmara e Senado)
+
+- Cadastro manual ou a partir das coletadas, com especialidade, prioridade, posicionamento, situação e próximo passo.
+- Coleta diária: a função `supabase/functions/coletar-proposicoes` traz tudo o que foi apresentado ontem e hoje nas duas Casas (APIs de dados abertos). O app mostra em "Novas" o que tem alguma palavra-chave ou é parecido com o que já é monitorado, acima da similaridade mínima.
+- Similaridade (`similaridade.js`): TF-IDF com cosseno sobre as ementas, sem as palavras de praxe ("dispõe", "altera", "lei"...). A especialidade sugerida é a de maior média entre as duas monitoradas mais parecidas.
+
+Para ligar a coleta:
+
+1. Rode de novo `supabase/esquema.sql` (cria as tabelas de proposições).
+2. Edge Functions > Deploy a new function > Via Editor: nome `coletar-proposicoes`, cole `index.ts` e publique.
+3. Database > Extensions: ligue `pg_cron` e `pg_net`. Depois rode `supabase/agendamento.sql` no SQL Editor.
+
+## Prévia dentro do Claude
+
+`python3 ferramentas/montar-previa.py . app-panorama.html` gera uma página única em modo de demonstração.
+
 ## Ao mudar arquivos
 
 Aumente `VERSAO` em `sw.js` para os celulares que já instalaram o app baixarem a versão nova.

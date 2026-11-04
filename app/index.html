@@ -72,10 +72,66 @@
   <section class="tela" id="tela-inicio" hidden>
     <p class="faixa-demo" id="faixa-demo" hidden>Demonstração com dados de exemplo</p>
     <div class="abas" role="tablist" aria-label="Seções">
-      <button role="tab" type="button" id="aba-alertas" aria-selected="true" aria-controls="painel-alertas">Alertas</button>
+      <button role="tab" type="button" id="aba-proposicoes" aria-selected="true" aria-controls="painel-proposicoes">Proposições</button>
+      <button role="tab" type="button" id="aba-alertas" aria-selected="false" aria-controls="painel-alertas">Alertas</button>
       <button role="tab" type="button" id="aba-recebidos" aria-selected="false" aria-controls="painel-recebidos">Recebidos</button>
     </div>
-    <div role="tabpanel" id="painel-alertas" aria-labelledby="aba-alertas">
+    <div role="tabpanel" id="painel-proposicoes" aria-labelledby="aba-proposicoes">
+      <div class="resumo-prop" id="resumo-prop"></div>
+      <div class="subabas" role="group" aria-label="Proposições">
+        <button type="button" id="sub-monitoradas" aria-pressed="true">Monitoradas</button>
+        <button type="button" id="sub-novas" aria-pressed="false">Novas <span class="contador" id="contador-novas"></span></button>
+        <button type="button" id="sub-filtros" aria-pressed="false">Filtros</button>
+      </div>
+
+      <div id="vista-monitoradas">
+        <div class="barra-lista">
+          <input type="search" id="busca-prop" placeholder="Buscar por número, ementa ou autor" aria-label="Buscar proposições monitoradas">
+          <button class="botao botao-pequeno" type="button" id="nova-prop">Cadastrar</button>
+        </div>
+        <div class="chips-filtro" id="filtro-esp" role="group" aria-label="Filtrar por especialidade"></div>
+        <ul class="lista" id="lista-monitoradas"></ul>
+      </div>
+
+      <div id="vista-novas" hidden>
+        <div class="barra-coleta">
+          <p class="discreto" id="info-coleta"></p>
+          <button class="botao botao-pequeno botao-linha" type="button" id="buscar-agora">Buscar agora</button>
+        </div>
+        <ul class="lista" id="lista-novas"></ul>
+        <button class="botao-texto" type="button" id="mostrar-abaixo" hidden></button>
+      </div>
+
+      <div id="vista-filtros" hidden>
+        <section class="bloco">
+          <h2>Palavras-chave</h2>
+          <p class="discreto">A busca diária traz toda proposição nova cuja ementa tenha uma destas palavras, além das parecidas com as que você já monitora.</p>
+          <form class="linha-form" id="form-palavra" novalidate>
+            <input id="nova-palavra" type="text" placeholder="Ex.: crédito consignado" aria-label="Nova palavra-chave" required>
+            <select id="esp-palavra" aria-label="Especialidade da palavra-chave"></select>
+            <button class="botao botao-pequeno" type="submit">Adicionar</button>
+          </form>
+          <ul class="lista-simples" id="lista-palavras"></ul>
+        </section>
+        <section class="bloco">
+          <h2>Especialidades</h2>
+          <form class="linha-form" id="form-esp" novalidate>
+            <input id="nova-esp" type="text" placeholder="Nome da especialidade" aria-label="Nova especialidade" required>
+            <button class="botao botao-pequeno" type="submit">Criar</button>
+          </form>
+          <ul class="lista-simples" id="lista-esp"></ul>
+        </section>
+        <section class="bloco">
+          <h2>Similaridade mínima</h2>
+          <p class="discreto">Proposições sem palavra-chave só aparecem em Novas se forem pelo menos este tanto parecidas com uma que você já monitora.</p>
+          <div class="linha-limiar">
+            <input type="range" id="limiar" min="5" max="80" step="5" aria-label="Similaridade mínima">
+            <output id="limiar-valor" for="limiar"></output>
+          </div>
+        </section>
+      </div>
+    </div>
+    <div role="tabpanel" id="painel-alertas" aria-labelledby="aba-alertas" hidden>
       <ul class="lista" id="lista-alertas"></ul>
     </div>
     <div role="tabpanel" id="painel-recebidos" aria-labelledby="aba-recebidos" hidden>
@@ -87,6 +143,49 @@
   <section class="tela" id="tela-alerta" hidden>
     <button class="botao-texto voltar" type="button" data-voltar>← Voltar</button>
     <article id="alerta"></article>
+  </section>
+
+  <section class="tela" id="tela-proposicao" hidden>
+    <button class="botao-texto voltar" type="button" data-voltar>← Voltar</button>
+    <article id="proposicao"></article>
+  </section>
+
+  <section class="tela" id="tela-form-prop" hidden>
+    <button class="botao-texto voltar" type="button" data-voltar>← Voltar</button>
+    <h1 id="titulo-form-prop">Cadastrar proposição</h1>
+    <form id="form-prop" class="form-prop" novalidate>
+      <div class="grade">
+        <label>Casa<select id="fp-casa"><option value="CD">Câmara</option><option value="SF">Senado</option></select></label>
+        <label>Tipo<input id="fp-sigla" list="tipos" required placeholder="PL"></label>
+        <label>Número<input id="fp-numero" inputmode="numeric" required></label>
+        <label>Ano<input id="fp-ano" inputmode="numeric" required maxlength="4"></label>
+      </div>
+      <datalist id="tipos"><option value="PL"><option value="PLP"><option value="PEC"><option value="MPV"><option value="PDL"><option value="PLN"><option value="REQ"></datalist>
+      <label>Ementa<textarea id="fp-ementa" rows="4" required></textarea></label>
+      <fieldset class="esp-escolha">
+        <legend>Especialidade</legend>
+        <div class="sugestoes" id="fp-sugestoes"></div>
+        <select id="fp-esp" aria-label="Especialidade"></select>
+        <input id="fp-esp-nova" type="text" placeholder="Nome da nova especialidade" aria-label="Nome da nova especialidade" hidden>
+      </fieldset>
+      <div class="grade grade-2">
+        <label>Prioridade<select id="fp-prioridade"><option value="alta">Alta</option><option value="media" selected>Média</option><option value="baixa">Baixa</option></select></label>
+        <label>Posicionamento<select id="fp-posicao"><option value="analise" selected>Em análise</option><option value="favoravel">Favorável</option><option value="contrario">Contrário</option><option value="acompanhar">Acompanhar</option></select></label>
+      </div>
+      <label>Autor<input id="fp-autor"></label>
+      <div class="grade grade-2">
+        <label>Apresentada em<input id="fp-data" type="date"></label>
+        <label>Situação atual<input id="fp-situacao" placeholder="Ex.: Aguardando parecer do relator"></label>
+      </div>
+      <label>Próximo passo<input id="fp-proximo" placeholder="Ex.: Reunião com o relator até sexta"></label>
+      <label>Notas<textarea id="fp-notas" rows="3"></textarea></label>
+      <label>Link na Casa<input id="fp-url" type="url" placeholder="https://"></label>
+      <p class="mensagem erro" id="fp-erro" role="alert"></p>
+      <div class="acoes">
+        <button class="botao" type="submit" id="fp-salvar">Salvar e monitorar</button>
+        <button class="botao botao-linha" type="button" data-voltar>Cancelar</button>
+      </div>
+    </form>
   </section>
 
   <section class="tela" id="tela-recebido" hidden>
@@ -106,6 +205,8 @@
 
 <script src="vendor/supabase-2.45.4.js"></script>
 <script src="config.js"></script>
+<script src="similaridade.js"></script>
+<script src="proposicoes.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

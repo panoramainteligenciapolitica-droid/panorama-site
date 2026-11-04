@@ -60,9 +60,8 @@
   }
 
   // ---------- utilidades de tela ----------
-  var telas = ['tela-carregando', 'tela-login', 'tela-inicio', 'tela-alerta', 'tela-recebido'];
   function mostrar(id) {
-    telas.forEach(function (t) { $(t).hidden = t !== id; });
+    document.querySelectorAll('main > .tela').forEach(function (t) { t.hidden = t.id !== id; });
     $('sair').hidden = !(estado.sessao || estado.demo) || id === 'tela-login';
     $('faixa-demo').hidden = !estado.demo;
     window.scrollTo(0, 0);
@@ -110,7 +109,7 @@
   // ---------- telas ----------
   function renderInicio(aba) {
     mostrar('tela-inicio');
-    selecionarAba(aba || 'alertas');
+    selecionarAba(aba || 'proposicoes');
     var lista = $('lista-alertas');
     lista.replaceChildren(el('li', { class: 'vazio', text: 'Carregando alertas…' }));
     listarAlertas().then(function (alertas) {
@@ -146,10 +145,11 @@
   }
 
   function selecionarAba(nome) {
-    ['alertas', 'recebidos'].forEach(function (n) {
+    ['proposicoes', 'alertas', 'recebidos'].forEach(function (n) {
       $('aba-' + n).setAttribute('aria-selected', String(n === nome));
       $('painel-' + n).hidden = n !== nome;
     });
+    (modulos || []).forEach(function (m) { if (m.aoAbrirAba) m.aoAbrirAba(nome); });
   }
 
   function renderAlerta(id) {
@@ -159,7 +159,7 @@
     obterAlerta(id).then(function (a) {
       if (!a) { art.replaceChildren(el('p', { text: 'Este alerta não existe ou você não tem acesso a ele.' })); return; }
       document.title = a.titulo + ' · Panorama';
-      art.replaceChildren(
+      art.replaceChildren.apply(art, [
         el('div', { class: 'item-topo' }, [a.tema ? el('span', { class: 'tema', text: a.tema }) : null, el('span', { text: data(a.publicado_em) })]),
         el('h1', { text: a.titulo }),
         a.resumo ? el('p', { class: 'discreto', text: a.resumo }) : null,
@@ -169,7 +169,7 @@
           el('button', { class: 'botao', type: 'button', text: 'Compartilhar', onclick: function () { compartilhar(a); } }),
           el('button', { class: 'botao botao-linha', type: 'button', text: 'Copiar link', onclick: function () { copiar(linkDoAlerta(a.id)); } })
         ])
-      );
+      ].filter(Boolean));
     }).catch(function () { art.replaceChildren(el('p', { text: 'Não foi possível carregar este alerta.' })); });
   }
 
@@ -207,6 +207,7 @@
     if (!estado.sessao && !estado.demo) { renderLogin(); return; }
     var pendente = recebidoPendente();
     if (pendente) { renderRecebido(pendente); return; }
+    for (var i = 0; i < (modulos || []).length; i++) if (modulos[i].rota && modulos[i].rota(params)) return;
     var id = params.get('alerta');
     if (id) renderAlerta(id); else renderInicio(params.get('aba'));
   }
@@ -266,6 +267,7 @@
   });
 
   // ---------- botões das telas ----------
+  $('aba-proposicoes').addEventListener('click', function () { selecionarAba('proposicoes'); });
   $('aba-alertas').addEventListener('click', function () { selecionarAba('alertas'); });
   $('aba-recebidos').addEventListener('click', function () { selecionarAba('recebidos'); });
   document.querySelectorAll('[data-voltar]').forEach(function (b) {
@@ -298,6 +300,13 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function () { /* app segue sem modo offline */ }); });
   }
+
+  // ---------- módulos (proposicoes.js) ----------
+  // Cada módulo recebe as utilidades do app e pode responder por rotas e abas próprias
+  var modulos = (window.PanoramaModulos || []).map(function (iniciar) {
+    return iniciar({ $: $, el: el, avisar: avisar, data: data, mostrar: mostrar, irPara: irPara, copiar: copiar,
+      ler: ler, gravar: gravar, estado: estado, sb: sb, voltar: function () { irPara(''); } });
+  });
 
   // ---------- início ----------
   if (!configurado) { rotear(); return; }
