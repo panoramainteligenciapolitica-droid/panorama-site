@@ -27,6 +27,7 @@
     <span>Panorama</span>
   </a>
   <button class="botao-barra" id="instalar" type="button" hidden>Instalar</button>
+  <button class="botao-barra" id="abrir-config" type="button" hidden>Configurações</button>
   <button class="botao-barra" id="sair" type="button" hidden>Sair</button>
 </header>
 
@@ -75,6 +76,11 @@
 
   <section class="tela" id="tela-inicio" hidden>
     <p class="faixa-demo" id="faixa-demo" hidden>Modo de teste: proposições reais das Casas, guardadas só neste aparelho</p>
+    <div class="linha-cliente" id="linha-cliente" hidden>
+      <label for="seletor-cliente">Cliente</label>
+      <select id="seletor-cliente"></select>
+    </div>
+    <p class="aviso-sem-cliente" id="sem-cliente" hidden>Você ainda não tem acesso a nenhum cliente. Peça a um administrador para liberar.</p>
     <div class="abas" role="tablist" aria-label="Seções">
       <button role="tab" type="button" id="aba-geral" aria-selected="true" aria-controls="painel-geral">Geral</button>
       <button role="tab" type="button" id="aba-proposicoes" aria-selected="false" aria-controls="painel-proposicoes">Proposições</button>
@@ -231,6 +237,63 @@
     </form>
   </section>
 
+  <section class="tela" id="tela-config" hidden>
+    <button class="botao-texto voltar" type="button" data-voltar>← Voltar</button>
+    <h1>Configurações</h1>
+
+    <section class="bloco">
+      <h2>Minha conta</h2>
+      <p class="discreto" id="conta-resumo"></p>
+      <form class="linha-form" id="form-meu-nome" novalidate>
+        <input id="meu-nome" type="text" placeholder="Seu nome" aria-label="Seu nome" autocomplete="name">
+        <button class="botao botao-pequeno" type="submit">Salvar nome</button>
+      </form>
+      <form class="form-prop" id="form-minha-senha" novalidate>
+        <label>Nova senha<input id="minha-senha" type="password" autocomplete="new-password" minlength="8"></label>
+        <label>Repita a nova senha<input id="minha-senha-2" type="password" autocomplete="new-password" minlength="8"></label>
+        <p class="mensagem" id="conta-msg" role="status"></p>
+        <div class="acoes"><button class="botao botao-pequeno" type="submit">Trocar senha</button></div>
+      </form>
+    </section>
+
+    <div id="config-admin" hidden>
+    <p class="sobretitulo">Administração</p>
+    <p class="discreto">Administradores veem todos os clientes. As demais pessoas veem só os clientes marcados para elas.</p>
+
+    <section class="bloco">
+      <h2>Clientes</h2>
+      <p class="discreto">Cada cliente tem o seu próprio banco: palavras-chave, especialidades, proposições monitoradas e novas.</p>
+      <form class="linha-form" id="form-cliente" novalidate>
+        <input id="novo-cliente" type="text" placeholder="Nome do cliente" aria-label="Nome do novo cliente" required>
+        <button class="botao botao-pequeno" type="submit">Criar</button>
+      </form>
+      <ul class="lista-simples" id="lista-clientes"></ul>
+    </section>
+
+    <section class="bloco">
+      <h2>Pessoas</h2>
+      <ul class="lista-pessoas" id="lista-pessoas"></ul>
+    </section>
+
+    <section class="bloco">
+      <h2>Cadastrar pessoa</h2>
+      <p class="discreto">Crie uma senha provisória e passe para a pessoa. Ela pode trocar depois pelo "Esqueci minha senha".</p>
+      <form class="form-prop" id="form-pessoa" novalidate>
+        <label>Nome<input id="pessoa-nome" type="text" autocomplete="off"></label>
+        <label>E-mail<input id="pessoa-email" type="email" autocomplete="off" required></label>
+        <label>Senha provisória<input id="pessoa-senha" type="text" autocomplete="off" minlength="8" required></label>
+        <label class="marcar"><input id="pessoa-admin" type="checkbox"> Administrador (vê todos os clientes)</label>
+        <fieldset class="esp-escolha" id="pessoa-clientes-caixa">
+          <legend>Clientes que ela acessa</legend>
+          <div class="marcas" id="pessoa-clientes"></div>
+        </fieldset>
+        <p class="mensagem erro" id="pessoa-erro" role="alert"></p>
+        <div class="acoes"><button class="botao" type="submit">Cadastrar</button></div>
+      </form>
+    </section>
+    </div>
+  </section>
+
   <section class="tela" id="tela-recebido" hidden>
     <p class="sobretitulo">Recebido de outro app</p>
     <h1 id="recebido-titulo">Conteúdo compartilhado</h1>
@@ -270,6 +333,7 @@
 <script src="casas.js"></script>
 <script src="geral.js"></script>
 <script src="proposicoes.js"></script>
+<script src="equipe.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -51,6 +51,15 @@ select net.http_post(
 );
 ```
 
+## Clientes e pessoas
+Rode `supabase/clientes.sql` uma vez no SQL Editor, depois de `esquema.sql`. Cada cliente (Magistratura, ATRICON...)
+tem banco próprio de especialidades, palavras-chave, proposições monitoradas, novas e alertas. Quem já tinha login
+vira administrador. No app, o botão **Configurações** abre:
+- para todos: nome e senha;
+- para administradores: criar, renomear e apagar clientes; cadastrar pessoas com senha provisória; marcar quem é
+  administrador (vê todos os clientes) e quais clientes cada pessoa acessa. O cadastro usa a função `gerenciar-pessoas`.
+Os alertas são publicados pelo Table Editor escolhendo o cliente na coluna `cliente_id`. A coleta diária roda para cada cliente.
+
 ## Prévia dentro do Claude
 
 `python3 ferramentas/montar-previa.py . app-panorama.html` gera uma página única em modo de demonstração.
