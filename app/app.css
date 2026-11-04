@@ -49,7 +49,6 @@ form { display: grid; gap: .6rem; }
 label { font-size: .9rem; font-weight: 400; }
 input { font: inherit; font-size: 1rem; padding: .8rem .9rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--text); width: 100%; }
 input:focus { border-color: var(--navy); outline: none; box-shadow: 0 0 0 3px rgba(34, 53, 95, .15); }
-#codigo { letter-spacing: .3em; font-size: 1.2rem; }
 .mensagem { min-height: 1.4em; font-size: .9rem; }
 .mensagem.erro { color: var(--erro); }
 .caixa-demo { display: grid; gap: .75rem; padding: 1rem; background: var(--surface); border-radius: 12px; font-size: .9rem; }
