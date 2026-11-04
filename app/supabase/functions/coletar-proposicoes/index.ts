@@ -10,7 +10,7 @@ const cors = {
 
 type Candidata = {
   id_externo: string; casa: 'CD' | 'SF'; sigla: string; numero: string; ano: string; ementa: string;
-  autor?: string; situacao?: string; data_apresentacao: string | null; url: string; tema_casa?: string;
+  autor?: string; situacao?: string; data_apresentacao: string | null; url: string; tema_casa?: string; url_inteiro_teor?: string;
 };
 
 const dia = (d: Date) => d.toISOString().slice(0, 10);
@@ -51,6 +51,7 @@ async function senado(inicio: string, fim: string): Promise<Candidata[]> {
       ementa: p.ementa ?? '', autor: p.autoria ?? '', situacao: p.situacaoAtual ?? '',
       data_apresentacao: (p.dataApresentacao ?? '').slice(0, 10) || null,
       url: p.codigoMateria ? `https://www25.senado.leg.br/web/atividade/materias/-/materia/${p.codigoMateria}` : '',
+      url_inteiro_teor: p.urlDocumento ?? '',
     }];
   });
 }

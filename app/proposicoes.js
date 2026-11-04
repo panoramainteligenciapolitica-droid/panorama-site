@@ -286,6 +286,7 @@
             P.avisar('Descartada'); renderPainel();
           }, function () { P.avisar('Não foi possível descartar'); });
         } }),
+        el('button', { type: 'button', text: 'Inteiro teor', onclick: function () { abrirTeor(c, 'candidatas'); } }),
         linkCasa(c)
       ])
     ]);
@@ -415,7 +416,8 @@
           }))
         ]) : null,
         el('div', { class: 'acoes' }, [
-          el('button', { class: 'botao', type: 'button', text: 'Editar', onclick: function () { P.irPara('?editar=' + encodeURIComponent(p.id)); } }),
+          el('button', { class: 'botao', type: 'button', text: 'Ler inteiro teor', onclick: function () { abrirTeor(p, 'proposicoes'); } }),
+          el('button', { class: 'botao botao-linha', type: 'button', text: 'Editar', onclick: function () { P.irPara('?editar=' + encodeURIComponent(p.id)); } }),
           el('button', { class: 'botao botao-linha', type: 'button', text: 'Compartilhar', onclick: function () { compartilharProp(p); } }),
           parar
         ]),
@@ -430,6 +432,160 @@
       navigator.share({ title: ident(p), text: texto }).catch(function (e) { if (e && e.name !== 'AbortError') P.copiar(texto); });
     } else P.copiar(texto);
   }
+
+  // ---------- inteiro teor: janela com leitura, download e compartilhamento ----------
+  var TIPOS = { PL: 'PROJETO DE LEI', PLP: 'PROJETO DE LEI COMPLEMENTAR', PEC: 'PROPOSTA DE EMENDA À CONSTITUIÇÃO', PDL: 'PROJETO DE DECRETO LEGISLATIVO', MPV: 'MEDIDA PROVISÓRIA', REQ: 'REQUERIMENTO' };
+  function teorExemplo(p) {
+    var cabeca = (TIPOS[p.sigla] || p.sigla) + ' Nº ' + p.numero + ', DE ' + p.ano;
+    var aviso = '(Texto de exemplo, criado para a demonstração do app)';
+    if (p.sigla === 'REQ') {
+      return [cabeca, aviso, 'Senhor Presidente,', 'Requeiro, nos termos regimentais, ' + p.ementa.replace(/^Requer /, '').replace(/^a /, 'a ') ,
+        'JUSTIFICAÇÃO', 'O tema exige debate com o setor produtivo, os órgãos de governo e especialistas, para subsidiar a análise das proposições em tramitação.',
+        'Sala das Sessões, em ' + dataCurta(p.data_apresentacao) + '.'].join('\n\n');
+    }
+    var objeto = p.ementa.charAt(0).toLowerCase() + p.ementa.slice(1).replace(/\.$/, '');
+    return [cabeca, aviso, '(' + p.ementa + ')', (p.sigla === 'PEC' ? 'As Mesas da Câmara dos Deputados e do Senado Federal, nos termos do § 3º do art. 60 da Constituição Federal, promulgam a seguinte Emenda ao texto constitucional:' : 'O CONGRESSO NACIONAL decreta:'),
+      'Art. 1º Esta ' + (p.sigla === 'PEC' ? 'Emenda Constitucional' : 'Lei') + ' ' + objeto + '.',
+      'Art. 2º O Poder Executivo regulamentará o disposto nesta ' + (p.sigla === 'PEC' ? 'Emenda' : 'Lei') + ' no prazo de cento e oitenta dias.',
+      'Art. 3º Esta ' + (p.sigla === 'PEC' ? 'Emenda Constitucional' : 'Lei') + ' entra em vigor na data de sua publicação.',
+      'JUSTIFICAÇÃO', 'A proposta busca dar segurança jurídica ao tema e atualizar a legislação diante das mudanças recentes no setor.',
+      'Sala das Sessões, em ' + dataCurta(p.data_apresentacao) + '.'].join('\n\n');
+  }
+
+  // No app real, a função inteiro-teor no Supabase baixa o PDF da Casa e extrai o texto; o texto fica guardado
+  function obterTeor(p, tabela) {
+    if (p.inteiro_teor) return Promise.resolve({ texto: p.inteiro_teor, url: p.url_inteiro_teor || '' });
+    if (p.exemplo || P.estado.demo) return Promise.resolve({ texto: teorExemplo(p), url: p.url_inteiro_teor || '' });
+    return P.sb.functions.invoke('inteiro-teor', { body: { casa: p.casa, id_externo: p.id_externo || null, url: p.url_inteiro_teor || null } }).then(function (r) {
+      if (r.error) throw r.error;
+      var d = r.data || {};
+      p.url_inteiro_teor = d.url || p.url_inteiro_teor || '';
+      if (d.texto) {
+        p.inteiro_teor = d.texto;
+        if (tabela && p.id) banco.atualizar(tabela, p.id, { inteiro_teor: d.texto, url_inteiro_teor: p.url_inteiro_teor }).catch(function () {});
+      }
+      return { texto: d.texto || '', url: p.url_inteiro_teor };
+    });
+  }
+
+  var teor = null;
+  function nomeArquivo(p, ext) { return [p.sigla, p.numero, p.ano, CASAS[p.casa]].join('-').replace(/[^\wÀ-ú-]+/g, '') + '.' + ext; }
+  function abrirTeor(p, tabela) {
+    var d = $('dialogo-teor');
+    teor = { p: p, texto: '', url: '' };
+    $('teor-titulo').textContent = ident(p);
+    $('teor-sub').textContent = 'Inteiro teor · ' + CASAS[p.casa];
+    $('teor-texto').textContent = 'Carregando o texto…';
+    $('teor-aviso').hidden = true;
+    estadoBotoesTeor(false);
+    if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+    obterTeor(p, tabela).then(function (r) {
+      if (!teor || teor.p !== p) return;
+      teor.texto = r.texto; teor.url = r.url;
+      $('teor-texto').textContent = r.texto || '';
+      if (!r.texto) {
+        $('teor-aviso').hidden = false;
+        $('teor-aviso').textContent = r.url ? 'Não foi possível extrair o texto deste documento. Abra o PDF original.' : 'A Casa ainda não publicou o inteiro teor desta proposição.';
+      }
+      estadoBotoesTeor(Boolean(r.texto));
+    }, function () {
+      $('teor-texto').textContent = '';
+      $('teor-aviso').hidden = false;
+      $('teor-aviso').textContent = 'Não foi possível buscar o inteiro teor agora. Verifique a conexão e tente de novo.';
+    });
+  }
+  function estadoBotoesTeor(temTexto) {
+    ['teor-compartilhar', 'teor-txt', 'teor-doc', 'teor-copiar'].forEach(function (id) { $(id).disabled = !temTexto; });
+    var pdf = $('teor-pdf');
+    pdf.hidden = !(teor && teor.url);
+    if (teor && teor.url) pdf.href = teor.url;
+  }
+  function fecharTeor() { var d = $('dialogo-teor'); if (d.close) d.close(); else d.removeAttribute('open'); teor = null; }
+  // Dentro do Claude a página não pode baixar sozinha: pede ao visualizador (capacidade downloads); no app, link comum
+  function baixar(nome, conteudo, tipo) {
+    var blob = new Blob([conteudo], { type: tipo });
+    var pelaPagina = function () {
+      var url = URL.createObjectURL(blob);
+      var a = el('a', { href: url, download: nome });
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      P.avisar('Download iniciado: ' + nome);
+    };
+    if (!window.claude || !window.claude.use) { pelaPagina(); return; }
+    window.claude.use('downloads').then(function (d) {
+      if (!d) { pelaPagina(); return; }
+      d.save({ filename: nome, data: blob }).then(function () { P.avisar('Arquivo salvo: ' + nome); }, function (e) {
+        if (!e || e.code !== 'declined') P.avisar('Não foi possível baixar aqui');
+      });
+    }, pelaPagina);
+  }
+  function escaparXml(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  // .docx de verdade, sem biblioteca: um zip sem compressão com as três partes mínimas do Word
+  var tabelaCrc = null;
+  function crc32(bytes) {
+    if (!tabelaCrc) {
+      tabelaCrc = new Uint32Array(256);
+      for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; tabelaCrc[n] = c >>> 0; }
+    }
+    var crc = 0xFFFFFFFF;
+    for (var i = 0; i < bytes.length; i++) crc = tabelaCrc[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  function zip(arquivos) {
+    var enc = new TextEncoder(), partes = [], central = [], pos = 0;
+    arquivos.forEach(function (f) {
+      var nome = enc.encode(f.nome), dados = enc.encode(f.conteudo), crc = crc32(dados);
+      var cab = new DataView(new ArrayBuffer(30));
+      cab.setUint32(0, 0x04034b50, true); cab.setUint16(4, 20, true); cab.setUint16(6, 0x0800, true);
+      cab.setUint32(14, crc, true); cab.setUint32(18, dados.length, true); cab.setUint32(22, dados.length, true); cab.setUint16(26, nome.length, true);
+      var cen = new DataView(new ArrayBuffer(46));
+      cen.setUint32(0, 0x02014b50, true); cen.setUint16(4, 20, true); cen.setUint16(6, 20, true); cen.setUint16(8, 0x0800, true);
+      cen.setUint32(16, crc, true); cen.setUint32(20, dados.length, true); cen.setUint32(24, dados.length, true); cen.setUint16(28, nome.length, true); cen.setUint32(42, pos, true);
+      partes.push(new Uint8Array(cab.buffer), nome, dados);
+      central.push(new Uint8Array(cen.buffer), nome);
+      pos += 30 + nome.length + dados.length;
+    });
+    var tamCentral = central.reduce(function (t, p) { return t + p.length; }, 0);
+    var fim = new DataView(new ArrayBuffer(22));
+    fim.setUint32(0, 0x06054b50, true); fim.setUint16(8, arquivos.length, true); fim.setUint16(10, arquivos.length, true);
+    fim.setUint32(12, tamCentral, true); fim.setUint32(16, pos, true);
+    return new Blob(partes.concat(central, [new Uint8Array(fim.buffer)]));
+  }
+  function docx(texto) {
+    var cabecalho = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+    var paragrafos = texto.split(/\n{2,}/).map(function (par, i) {
+      var linhas = par.split('\n').map(function (l) { return '<w:t xml:space="preserve">' + escaparXml(l) + '</w:t>'; }).join('<w:br/>');
+      return '<w:p><w:r>' + (i === 0 ? '<w:rPr><w:b/></w:rPr>' : '') + linhas + '</w:r></w:p>';
+    }).join('');
+    return zip([
+      { nome: '[Content_Types].xml', conteudo: cabecalho + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>' },
+      { nome: '_rels/.rels', conteudo: cabecalho + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>' },
+      { nome: 'word/document.xml', conteudo: cabecalho + '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' + paragrafos + '<w:sectPr/></w:body></w:document>' }
+    ]);
+  }
+
+  $('teor-fechar').addEventListener('click', fecharTeor);
+  $('dialogo-teor').addEventListener('click', function (ev) { if (ev.target === this) fecharTeor(); });
+  $('dialogo-teor').addEventListener('close', function () { teor = null; });
+  $('teor-copiar').addEventListener('click', function () {
+    if (!teor) return;
+    var t = teor.texto;
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { P.avisar('Texto copiado'); }, function () { P.avisar('Não foi possível copiar'); });
+  });
+  $('teor-txt').addEventListener('click', function () { if (teor) baixar(nomeArquivo(teor.p, 'txt'), teor.texto, 'text/plain;charset=utf-8'); });
+  $('teor-doc').addEventListener('click', function () {
+    if (teor) baixar(nomeArquivo(teor.p, 'docx'), docx(teor.texto), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  });
+  $('teor-compartilhar').addEventListener('click', function () {
+    if (!teor) return;
+    var p = teor.p, resumo = ident(p) + ' (' + CASAS[p.casa] + ')\n' + p.ementa + (teor.url ? '\nInteiro teor: ' + teor.url : '');
+    var arquivo = typeof File === 'function' ? new File([teor.texto], nomeArquivo(p, 'txt'), { type: 'text/plain' }) : null;
+    // Com arquivo quando o sistema aceita (WhatsApp, e-mail); senão o resumo com o link do PDF
+    var dadosShare = arquivo && navigator.canShare && navigator.canShare({ files: [arquivo] }) ? { title: ident(p), text: resumo, files: [arquivo] } : { title: ident(p), text: resumo };
+    if (navigator.share) navigator.share(dadosShare).catch(function (e) { if (e && e.name !== 'AbortError') P.copiar(resumo); });
+    else P.copiar(resumo);
+  });
 
   // ---------- cadastro e edição ----------
   var form = { editando: null, candidata: null, origem: 'manual', temporizador: null };
@@ -454,6 +610,8 @@
       $('fp-data').value = origem.data_apresentacao ? String(origem.data_apresentacao).slice(0, 10) : '';
       $('fp-situacao').value = origem.situacao || '';
       $('fp-url').value = origem.url || '';
+      $('fp-teor-url').value = origem.url_inteiro_teor || '';
+      $('fp-teor').value = (base && base.inteiro_teor) || '';
       $('fp-prioridade').value = (base && base.prioridade) || 'media';
       $('fp-posicao').value = (base && base.posicionamento) || 'analise';
       $('fp-proximo').value = (base && base.proximo_passo) || '';
@@ -520,6 +678,7 @@
       casa: $('fp-casa').value, sigla: $('fp-sigla').value.trim().toUpperCase(), numero: $('fp-numero').value.trim().replace(/^0+(?=\d)/, ''),
       ano: $('fp-ano').value.trim(), ementa: $('fp-ementa').value.trim(), autor: $('fp-autor').value.trim(),
       data_apresentacao: $('fp-data').value || null, situacao: $('fp-situacao').value.trim(), url: $('fp-url').value.trim(),
+      url_inteiro_teor: $('fp-teor-url').value.trim(), inteiro_teor: $('fp-teor').value.trim() || (form.candidata && form.candidata.inteiro_teor) || null,
       prioridade: $('fp-prioridade').value, posicionamento: $('fp-posicao').value,
       proximo_passo: $('fp-proximo').value.trim(), notas: $('fp-notas').value.trim(), origem_especialidade: form.origem
     };
@@ -527,7 +686,7 @@
     if (!/^\d{1,6}$/.test(p.numero)) { erro.textContent = 'Informe o número da proposição.'; return; }
     if (!/^\d{4}$/.test(p.ano)) { erro.textContent = 'Informe o ano com quatro dígitos.'; return; }
     if (p.ementa.length < 10) { erro.textContent = 'Escreva a ementa: ela é a base da comparação com as outras proposições.'; return; }
-    if (p.url && !/^https?:\/\//.test(p.url)) { erro.textContent = 'O link precisa começar com https://'; return; }
+    if ((p.url && !/^https?:\/\//.test(p.url)) || (p.url_inteiro_teor && !/^https?:\/\//.test(p.url_inteiro_teor))) { erro.textContent = 'Os links precisam começar com https://'; return; }
     var repetida = dados.proposicoes.find(function (x) { return chave(x) === chave(p) && (!form.editando || x.id !== form.editando.id); });
     if (repetida) { erro.textContent = ident(p) + ' do ' + CASAS[p.casa] + ' já está sendo monitorada.'; return; }
     if (form.candidata) { p.id_externo = form.candidata.id_externo; p.tema_casa = form.candidata.tema_casa || ''; if (form.candidata.exemplo) p.exemplo = true; }

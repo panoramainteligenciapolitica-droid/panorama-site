@@ -106,3 +106,9 @@ begin
     execute format('create policy "Equipe com login usa %1$s" on public.%1$I for all to authenticated using (true) with check (true)', t);
   end loop;
 end $$;
+
+-- Inteiro teor: link do PDF na Casa e o texto extraído (guardado na primeira leitura)
+alter table public.proposicoes add column if not exists url_inteiro_teor text;
+alter table public.proposicoes add column if not exists inteiro_teor text;
+alter table public.candidatas add column if not exists url_inteiro_teor text;
+alter table public.candidatas add column if not exists inteiro_teor text;

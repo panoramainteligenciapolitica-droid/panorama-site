@@ -180,6 +180,8 @@
       <label>Próximo passo<input id="fp-proximo" placeholder="Ex.: Reunião com o relator até sexta"></label>
       <label>Notas<textarea id="fp-notas" rows="3"></textarea></label>
       <label>Link na Casa<input id="fp-url" type="url" placeholder="https://"></label>
+      <label>Link do inteiro teor (PDF)<input id="fp-teor-url" type="url" placeholder="https://"></label>
+      <label>Texto do inteiro teor <span class="discreto">(opcional, se quiser colar)</span><textarea id="fp-teor" rows="3"></textarea></label>
       <p class="mensagem erro" id="fp-erro" role="alert"></p>
       <div class="acoes">
         <button class="botao" type="submit" id="fp-salvar">Salvar e monitorar</button>
@@ -200,6 +202,25 @@
   </section>
 
 </main>
+
+<dialog class="dialogo-teor" id="dialogo-teor" aria-labelledby="teor-titulo">
+  <div class="teor-cabeca">
+    <div>
+      <p class="sobretitulo" id="teor-sub"></p>
+      <h2 id="teor-titulo">Inteiro teor</h2>
+    </div>
+    <button type="button" class="fechar" id="teor-fechar" aria-label="Fechar">×</button>
+  </div>
+  <div class="teor-acoes">
+    <button type="button" class="botao botao-pequeno" id="teor-compartilhar">Compartilhar</button>
+    <button type="button" class="botao botao-pequeno botao-linha" id="teor-txt">Baixar texto (.txt)</button>
+    <button type="button" class="botao botao-pequeno botao-linha" id="teor-doc">Baixar para Word (.docx)</button>
+    <a class="botao botao-pequeno botao-linha" id="teor-pdf" target="_blank" rel="noopener" hidden>PDF original</a>
+    <button type="button" class="botao-texto" id="teor-copiar">Copiar texto</button>
+  </div>
+  <p class="teor-aviso discreto" id="teor-aviso" hidden></p>
+  <div class="teor-texto" id="teor-texto" tabindex="0"></div>
+</dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

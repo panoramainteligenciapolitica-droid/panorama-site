@@ -29,7 +29,7 @@ Sem o Supabase configurado, o app abre em modo de demonstração com dados de ex
 Para ligar a coleta:
 
 1. Rode de novo `supabase/esquema.sql` (cria as tabelas de proposições).
-2. Edge Functions > Deploy a new function > Via Editor: nome `coletar-proposicoes`, cole `index.ts` e publique.
+2. Edge Functions > Deploy a new function > Via Editor: publique `coletar-proposicoes` e `inteiro-teor`, cada uma com o seu `index.ts`.
 3. Database > Extensions: ligue `pg_cron` e `pg_net`. Depois rode `supabase/agendamento.sql` no SQL Editor.
 
 ## Prévia dentro do Claude
