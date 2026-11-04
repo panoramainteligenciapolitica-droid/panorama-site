@@ -112,3 +112,25 @@ alter table public.proposicoes add column if not exists url_inteiro_teor text;
 alter table public.proposicoes add column if not exists inteiro_teor text;
 alter table public.candidatas add column if not exists url_inteiro_teor text;
 alter table public.candidatas add column if not exists inteiro_teor text;
+
+-- Aba Geral: uma linha por proposição apresentada (tudo o que a coleta diária trouxe), para contar por tipo e período
+create table if not exists public.entradas (
+  id_externo text primary key,
+  casa text not null check (casa in ('CD', 'SF')),
+  sigla text not null,
+  data_apresentacao date not null,
+  coletado_em timestamptz not null default now()
+);
+create index if not exists entradas_data_idx on public.entradas (data_apresentacao);
+alter table public.entradas enable row level security;
+drop policy if exists "Equipe com login lê entradas" on public.entradas;
+create policy "Equipe com login lê entradas" on public.entradas for select to authenticated using (true);
+
+create or replace function public.contar_entradas(inicio date, fim date)
+returns table (casa text, sigla text, total bigint)
+language sql stable security invoker set search_path = public as $$
+  select e.casa, e.sigla, count(*) from public.entradas e
+  where e.data_apresentacao between inicio and fim
+  group by e.casa, e.sigla
+$$;
+grant execute on function public.contar_entradas(date, date) to authenticated;

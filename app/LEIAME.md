@@ -32,6 +32,22 @@ Para ligar a coleta:
 2. Edge Functions > Deploy a new function > Via Editor: publique `coletar-proposicoes` e `inteiro-teor`, cada uma com o seu `index.ts`.
 3. Database > Extensions: ligue `pg_cron` e `pg_net`. Depois rode `supabase/agendamento.sql` no SQL Editor.
 
+## Aba Geral (entradas por tipo)
+
+Conta quantas proposições deram entrada nas duas Casas, por tipo (PL, PEC, REQ...), no período escolhido: último dia com registros, 7 dias, 15 dias, semana atual, mês atual ou datas livres.
+
+- Os números vêm da tabela `entradas`, que a coleta diária preenche com tudo o que foi apresentado. Rode de novo `supabase/esquema.sql` para criá-la, junto com a função `contar_entradas`.
+- A contagem começa no dia em que a coleta passar a rodar. Para preencher meses passados, chame a função com um período de até 31 dias por vez, por exemplo no SQL Editor:
+
+```sql
+select net.http_post(
+  url := 'https://crshelcvnyisecueknzd.supabase.co/functions/v1/coletar-proposicoes',
+  headers := '{"Content-Type": "application/json", "Authorization": "Bearer <chave anon>"}'::jsonb,
+  body := '{"inicio": "2026-10-01", "fim": "2026-10-31", "soEntradas": true}'::jsonb,
+  timeout_milliseconds := 150000
+);
+```
+
 ## Prévia dentro do Claude
 
 `python3 ferramentas/montar-previa.py . app-panorama.html` gera uma página única em modo de demonstração.

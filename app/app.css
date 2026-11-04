@@ -198,3 +198,30 @@ select { font: inherit; font-size: .95rem; padding: .6rem .7rem; border: 1px sol
 .teor-aviso { padding: .75rem 1.1rem 0; font-size: .88rem; }
 .teor-texto { overflow-y: auto; padding: 1rem 1.1rem 1.4rem; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; font-size: .95rem; min-height: 8rem; }
 .teor-texto:focus-visible { outline-offset: -3px; }
+
+/* Aba Geral: entradas por tipo */
+.titulo-geral { margin: 1.1rem 0 0; font-size: 1rem; }
+#periodo-geral { flex-wrap: wrap; }
+.linha-datas { display: flex; flex-wrap: wrap; gap: .5rem 1rem; padding-top: .6rem; font-size: .85rem; color: var(--muted); }
+.linha-datas label { display: flex; align-items: center; gap: .4rem; }
+.linha-datas input { padding: .4rem .5rem; font-size: .9rem; }
+.total-geral { margin: 1.1rem 0 .6rem; color: var(--muted); font-size: .9rem; }
+.total-geral b { display: block; font-size: 2.2rem; line-height: 1.1; font-weight: 500; color: var(--text); font-variant-numeric: tabular-nums; }
+.rolagem-tabela { overflow-x: auto; }
+.tabela-tipos { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.tabela-tipos th, .tabela-tipos td { padding: .55rem .4rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.tabela-tipos thead th { font-size: .75rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.tabela-tipos tbody th { font-weight: 300; }
+.tabela-tipos .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tabela-tipos tbody tr:hover { background: var(--surface); }
+.sigla-tipo { display: block; font-weight: 500; }
+.nome-tipo { display: block; font-size: .76rem; color: var(--muted); line-height: 1.3; }
+.tabela-tipos .total { width: 1%; }
+.tabela-tipos .total .valor { display: inline-block; min-width: 2.6rem; font-weight: 500; }
+.trilho { display: inline-block; width: 4.5rem; height: 8px; margin-right: .5rem; vertical-align: middle; }
+.barra-tipo { display: block; height: 100%; background: var(--navy); border-radius: 0 4px 4px 0; }
+.outros .sigla-tipo { font-weight: 400; color: var(--muted); }
+.outros .barra-tipo { background: #9aa6bd; }
+.nota-geral { margin-top: .75rem; font-size: .8rem; }
+.so-leitor { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 380px) { .trilho { width: 2.5rem; } }

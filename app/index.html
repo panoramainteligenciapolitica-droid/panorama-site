@@ -72,11 +72,36 @@
   <section class="tela" id="tela-inicio" hidden>
     <p class="faixa-demo" id="faixa-demo" hidden>Demonstração com dados de exemplo</p>
     <div class="abas" role="tablist" aria-label="Seções">
-      <button role="tab" type="button" id="aba-proposicoes" aria-selected="true" aria-controls="painel-proposicoes">Proposições</button>
+      <button role="tab" type="button" id="aba-geral" aria-selected="true" aria-controls="painel-geral">Geral</button>
+      <button role="tab" type="button" id="aba-proposicoes" aria-selected="false" aria-controls="painel-proposicoes">Proposições</button>
       <button role="tab" type="button" id="aba-alertas" aria-selected="false" aria-controls="painel-alertas">Alertas</button>
       <button role="tab" type="button" id="aba-recebidos" aria-selected="false" aria-controls="painel-recebidos">Recebidos</button>
     </div>
-    <div role="tabpanel" id="painel-proposicoes" aria-labelledby="aba-proposicoes">
+    <div role="tabpanel" id="painel-geral" aria-labelledby="aba-geral">
+      <h2 class="titulo-geral">Proposições apresentadas</h2>
+      <div class="chips-filtro" id="periodo-geral" role="group" aria-label="Período">
+        <button type="button" data-periodo="dia" aria-pressed="false">Último dia</button>
+        <button type="button" data-periodo="7" aria-pressed="true">7 dias</button>
+        <button type="button" data-periodo="15" aria-pressed="false">15 dias</button>
+        <button type="button" data-periodo="semana" aria-pressed="false">Esta semana</button>
+        <button type="button" data-periodo="mes" aria-pressed="false">Este mês</button>
+        <button type="button" data-periodo="livre" aria-pressed="false">Escolher datas</button>
+      </div>
+      <div class="linha-datas" id="datas-geral" hidden>
+        <label>De <input type="date" id="geral-inicio"></label>
+        <label>até <input type="date" id="geral-fim"></label>
+      </div>
+      <div class="chips-filtro" id="casa-geral" role="group" aria-label="Casa">
+        <button type="button" data-casa="" aria-pressed="true">Câmara e Senado</button>
+        <button type="button" data-casa="CD" aria-pressed="false">Câmara</button>
+        <button type="button" data-casa="SF" aria-pressed="false">Senado</button>
+      </div>
+      <div class="total-geral" id="total-geral" aria-live="polite"></div>
+      <div class="rolagem-tabela"><table class="tabela-tipos" id="tabela-geral"></table></div>
+      <button class="botao-texto" type="button" id="todos-tipos" hidden></button>
+      <p class="discreto nota-geral" id="nota-geral"></p>
+    </div>
+    <div role="tabpanel" id="painel-proposicoes" aria-labelledby="aba-proposicoes" hidden>
       <div class="resumo-prop" id="resumo-prop"></div>
       <div class="subabas" role="group" aria-label="Proposições">
         <button type="button" id="sub-monitoradas" aria-pressed="true">Monitoradas</button>
@@ -227,6 +252,7 @@
 <script src="vendor/supabase-2.45.4.js"></script>
 <script src="config.js"></script>
 <script src="similaridade.js"></script>
+<script src="geral.js"></script>
 <script src="proposicoes.js"></script>
 <script src="app.js"></script>
 </body>

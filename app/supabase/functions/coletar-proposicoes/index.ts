@@ -1,6 +1,8 @@
 // Coleta as proposições apresentadas ontem e hoje na Câmara e no Senado e guarda em "candidatas".
 // Roda todo dia pelo agendamento (agendamento.sql) e quando alguém toca em "Buscar agora" no app.
 // Traz tudo o que foi apresentado: o app decide o que mostrar (palavras-chave e semelhança com as monitoradas).
+// Tudo o que chega também vai para "entradas", que alimenta a contagem por tipo da aba Geral.
+// Para preencher dias passados: corpo {"inicio": "2026-10-01", "fim": "2026-10-31", "soEntradas": true}, até 31 dias por vez.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 
 const cors = {
@@ -27,7 +29,7 @@ async function camara(inicio: string, fim: string): Promise<Candidata[]> {
   const itens: any[] = [];
   let url: string | undefined = 'https://dadosabertos.camara.leg.br/api/v2/proposicoes' +
     `?dataApresentacaoInicio=${inicio}&dataApresentacaoFim=${fim}&itens=100&ordem=ASC&ordenarPor=id`;
-  for (let paginas = 0; url && paginas < 30; paginas++) {
+  for (let paginas = 0; url && paginas < 120; paginas++) {
     const j = await json(url);
     itens.push(...(j.dados ?? []));
     url = (j.links ?? []).find((l: any) => l.rel === 'next')?.href;
@@ -74,12 +76,34 @@ Deno.serve(async (req) => {
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const hoje = new Date(), ontem = new Date(hoje.getTime() - 864e5);
   const erros: string[] = [];
+  const corpo = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+  const dataValida = (t: unknown) => typeof t === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t);
+  let inicio = dia(ontem), fim = dia(hoje);
+  if (dataValida(corpo.inicio) && dataValida(corpo.fim) && corpo.inicio <= corpo.fim) {
+    if (Date.parse(corpo.fim) - Date.parse(corpo.inicio) > 31 * 864e5) {
+      return new Response(JSON.stringify({ erros: ['Use no máximo 31 dias por vez'] }), { headers: { ...cors, 'Content-Type': 'application/json' }, status: 400 });
+    }
+    inicio = corpo.inicio; fim = corpo.fim;
+  }
 
   const [cd, sf] = await Promise.all([
-    camara(dia(ontem), dia(hoje)).catch((e) => { erros.push(String(e)); return []; }),
-    senado(dia(ontem), dia(hoje)).catch((e) => { erros.push(String(e)); return []; }),
+    camara(inicio, fim).catch((e) => { erros.push(String(e)); return []; }),
+    senado(inicio, fim).catch((e) => { erros.push(String(e)); return []; }),
   ]);
   let coletadas = [...cd, ...sf];
+
+  // Contagem da aba Geral: guarda tudo o que foi apresentado, monitorado ou não
+  const entradas = coletadas.filter((c) => c.data_apresentacao)
+    .map((c) => ({ id_externo: c.id_externo, casa: c.casa, sigla: c.sigla, data_apresentacao: c.data_apresentacao }));
+  for (let i = 0; i < entradas.length; i += 500) {
+    const { error } = await sb.from('entradas').upsert(entradas.slice(i, i + 500), { onConflict: 'id_externo' });
+    if (error) erros.push(error.message);
+  }
+  if (corpo.soEntradas) {
+    return new Response(JSON.stringify({ entradas: entradas.length, camara: cd.length, senado: sf.length, erros }), {
+      headers: { ...cors, 'Content-Type': 'application/json' },
+    });
+  }
 
   // Não traz de volta o que já é monitorado
   const { data: monitoradas } = await sb.from('proposicoes').select('casa, sigla, numero, ano');

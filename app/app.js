@@ -109,7 +109,7 @@
   // ---------- telas ----------
   function renderInicio(aba) {
     mostrar('tela-inicio');
-    selecionarAba(aba || 'proposicoes');
+    selecionarAba(aba || estado.aba || 'geral');
     var lista = $('lista-alertas');
     lista.replaceChildren(el('li', { class: 'vazio', text: 'Carregando alertas…' }));
     listarAlertas().then(function (alertas) {
@@ -145,7 +145,8 @@
   }
 
   function selecionarAba(nome) {
-    ['proposicoes', 'alertas', 'recebidos'].forEach(function (n) {
+    estado.aba = nome;
+    ['geral', 'proposicoes', 'alertas', 'recebidos'].forEach(function (n) {
       $('aba-' + n).setAttribute('aria-selected', String(n === nome));
       $('painel-' + n).hidden = n !== nome;
     });
@@ -267,6 +268,7 @@
   });
 
   // ---------- botões das telas ----------
+  $('aba-geral').addEventListener('click', function () { selecionarAba('geral'); });
   $('aba-proposicoes').addEventListener('click', function () { selecionarAba('proposicoes'); });
   $('aba-alertas').addEventListener('click', function () { selecionarAba('alertas'); });
   $('aba-recebidos').addEventListener('click', function () { selecionarAba('recebidos'); });
@@ -301,7 +303,7 @@
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function () { /* app segue sem modo offline */ }); });
   }
 
-  // ---------- módulos (proposicoes.js) ----------
+  // ---------- módulos (geral.js, proposicoes.js) ----------
   // Cada módulo recebe as utilidades do app e pode responder por rotas e abas próprias
   var modulos = (window.PanoramaModulos || []).map(function (iniciar) {
     return iniciar({ $: $, el: el, avisar: avisar, data: data, mostrar: mostrar, irPara: irPara, copiar: copiar,
