@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Panorama</title>
+<meta name="description" content="Área do cliente da Panorama Inteligência Política.">
+<meta name="theme-color" content="#22355f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="../assets/simbolo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Panorama">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="barra">
+  <a class="marca" href="./" aria-label="Panorama, início">
+    <svg viewBox="0 0 526.07 526.07" aria-hidden="true"><path d="M244.25,0h0C244.25,134.89,134.89,244.25,0,244.25h0v18.79h263.03V0h-18.79Z"/><path d="M281.82,526.07h0c0-134.89,109.35-244.25,244.25-244.25h0v-18.79h-263.03v263.03h18.79Z"/><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.73-93.94,66.42h187.88Z"/><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg>
+    <span>Panorama</span>
+  </a>
+  <button class="botao-barra" id="instalar" type="button" hidden>Instalar</button>
+  <button class="botao-barra" id="sair" type="button" hidden>Sair</button>
+</header>
+
+<div class="aviso-ios" id="aviso-ios" hidden>
+  <p>Para instalar no iPhone: toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</p>
+  <button type="button" id="fechar-aviso-ios" aria-label="Fechar aviso">×</button>
+</div>
+
+<main id="conteudo">
+
+  <section class="tela" id="tela-carregando" aria-busy="true">
+    <p class="discreto">Carregando…</p>
+  </section>
+
+  <section class="tela tela-login" id="tela-login" hidden>
+    <p class="sobretitulo">Área do cliente</p>
+    <h1>Entre para ver seus alertas</h1>
+
+    <form id="form-email" novalidate>
+      <label for="email">Seu e-mail</label>
+      <input id="email" type="email" autocomplete="email" inputmode="email" required placeholder="nome@empresa.com.br">
+      <button class="botao" type="submit">Receber código de acesso</button>
+    </form>
+
+    <form id="form-codigo" hidden novalidate>
+      <p>Enviamos um código para <b id="email-enviado"></b>. Digite-o abaixo ou toque no link do e-mail.</p>
+      <label for="codigo">Código de acesso</label>
+      <input id="codigo" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="10" required>
+      <button class="botao" type="submit">Entrar</button>
+      <button class="botao-texto" type="button" id="trocar-email">Usar outro e-mail</button>
+    </form>
+
+    <p class="mensagem" id="mensagem-login" role="status"></p>
+
+    <div class="caixa-demo" id="caixa-demo" hidden>
+      <p>O login ainda não foi configurado neste app. Você pode testar o app com as proposições reais da Câmara e do Senado.</p>
+      <button class="botao botao-linha" type="button" id="ver-demo">Testar o app</button>
+    </div>
+
+    <p class="rodape-login"><a href="/">Voltar para o site da Panorama</a></p>
+  </section>
+
+  <section class="tela" id="tela-inicio" hidden>
+    <p class="faixa-demo" id="faixa-demo" hidden>Modo de teste: proposições reais das Casas, guardadas só neste aparelho</p>
+    <div class="abas" role="tablist" aria-label="Seções">
+      <button role="tab" type="button" id="aba-geral" aria-selected="true" aria-controls="painel-geral">Geral</button>
+      <button role="tab" type="button" id="aba-proposicoes" aria-selected="false" aria-controls="painel-proposicoes">Proposições</button>
+      <button role="tab" type="button" id="aba-alertas" aria-selected="false" aria-controls="painel-alertas">Alertas</button>
+      <button role="tab" type="button" id="aba-recebidos" aria-selected="false" aria-controls="painel-recebidos">Recebidos</button>
+    </div>
+    <div role="tabpanel" id="painel-geral" aria-labelledby="aba-geral">
+      <h2 class="titulo-geral">Proposições apresentadas</h2>
+      <div class="chips-filtro" id="periodo-geral" role="group" aria-label="Período">
+        <button type="button" data-periodo="dia" aria-pressed="false">Último dia</button>
+        <button type="button" data-periodo="7" aria-pressed="true">7 dias</button>
+        <button type="button" data-periodo="15" aria-pressed="false">15 dias</button>
+        <button type="button" data-periodo="semana" aria-pressed="false">Esta semana</button>
+        <button type="button" data-periodo="mes" aria-pressed="false">Este mês</button>
+        <button type="button" data-periodo="livre" aria-pressed="false">Escolher datas</button>
+      </div>
+      <div class="linha-datas" id="datas-geral" hidden>
+        <label>De <input type="date" id="geral-inicio"></label>
+        <label>até <input type="date" id="geral-fim"></label>
+      </div>
+      <div class="chips-filtro" id="casa-geral" role="group" aria-label="Casa">
+        <button type="button" data-casa="" aria-pressed="true">Câmara e Senado</button>
+        <button type="button" data-casa="CD" aria-pressed="false">Câmara</button>
+        <button type="button" data-casa="SF" aria-pressed="false">Senado</button>
+      </div>
+      <div class="total-geral" id="total-geral" aria-live="polite"></div>
+      <div class="barra-geral" id="barra-geral" role="group" aria-label="Parte de cada tipo no total"></div>
+      <p class="dica-barra" id="dica-barra" aria-live="polite"></p>
+      <div class="rolagem-tabela"><table class="tabela-tipos" id="tabela-geral"></table></div>
+      <button class="botao-texto" type="button" id="todos-tipos" hidden></button>
+      <button class="botao-texto" type="button" id="incluir-docs" hidden></button>
+      <p class="discreto nota-geral" id="nota-geral"></p>
+    </div>
+    <div role="tabpanel" id="painel-proposicoes" aria-labelledby="aba-proposicoes" hidden>
+      <div class="resumo-prop" id="resumo-prop"></div>
+      <div class="subabas" role="group" aria-label="Proposições">
+        <button type="button" id="sub-monitoradas" aria-pressed="true">Monitoradas</button>
+        <button type="button" id="sub-novas" aria-pressed="false">Novas <span class="contador" id="contador-novas"></span></button>
+        <button type="button" id="sub-filtros" aria-pressed="false">Filtros</button>
+      </div>
+
+      <div id="vista-monitoradas">
+        <div class="barra-lista">
+          <input type="search" id="busca-prop" placeholder="Buscar por número, ementa ou autor" aria-label="Buscar proposições monitoradas">
+          <button class="botao botao-pequeno" type="button" id="nova-prop">Cadastrar</button>
+        </div>
+        <div class="chips-filtro" id="filtro-esp" role="group" aria-label="Filtrar por especialidade"></div>
+        <ul class="lista" id="lista-monitoradas"></ul>
+      </div>
+
+      <div id="vista-novas" hidden>
+        <div class="barra-coleta">
+          <p class="discreto" id="info-coleta"></p>
+          <button class="botao botao-pequeno botao-linha" type="button" id="buscar-agora">Buscar agora</button>
+        </div>
+        <ul class="lista" id="lista-novas"></ul>
+        <button class="botao-texto" type="button" id="mostrar-abaixo" hidden></button>
+      </div>
+
+      <div id="vista-filtros" hidden>
+        <section class="bloco">
+          <h2>Palavras-chave</h2>
+          <p class="discreto">A busca diária traz toda proposição nova cuja ementa tenha uma destas palavras, além das parecidas com as que você já monitora.</p>
+          <form class="linha-form" id="form-palavra" novalidate>
+            <input id="nova-palavra" type="text" placeholder="Ex.: crédito consignado" aria-label="Nova palavra-chave" required>
+            <select id="esp-palavra" aria-label="Especialidade da palavra-chave"></select>
+            <button class="botao botao-pequeno" type="submit">Adicionar</button>
+          </form>
+          <ul class="lista-simples" id="lista-palavras"></ul>
+        </section>
+        <section class="bloco">
+          <h2>Especialidades</h2>
+          <form class="linha-form" id="form-esp" novalidate>
+            <input id="nova-esp" type="text" placeholder="Nome da especialidade" aria-label="Nova especialidade" required>
+            <button class="botao botao-pequeno" type="submit">Criar</button>
+          </form>
+          <ul class="lista-simples" id="lista-esp"></ul>
+        </section>
+        <section class="bloco">
+          <h2>Similaridade mínima</h2>
+          <p class="discreto">Proposições sem palavra-chave só aparecem em Novas se forem pelo menos este tanto parecidas com uma que você já monitora.</p>
+          <div class="linha-limiar">
+            <input type="range" id="limiar" min="5" max="80" step="5" aria-label="Similaridade mínima">
+            <output id="limiar-valor" for="limiar"></output>
+          </div>
+        </section>
+      </div>
+    </div>
+    <div role="tabpanel" id="painel-alertas" aria-labelledby="aba-alertas" hidden>
+      <ul class="lista" id="lista-alertas"></ul>
+    </div>
+    <div role="tabpanel" id="painel-recebidos" aria-labelledby="aba-recebidos" hidden>
+      <p class="discreto explica">Conteúdo que você compartilhou de outros apps para a Panorama aparece aqui.</p>
+      <ul class="lista" id="lista-recebidos"></ul>
+    </div>
+  </section>
+
+  <section class="tela" id="tela-alerta" hidden>
+    <button class="botao-texto voltar" type="button" data-voltar>← Voltar</button>
+    <article id="alerta"></article>
+  </section>
+
+  <section class="tela" id="tela-entradas" hidden>
+    <button class="botao-texto voltar" type="button" data-voltar>← Voltar</button>
+    <h1 id="titulo-entradas"></h1>
+    <p class="casa-entradas" id="casa-entradas"></p>
+    <p class="discreto" id="sub-entradas" aria-live="polite"></p>
+    <ul class="lista" id="lista-entradas"></ul>
+    <button class="botao botao-linha" type="button" id="mais-entradas" hidden></button>
+  </section>
+
+  <section class="tela" id="tela-proposicao" hidden>
+    <button class="botao-texto voltar" type="button" data-voltar>← Voltar</button>
+    <article id="proposicao"></article>
+  </section>
+
+  <section class="tela" id="tela-form-prop" hidden>
+    <button class="botao-texto voltar" type="button" data-voltar>← Voltar</button>
+    <h1 id="titulo-form-prop">Cadastrar proposição</h1>
+    <form id="form-prop" class="form-prop" novalidate>
+      <div class="grade">
+        <label>Casa<select id="fp-casa"><option value="CD">Câmara</option><option value="SF">Senado</option></select></label>
+        <label>Tipo<input id="fp-sigla" list="tipos" required placeholder="PL"></label>
+        <label>Número<input id="fp-numero" inputmode="numeric" required></label>
+        <label>Ano<input id="fp-ano" inputmode="numeric" required maxlength="4"></label>
+      </div>
+      <datalist id="tipos"><option value="PL"><option value="PLP"><option value="PEC"><option value="MPV"><option value="PDL"><option value="PLN"><option value="REQ"></datalist>
+      <label>Ementa<textarea id="fp-ementa" rows="4" required></textarea></label>
+      <fieldset class="esp-escolha">
+        <legend>Especialidade</legend>
+        <div class="sugestoes" id="fp-sugestoes"></div>
+        <select id="fp-esp" aria-label="Especialidade"></select>
+        <input id="fp-esp-nova" type="text" placeholder="Nome da nova especialidade" aria-label="Nome da nova especialidade" hidden>
+      </fieldset>
+      <div class="grade grade-2">
+        <label>Prioridade<select id="fp-prioridade"><option value="alta">Alta</option><option value="media" selected>Média</option><option value="baixa">Baixa</option></select></label>
+        <label>Posicionamento<select id="fp-posicao"><option value="analise" selected>Em análise</option><option value="favoravel">Favorável</option><option value="contrario">Contrário</option><option value="acompanhar">Acompanhar</option></select></label>
+      </div>
+      <label>Autor<input id="fp-autor"></label>
+      <div class="grade grade-2">
+        <label>Apresentada em<input id="fp-data" type="date"></label>
+        <label>Situação atual<input id="fp-situacao" placeholder="Ex.: Aguardando parecer do relator"></label>
+      </div>
+      <label>Próximo passo<input id="fp-proximo" placeholder="Ex.: Reunião com o relator até sexta"></label>
+      <label>Notas<textarea id="fp-notas" rows="3"></textarea></label>
+      <label>Link na Casa<input id="fp-url" type="url" placeholder="https://"></label>
+      <label>Link do inteiro teor (PDF)<input id="fp-teor-url" type="url" placeholder="https://"></label>
+      <label>Texto do inteiro teor <span class="discreto">(opcional, se quiser colar)</span><textarea id="fp-teor" rows="3"></textarea></label>
+      <p class="mensagem erro" id="fp-erro" role="alert"></p>
+      <div class="acoes">
+        <button class="botao" type="submit" id="fp-salvar">Salvar e monitorar</button>
+        <button class="botao botao-linha" type="button" data-voltar>Cancelar</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="tela" id="tela-recebido" hidden>
+    <p class="sobretitulo">Recebido de outro app</p>
+    <h1 id="recebido-titulo">Conteúdo compartilhado</h1>
+    <p class="recebido-texto" id="recebido-texto"></p>
+    <p><a id="recebido-link" target="_blank" rel="noopener" hidden></a></p>
+    <div class="acoes">
+      <button class="botao" type="button" id="salvar-recebido">Salvar em Recebidos</button>
+      <button class="botao botao-linha" type="button" id="descartar-recebido">Descartar</button>
+    </div>
+  </section>
+
+</main>
+
+<dialog class="dialogo-teor" id="dialogo-teor" aria-labelledby="teor-titulo">
+  <div class="teor-cabeca">
+    <div>
+      <p class="sobretitulo" id="teor-sub"></p>
+      <h2 id="teor-titulo">Inteiro teor</h2>
+    </div>
+    <button type="button" class="fechar" id="teor-fechar" aria-label="Fechar">×</button>
+  </div>
+  <div class="teor-acoes">
+    <button type="button" class="botao botao-pequeno" id="teor-compartilhar">Compartilhar</button>
+    <a class="botao botao-pequeno botao-linha" id="teor-pdf" href="#" rel="noopener" hidden>Baixar PDF (.pdf)</a>
+    <button type="button" class="botao botao-pequeno botao-linha" id="teor-doc">Baixar para Word (.docx)</button>
+    <button type="button" class="botao-texto" id="teor-copiar">Copiar texto</button>
+  </div>
+  <p class="teor-aviso discreto" id="teor-aviso" hidden></p>
+  <div class="teor-texto" id="teor-texto" tabindex="0"></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="vendor/supabase-2.45.4.js"></script>
+<script src="config.js"></script>
+<script src="similaridade.js"></script>
+<script src="casas.js"></script>
+<script src="geral.js"></script>
+<script src="proposicoes.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
