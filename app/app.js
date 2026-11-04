@@ -10,7 +10,7 @@
   }) : null;
 
   var $ = function (id) { return document.getElementById(id); };
-  var estado = { demo: cfg.demo === true, sessao: null, emailLogin: '', notasDemo: [], busca: null };
+  var estado = { demo: cfg.demo === true, sessao: null, notasDemo: [], busca: null };
 
   // ---------- armazenamento local, que pode falhar em janela privada ----------
   function ler(chave) { try { return localStorage.getItem(chave); } catch (e) { return null; } }
@@ -213,56 +213,86 @@
     if (id) renderAlerta(id); else renderInicio(params.get('aba'));
   }
 
-  // ---------- login por código enviado ao e-mail ----------
-  // Código em vez de só link: no iPhone, o link do e-mail abre no Safari, que não divide o login com o app instalado.
+  // ---------- login com e-mail e senha ----------
+  // "Esqueci minha senha" manda um link; ao abrir o link, o app pede a senha nova (evento PASSWORD_RECOVERY).
+  // A senha vale também no app instalado no iPhone, que não divide o login com o Safari.
   function renderLogin() {
     mostrar('tela-login');
     $('caixa-demo').hidden = configurado;
     $('form-email').hidden = !configurado;
-    $('form-codigo').hidden = true;
+    $('form-nova-senha').hidden = true;
     mensagem('');
   }
+  function renderNovaSenha() {
+    mostrar('tela-login');
+    $('caixa-demo').hidden = true;
+    $('form-email').hidden = true;
+    $('form-nova-senha').hidden = false;
+    $('email-nova-senha').textContent = (estado.sessao && estado.sessao.user && estado.sessao.user.email) || 'sua conta';
+    mensagem('');
+    $('nova-senha').focus();
+  }
   function mensagem(texto, erro) { var m = $('mensagem-login'); m.textContent = texto; m.classList.toggle('erro', Boolean(erro)); }
+  function emailDigitado() {
+    var email = $('email').value.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { mensagem('Digite um e-mail válido.', true); return ''; }
+    return email;
+  }
 
   $('form-email').addEventListener('submit', function (ev) {
     ev.preventDefault();
-    var email = $('email').value.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { mensagem('Digite um e-mail válido.', true); return; }
-    var botao = ev.submitter || this.querySelector('button');
-    botao.disabled = true;
-    mensagem('Enviando…');
-    sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: false, emailRedirectTo: new URL('./', location.href).href } }).then(function (r) {
-      botao.disabled = false;
-      if (r.error) {
-        var semCadastro = /signup|not allowed|not found/i.test(r.error.message || '');
-        mensagem(semCadastro ? 'Este e-mail não tem acesso. Fale com a Panorama para liberar.' : 'Não foi possível enviar agora. Tente de novo em instantes.', true);
-        // Se o servidor de login não responde, deixa testar o app com os dados das Casas, guardados neste aparelho
-        if (!semCadastro) $('caixa-demo').hidden = false;
-        return;
-      }
-      estado.emailLogin = email;
-      $('email-enviado').textContent = email;
-      $('form-email').hidden = true;
-      $('form-codigo').hidden = false;
-      mensagem('');
-      $('codigo').focus();
-    });
-  });
-
-  $('form-codigo').addEventListener('submit', function (ev) {
-    ev.preventDefault();
-    var codigo = $('codigo').value.replace(/\D/g, '');
-    if (codigo.length < 6) { mensagem('Digite o código que chegou no e-mail.', true); return; }
+    var email = emailDigitado(); if (!email) return;
+    var senha = $('senha').value;
+    if (!senha) { mensagem('Digite sua senha.', true); return; }
     var botao = ev.submitter || this.querySelector('button[type=submit]');
     botao.disabled = true;
-    sb.auth.verifyOtp({ email: estado.emailLogin, token: codigo, type: 'email' }).then(function (r) {
+    mensagem('Entrando…');
+    sb.auth.signInWithPassword({ email: email, password: senha }).then(function (r) {
       botao.disabled = false;
-      if (r.error) { mensagem('Código inválido ou vencido. Peça um novo.', true); return; }
-      $('codigo').value = '';
+      if (r.error) {
+        var errada = /invalid login|credentials/i.test(r.error.message || '');
+        var muitas = r.error.status === 429 || /rate|too many/i.test(r.error.message || '');
+        mensagem(errada ? 'E-mail ou senha incorretos. Se ainda não tem senha, toque em "Esqueci minha senha".'
+          : muitas ? 'Muitas tentativas. Espere alguns minutos e tente de novo.' : 'Não foi possível entrar agora. Tente de novo em instantes.', true);
+        // Se o servidor de login não responde, deixa testar o app com os dados das Casas, guardados neste aparelho
+        if (!errada && !muitas) $('caixa-demo').hidden = false;
+        return;
+      }
+      $('senha').value = '';
+      mensagem('');
     });
   });
 
-  $('trocar-email').addEventListener('click', function () { $('form-codigo').hidden = true; $('form-email').hidden = false; mensagem(''); });
+  $('esqueci').addEventListener('click', function () {
+    var email = emailDigitado(); if (!email) { mensagem('Digite seu e-mail acima e toque de novo em "Esqueci minha senha".', true); return; }
+    var botao = this; botao.disabled = true;
+    mensagem('Enviando…');
+    sb.auth.resetPasswordForEmail(email, { redirectTo: new URL('./', location.href).href }).then(function (r) {
+      botao.disabled = false;
+      if (r.error && (r.error.status === 429 || /rate|too many/i.test(r.error.message || ''))) { mensagem('Já enviamos um link há pouco. Espere alguns minutos.', true); return; }
+      if (r.error) { mensagem('Não foi possível enviar agora. Tente de novo em instantes.', true); return; }
+      // Mesma resposta para e-mail cadastrado ou não, para não revelar quem tem acesso
+      mensagem('Se este e-mail tiver acesso, chega em instantes um link para criar a senha. Abra o link neste aparelho.');
+    });
+  });
+
+  $('form-nova-senha').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var a = $('nova-senha').value, b = $('nova-senha-2').value;
+    if (a.length < 8) { mensagem('Use pelo menos 8 caracteres.', true); return; }
+    if (a !== b) { mensagem('As duas senhas estão diferentes.', true); return; }
+    var botao = ev.submitter || this.querySelector('button[type=submit]');
+    botao.disabled = true;
+    sb.auth.updateUser({ password: a }).then(function (r) {
+      botao.disabled = false;
+      if (r.error) { mensagem(/weak|short|least/i.test(r.error.message || '') ? 'Senha fraca demais. Use mais caracteres, misturando letras e números.' : 'Não foi possível salvar a senha. Peça um novo link.', true); return; }
+      $('nova-senha').value = ''; $('nova-senha-2').value = '';
+      estado.trocandoSenha = false;
+      avisar('Senha salva');
+      rotear();
+    });
+  });
+
   $('ver-demo').addEventListener('click', function () { estado.demo = true; rotear(); });
   $('sair').addEventListener('click', function () {
     if (estado.demo) { estado.demo = false; rotear(); return; }
@@ -318,6 +348,8 @@
   sb.auth.onAuthStateChange(function (evento, sessao) {
     var mudou = Boolean(sessao) !== Boolean(estado.sessao);
     estado.sessao = sessao;
+    if (evento === 'PASSWORD_RECOVERY') { estado.trocandoSenha = true; primeiro = false; renderNovaSenha(); return; }
+    if (estado.trocandoSenha && sessao) return;
     if (primeiro || mudou) { primeiro = false; rotear(); }
   });
 })();

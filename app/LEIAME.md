@@ -2,7 +2,7 @@
 
 App instalável em `panoramaip.com.br/app`, publicado pelo GitHub Pages junto com o site. Não tem build: os arquivos desta pasta são servidos como estão.
 
-- Login por código enviado ao e-mail, só para clientes cadastrados.
+- Login com e-mail e senha, só para clientes cadastrados. "Esqueci minha senha" manda um link para criar ou trocar a senha.
 - Lista de alertas, cada um com link próprio (`/app/?alerta=<id>`) e botão para compartilhar em outros apps.
 - No Android, o app instalado aparece no menu Compartilhar de outros apps; o que chega fica em "Recebidos".
 - Funciona sem internet depois da primeira visita (a casca do app fica guardada; os dados precisam de rede).
@@ -17,9 +17,9 @@ Em qualquer tela, tocar no número da proposição abre o inteiro teor, com down
 2. SQL Editor: cole e rode o arquivo `supabase/esquema.sql`.
 3. Authentication > Sign In / Providers: deixe o Email ligado e desligue "Allow new users to sign up", para que só clientes convidados entrem.
 4. Authentication > URL Configuration: Site URL `https://panoramaip.com.br/app/`.
-5. Authentication > Emails > Magic Link: inclua o código no texto, por exemplo `Seu código de acesso: {{ .Token }}`. No iPhone, o app instalado precisa do código, porque o link do e-mail abre no Safari.
+5. Antes de abrir aos clientes, configure um SMTP próprio (Authentication > Emails > SMTP Settings). O envio grátis do Supabase só manda e-mail para quem é da equipe do projeto.
 6. Project Settings > API: copie a Project URL e a chave anon public para `config.js`.
-7. Para liberar um cliente: Authentication > Users > Invite user (ou Add user).
+7. Para liberar um cliente: Authentication > Users > Add user. Ele cria a senha pelo "Esqueci minha senha" na tela de entrada.
 8. Para publicar um alerta: Table Editor > alertas > Insert row.
 
 ## Proposições (Câmara e Senado)

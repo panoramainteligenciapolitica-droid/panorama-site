@@ -43,20 +43,24 @@
 
   <section class="tela tela-login" id="tela-login" hidden>
     <p class="sobretitulo">Área do cliente</p>
-    <h1>Entre para ver seus alertas</h1>
+    <h1>Entre na sua conta</h1>
 
     <form id="form-email" novalidate>
       <label for="email">Seu e-mail</label>
-      <input id="email" type="email" autocomplete="email" inputmode="email" required placeholder="nome@empresa.com.br">
-      <button class="botao" type="submit">Receber código de acesso</button>
+      <input id="email" type="email" autocomplete="username" inputmode="email" required placeholder="nome@empresa.com.br">
+      <label for="senha">Senha</label>
+      <input id="senha" type="password" autocomplete="current-password" required>
+      <button class="botao" type="submit">Entrar</button>
+      <button class="botao-texto" type="button" id="esqueci">Esqueci minha senha ou ainda não tenho uma</button>
     </form>
 
-    <form id="form-codigo" hidden novalidate>
-      <p>Enviamos um código para <b id="email-enviado"></b>. Digite-o abaixo ou toque no link do e-mail.</p>
-      <label for="codigo">Código de acesso</label>
-      <input id="codigo" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="10" required>
-      <button class="botao" type="submit">Entrar</button>
-      <button class="botao-texto" type="button" id="trocar-email">Usar outro e-mail</button>
+    <form id="form-nova-senha" hidden novalidate>
+      <p>Crie sua senha para <b id="email-nova-senha"></b>. Use pelo menos 8 caracteres.</p>
+      <label for="nova-senha">Nova senha</label>
+      <input id="nova-senha" type="password" autocomplete="new-password" minlength="8" required>
+      <label for="nova-senha-2">Repita a senha</label>
+      <input id="nova-senha-2" type="password" autocomplete="new-password" minlength="8" required>
+      <button class="botao" type="submit">Salvar senha e entrar</button>
     </form>
 
     <p class="mensagem" id="mensagem-login" role="status"></p>
