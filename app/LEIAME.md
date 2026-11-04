@@ -7,7 +7,9 @@ App instalável em `panoramaip.com.br/app`, publicado pelo GitHub Pages junto co
 - No Android, o app instalado aparece no menu Compartilhar de outros apps; o que chega fica em "Recebidos".
 - Funciona sem internet depois da primeira visita (a casca do app fica guardada; os dados precisam de rede).
 
-Sem o Supabase configurado, o app abre em modo de demonstração com dados de exemplo.
+Sem o Supabase configurado, o app abre em modo de demonstração: a aba Geral e a busca de Novas consultam a Câmara e o Senado direto do navegador (`casas.js`), e o que você cadastra fica guardado no próprio aparelho.
+
+Em qualquer tela, tocar no número da proposição abre o inteiro teor, com download em PDF e Word.
 
 ## Ligar o Supabase (uma vez)
 

@@ -1,6 +1,6 @@
 // Aba Geral: quantas proposições deram entrada na Câmara e no Senado, por tipo, num período.
-// Os números vêm da tabela "entradas", que a coleta diária preenche com tudo o que foi apresentado.
-// Na demonstração, os números são de exemplo, gerados sempre iguais para cada dia.
+// Os números vêm direto dos dados abertos das duas Casas (casas.js), consultados na hora.
+// No app com login, se as Casas não responderem, usa a tabela "entradas" que a coleta diária preenche.
 (window.PanoramaModulos = window.PanoramaModulos || []).push(function (P) {
   'use strict';
 
@@ -50,94 +50,46 @@
     return 'de ' + (mesmoAno ? curta(r.inicio) : longa(r.inicio)) + ' a ' + longa(r.fim);
   }
 
-  // ---------- exemplos da demonstração ----------
-  // Média por dia útil de cada tipo; fim de semana tem bem menos.
-  var MEDIAS = {
-    CD: { REQ: 110, PL: 42, RIC: 22, INC: 14, EMC: 9, PDL: 6, PLP: 3, PRC: 1, PEC: .5, MPV: .3 },
-    SF: { RQS: 24, PL: 12, PDL: 2, PLP: 1, PRS: .5, PEC: .4, EMS: 6 }
-  };
-  function sorteio(texto) {
-    var h = 2166136261;
-    for (var i = 0; i < texto.length; i++) { h ^= texto.charCodeAt(i); h = Math.imul(h, 16777619); }
-    return ((h >>> 0) % 10000) / 10000;
-  }
-  function quantidade(dia, casa, sigla) {
-    var semana = deIso(dia).getDay(), fator = semana === 0 ? .04 : semana === 6 ? .08 : semana === 1 || semana === 5 ? .7 : 1;
-    var media = (MEDIAS[casa][sigla] || 0) * fator, r = sorteio(casa + sigla + dia);
-    return media < 1 ? (r < media ? 1 : 0) : Math.round(media * (.6 + .8 * r));
-  }
-  function exemploDoDia(dia) {
-    var linhas = [];
-    Object.keys(MEDIAS).forEach(function (casa) {
-      Object.keys(MEDIAS[casa]).forEach(function (sigla) {
-        var n = quantidade(dia, casa, sigla);
-        if (n) linhas.push({ casa: casa, sigla: sigla, total: n });
-      });
+  // ---------- dados: consulta direta às Casas; no app com login, a tabela "entradas" é a reserva ----------
+  var C = window.PanoramaCasas;
+  var faltou = [];
+  function aoVivo(r) {
+    return C.periodo(r.inicio, r.fim).then(function (res) {
+      faltou = res.erros;
+      if (res.erros.length === 2) throw new Error('As duas Casas ficaram sem resposta');
+      return res.itens;
     });
-    return linhas;
   }
-  var ultimoExemplo = function () { return iso(somar(hoje(), -1)); };
-
-  // Ementas de exemplo (fictícias), montadas a partir de modelos por tipo e de assuntos variados
-  var ASSUNTOS = ['a segurança nas escolas públicas', 'o crédito consignado de aposentados', 'as tarifas portuárias', 'a proteção de dados de consumidores',
-    'o saneamento básico em municípios pequenos', 'a energia solar em residências', 'o transporte por aplicativo', 'o atendimento de urgência no SUS',
-    'a educação em tempo integral', 'as apostas esportivas on-line', 'o combate a incêndios florestais', 'a acessibilidade em prédios públicos',
-    'a agricultura familiar', 'as fintechs de crédito', 'a mediação digital nos tribunais', 'o despacho aduaneiro de exportação'];
-  var MODELOS = {
-    PL: 'Dispõe sobre {a} e dá outras providências.', PLP: 'Altera normas gerais de direito financeiro para tratar d{a}.',
-    PEC: 'Altera a Constituição Federal para dispor sobre {a}.', MPV: 'Institui medidas emergenciais sobre {a}.',
-    PDL: 'Susta os efeitos de ato do Poder Executivo que regulamenta {a}.', PRC: 'Cria frente parlamentar para acompanhar {a}.',
-    PRS: 'Institui comissão temporária para acompanhar {a}.', REQ: 'Requer a realização de audiência pública para debater {a}.',
-    RQS: 'Requer audiência pública na comissão para debater {a}.', RIC: 'Requer informações ao ministério competente sobre {a}.',
-    INC: 'Sugere ao Poder Executivo medidas sobre {a}.', EMC: 'Emenda ao projeto que trata d{a}, para ajustar prazos.', EMS: 'Emenda ao projeto que trata d{a}, para ajustar prazos.'
-  };
-  var BASE_NUMERO = { PL: 5200, PLP: 180, PEC: 40, MPV: 1310, PDL: 600, PRC: 90, PRS: 60, REQ: 3900, RQS: 800, RIC: 4100, INC: 2500, EMC: 300, EMS: 200 };
-  function itensExemplo(casa, siglas, r) {
-    var itens = [], limite = ultimoExemplo();
-    for (var d = deIso(r.fim > limite ? limite : r.fim); iso(d) >= r.inicio; d = somar(d, -1)) {
-      var dia = iso(d), ordemDia = Math.round((d - new Date(2026, 0, 1)) / 864e5);
-      (casa ? [casa] : ['CD', 'SF']).forEach(function (cs) {
-        siglas.forEach(function (sg) {
-          var n = MEDIAS[cs][sg] !== undefined ? quantidade(dia, cs, sg) : 0;
-          var porDia = Math.max(1, Math.ceil(MEDIAS[cs][sg] || 1));
-          for (var i = 0; i < n; i++) {
-            var assunto = ASSUNTOS[Math.floor(sorteio(cs + sg + dia + i) * ASSUNTOS.length)];
-            var modelo = MODELOS[sg] || 'Trata d{a}.';
-            var texto = modelo.replace('d{a}', 'd' + assunto).replace('{a}', assunto);
-            itens.push({ id_externo: cs + ':ex-' + sg + '-' + dia + '-' + i, casa: cs, sigla: sg, numero: String((BASE_NUMERO[sg] || 100) + ordemDia * porDia + i), ano: dia.slice(0, 4),
-              data_apresentacao: dia, ementa: texto, autor: '', url: '', exemplo: true });
-          }
-        });
-      });
-    }
-    return itens;
+  function doBanco() { return !P.estado.demo && P.sb; }
+  function bancoListar(casa, siglas, r, de, quantos) {
+    var q = P.sb.from('entradas').select('id_externo, casa, sigla, numero, ano, ementa, autor, url, url_inteiro_teor, data_apresentacao', { count: 'exact' })
+      .in('sigla', siglas).gte('data_apresentacao', r.inicio).lte('data_apresentacao', r.fim);
+    if (casa) q = q.eq('casa', casa);
+    return q.order('data_apresentacao', { ascending: false }).order('id_externo', { ascending: false }).range(de, de + quantos - 1)
+      .then(function (res) { if (res.error) throw res.error; return { itens: res.data || [], total: res.count || 0 }; });
   }
 
   var fonte = {
     ultimoDia: function () {
-      if (P.estado.demo) return Promise.resolve(ultimoExemplo());
-      return P.sb.from('entradas').select('data_apresentacao').order('data_apresentacao', { ascending: false }).limit(1)
-        .then(function (r) { if (r.error) throw r.error; return r.data && r.data[0] ? r.data[0].data_apresentacao : ''; });
+      var h = hoje();
+      return aoVivo({ inicio: iso(somar(h, -9)), fim: iso(h) }).then(function (itens) {
+        return itens.reduce(function (m, p) { return p.data_apresentacao > m ? p.data_apresentacao : m; }, '');
+      });
     },
     listar: function (casa, siglas, r, de, quantos) {
-      if (P.estado.demo) {
-        var todos = itensExemplo(casa, siglas, r);
-        return Promise.resolve({ itens: todos.slice(de, de + quantos), total: todos.length });
-      }
-      var q = P.sb.from('entradas').select('id_externo, casa, sigla, numero, ano, ementa, autor, url, url_inteiro_teor, data_apresentacao', { count: 'exact' })
-        .in('sigla', siglas).gte('data_apresentacao', r.inicio).lte('data_apresentacao', r.fim);
-      if (casa) q = q.eq('casa', casa);
-      return q.order('data_apresentacao', { ascending: false }).order('id_externo', { ascending: false }).range(de, de + quantos - 1)
-        .then(function (res) { if (res.error) throw res.error; return { itens: res.data || [], total: res.count || 0 }; });
+      return aoVivo(r).then(function (itens) {
+        var todos = itens.filter(function (p) { return (!casa || p.casa === casa) && siglas.indexOf(p.sigla) >= 0; })
+          .sort(function (a, b) { return a.data_apresentacao < b.data_apresentacao ? 1 : a.data_apresentacao > b.data_apresentacao ? -1 : Number(b.numero) - Number(a.numero); });
+        return { itens: todos.slice(de, de + quantos), total: todos.length };
+      }).catch(function (e) { if (doBanco()) return bancoListar(casa, siglas, r, de, quantos); throw e; });
     },
     contar: function (r) {
-      if (P.estado.demo) {
-        var linhas = [], limite = ultimoExemplo();
-        for (var d = deIso(r.inicio); iso(d) <= r.fim && iso(d) <= limite; d = somar(d, 1)) linhas = linhas.concat(exemploDoDia(iso(d)));
-        return Promise.resolve(linhas);
-      }
-      return P.sb.rpc('contar_entradas', { inicio: r.inicio, fim: r.fim })
-        .then(function (res) { if (res.error) throw res.error; return res.data || []; });
+      return aoVivo(r).then(function (itens) {
+        return itens.map(function (p) { return { casa: p.casa, sigla: p.sigla, total: 1 }; });
+      }).catch(function (e) {
+        if (!doBanco()) throw e;
+        return P.sb.rpc('contar_entradas', { inicio: r.inicio, fim: r.fim }).then(function (res) { if (res.error) throw res.error; return res.data || []; });
+      });
     }
   };
 
@@ -219,8 +171,14 @@
 
   function render() {
     var meu = ++pedido;
-    $('total-geral').replaceChildren(el('p', { class: 'discreto', text: 'Contando…' }));
-    fonte.ultimoDia().then(function (ultimo) {
+    var aviso = function (texto) {
+      $('total-geral').replaceChildren(el('p', { class: 'discreto', text: texto }));
+      $('barra-geral').hidden = true; $('tabela-geral').hidden = true; $('todos-tipos').hidden = true; $('nota-geral').textContent = '';
+    };
+    var previo = intervalo('');
+    if ((deIso(previo.fim) - deIso(previo.inicio)) / 864e5 + 1 > C.MAX_DIAS) { aviso('Escolha um período de até ' + C.MAX_DIAS + ' dias.'); return; }
+    $('total-geral').replaceChildren(el('p', { class: 'discreto', text: 'Consultando a Câmara e o Senado…' }));
+    (filtro.periodo === 'dia' ? fonte.ultimoDia() : Promise.resolve('')).then(function (ultimo) {
       var r = intervalo(ultimo); atual = r;
       return fonte.contar(r).then(function (linhas) {
         if (meu !== pedido) return;
@@ -233,16 +191,15 @@
         );
         renderTabela(tipos);
         var notas = [];
-        if (!total) notas.push(ultimo ? 'Nada registrado neste período.' : 'Ainda não há entradas registradas. Elas aparecem depois da primeira coleta diária.');
-        if (filtro.periodo === 'dia' && ultimo && ultimo !== iso(hoje())) notas.push('Último dia com registros: ' + longa(ultimo) + '.');
-        if (P.estado.demo) notas.push('Números de exemplo, só para a demonstração.');
-        else notas.push('Contagem de tudo o que foi apresentado nas duas Casas, inclusive requerimentos e emendas, segundo os dados abertos de cada uma.');
+        if (faltou.length === 1) notas.push((faltou[0] === 'CD' ? 'A Câmara' : 'O Senado') + ' não respondeu agora; os números são só ' + (faltou[0] === 'CD' ? 'do Senado.' : 'da Câmara.'));
+        if (!total) notas.push('Nada apresentado neste período.');
+        if (filtro.periodo === 'dia' && ultimo && ultimo !== iso(hoje())) notas.push('Último dia com proposições apresentadas: ' + longa(ultimo) + '.');
+        notas.push('Fonte: dados abertos da Câmara e do Senado, consultados agora. Inclui requerimentos, emendas e demais tipos.');
         $('nota-geral').textContent = notas.join(' ');
       });
     }).catch(function () {
       if (meu !== pedido) return;
-      $('total-geral').replaceChildren(el('p', { class: 'discreto', text: 'Não foi possível contar as proposições. Verifique sua conexão.' }));
-      $('tabela-geral').hidden = true; $('todos-tipos').hidden = true; $('nota-geral').textContent = '';
+      aviso('Não foi possível consultar a Câmara e o Senado agora. Verifique sua conexão e tente de novo.');
     });
   }
 
@@ -282,13 +239,15 @@
     return el('li', { class: 'item item-prop' }, [
       el('div', { class: 'item-topo' }, [el('span', { class: 'selo casa casa-' + p.casa, text: casa }), p.exemplo ? el('span', { class: 'selo exemplo', text: 'Exemplo' }) : null,
         el('span', { text: dataBr(p.data_apresentacao) })]),
-      el('h2', { text: p.sigla + ' ' + (p.numero || '?') + '/' + (p.ano || '') }),
+      el('h2', {}, [el('button', { type: 'button', class: 'numero-prop', title: 'Ler o inteiro teor', text: p.sigla + ' ' + (p.numero || '?') + '/' + (p.ano || ''),
+        onclick: function () { if (window.PanoramaTeor) window.PanoramaTeor.abrir(p); } })]),
       p.ementa ? el('p', { class: 'ementa', text: p.ementa }) : null,
       p.autor ? el('p', { class: 'situacao', text: p.autor }) : null,
       el('div', { class: 'item-acoes' }, [
         el('button', { type: 'button', class: 'acao-forte', text: 'Monitorar', onclick: function () {
           P.estado.preencher = p; P.irPara('?cadastrar=1&entrada=' + encodeURIComponent(p.id_externo));
         } }),
+        el('button', { type: 'button', text: 'Inteiro teor', onclick: function () { if (window.PanoramaTeor) window.PanoramaTeor.abrir(p); } }),
         p.url ? el('a', { href: p.url, target: '_blank', rel: 'noopener', text: 'Abrir na ' + casa }) : null
       ])
     ]);

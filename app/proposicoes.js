@@ -52,30 +52,6 @@
       ementa: 'Altera a Constituição para dispor sobre a autonomia orçamentária das Defensorias Públicas e a organização do sistema de Justiça.',
       situacao: 'Pronta para votação em primeiro turno' })
   ];
-  function cand(o) { return Object.assign({ exemplo: true, status: 'nova', autor: '', situacao: 'Aguardando despacho', url: '', tema_casa: '' }, o); }
-  var COLETA_EXEMPLO = [
-    cand({ id_externo: 'CD:ex-2310', casa: 'CD', sigla: 'PL', numero: '2310', ano: '2026', data_apresentacao: '2026-11-03', tema_casa: 'Segurança Pública',
-      ementa: 'Destina recursos do Fundo Nacional de Segurança Pública à compra de equipamentos e tecnologia para as polícias estaduais e municipais.' }),
-    cand({ id_externo: 'SF:ex-4102', casa: 'SF', sigla: 'PL', numero: '4102', ano: '2026', data_apresentacao: '2026-11-03',
-      ementa: 'Fixa limite de juros no crédito consignado de servidores públicos e veda tarifas adicionais nas operações.' }),
-    cand({ id_externo: 'CD:ex-2315', casa: 'CD', sigla: 'PL', numero: '2315', ano: '2026', data_apresentacao: '2026-11-03', tema_casa: 'Arte, Cultura e Religião',
-      ementa: 'Institui o Dia Nacional do Forró.' }),
-    cand({ id_externo: 'CD:ex-1040', casa: 'CD', sigla: 'PDL', numero: '1040', ano: '2026', data_apresentacao: '2026-11-03', tema_casa: 'Relações Internacionais e Comércio Exterior',
-      ementa: 'Susta portaria que alterou procedimentos de despacho aduaneiro de importação no Portal Único de Comércio Exterior.' }),
-    cand({ id_externo: 'SF:ex-4110', casa: 'SF', sigla: 'PL', numero: '4110', ano: '2026', data_apresentacao: '2026-11-04',
-      ementa: 'Regulamenta o uso de inteligência artificial na análise de crédito por instituições financeiras e fintechs.' }),
-    cand({ id_externo: 'CD:ex-2322', casa: 'CD', sigla: 'PL', numero: '2322', ano: '2026', data_apresentacao: '2026-11-04', tema_casa: 'Homenagens e Datas Comemorativas',
-      ementa: 'Denomina Viaduto Exemplo trecho de rodovia federal.' }),
-    cand({ id_externo: 'CD:ex-2330', casa: 'CD', sigla: 'PL', numero: '2330', ano: '2026', data_apresentacao: '2026-11-04', tema_casa: 'Direito Civil e Processual Civil',
-      ementa: 'Amplia as audiências de conciliação por videoconferência nos juizados especiais e no processo civil.' }),
-    cand({ id_externo: 'SF:ex-4115', casa: 'SF', sigla: 'PL', numero: '4115', ano: '2026', data_apresentacao: '2026-11-04',
-      ementa: 'Cria regras para a integração das bases de dados de inteligência das polícias com o sistema prisional nacional.' }),
-    cand({ id_externo: 'CD:ex-2341', casa: 'CD', sigla: 'PL', numero: '2341', ano: '2026', data_apresentacao: '2026-11-04', tema_casa: 'Agricultura, Pecuária, Pesca e Extrativismo',
-      ementa: 'Concede incentivo fiscal a startups de tecnologia agrícola.' }),
-    cand({ id_externo: 'CD:ex-512', casa: 'CD', sigla: 'REQ', numero: '512', ano: '2026', data_apresentacao: '2026-11-04',
-      ementa: 'Requer a realização de audiência pública para debater a cabotagem e os custos portuários no transporte de cargas.' })
-  ];
-  var JA_COLETADAS_NA_SEMENTE = 6;
 
   // ---------- dados: Supabase ou, na demonstração, este navegador ----------
   var CHAVE_LOCAL = 'panorama-demo-proposicoes-v1';
@@ -87,10 +63,11 @@
       var agora = new Date().toISOString();
       memoria = {
         especialidades: ESP_EXEMPLO.slice(), palavras: PALAVRAS_EXEMPLO.slice(), proposicoes: PROPOSICOES_EXEMPLO.slice(),
-        candidatas: COLETA_EXEMPLO.slice(0, JA_COLETADAS_NA_SEMENTE).map(function (c) { return Object.assign({ id: novoId('c-'), coletado_em: agora }, c); }),
-        ultima_busca: agora
+        candidatas: [], ultima_busca: null
       };
     }
+    // Versões antigas da demonstração guardavam coletadas de exemplo: agora a coleta é real
+    memoria.candidatas = memoria.candidatas.filter(function (c) { return !c.exemplo; });
     return memoria;
   }
   function guardarLocal() { P.gravar(CHAVE_LOCAL, JSON.stringify(memoria)); }
@@ -124,15 +101,25 @@
       return P.sb.from(tabela).delete().eq('id', id).then(function (r) { if (r.error) throw r.error; });
     },
     // Busca agora: no app real, chama a mesma função que roda todo dia no Supabase
+    // Sem o Supabase, consulta as Casas daqui mesmo (ontem e hoje) e guarda neste navegador só o que pode interessar:
+    // tem palavra-chave ou é ao menos 5% parecida com uma monitorada. Guarda por 30 dias.
     coletar: function () {
       if (P.estado.demo) {
-        var m = local(), agora = new Date().toISOString(), conhecidas = {};
+        var m = local(), agora = new Date(), conhecidas = {};
+        var dia = function (d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
         m.candidatas.forEach(function (c) { conhecidas[c.id_externo] = true; });
         m.proposicoes.forEach(function (p) { conhecidas[chave(p)] = true; });
-        var novas = COLETA_EXEMPLO.filter(function (c) { return !conhecidas[c.id_externo] && !conhecidas[chave(c)]; })
-          .map(function (c) { return Object.assign({ id: novoId('c-'), coletado_em: agora }, c); });
-        m.candidatas = m.candidatas.concat(novas); m.ultima_busca = agora; guardarLocal();
-        return Promise.resolve({ novas: novas.length });
+        return window.PanoramaCasas.periodo(dia(new Date(agora - 864e5)), dia(agora)).then(function (res) {
+          if (res.erros.length === 2) throw new Error('As Casas não responderam');
+          var ineditas = res.itens.filter(function (c) { return !conhecidas[c.id_externo] && !conhecidas[chave(c)]; });
+          var analise = S.analisar(ineditas, m.proposicoes, m.palavras);
+          var novas = analise.filter(function (a) { return a.palavras.length || (a.maisParecida && S.percentual(a.maisParecida.valor) >= 5); })
+            .map(function (a) { return Object.assign({ id: novoId('c-'), coletado_em: agora.toISOString(), status: 'nova' }, a.candidata); });
+          var limite = new Date(agora - 30 * 864e5).toISOString();
+          m.candidatas = m.candidatas.filter(function (c) { return c.status === 'monitorada' || c.coletado_em >= limite; }).concat(novas);
+          m.ultima_busca = agora.toISOString(); guardarLocal();
+          return { novas: novas.length, consultadas: res.itens.length, erros: res.erros };
+        });
       }
       return P.sb.functions.invoke('coletar-proposicoes', { body: {} }).then(function (r) { if (r.error) throw r.error; return r.data || {}; });
     },
@@ -162,6 +149,10 @@
   function espPorNome(nome) { var n = S.normalizar(nome).trim(); return dados.especialidades.find(function (e) { return S.normalizar(e.nome).trim() === n; }); }
   function dataCurta(d) { if (!d) return ''; var p = String(d).slice(0, 10).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ''; }
   function selo(texto, classe) { return el('span', { class: 'selo ' + (classe || ''), text: texto }); }
+  // O número da proposição, em qualquer tela, abre o inteiro teor
+  function botaoNumero(p, tabela) {
+    return el('button', { type: 'button', class: 'numero-prop', text: ident(p), title: 'Ler o inteiro teor', onclick: function () { abrirTeor(p, tabela); } });
+  }
   function linkCasa(p) {
     if (!p.url) return null;
     return el('a', { href: p.url, target: '_blank', rel: 'noopener', text: 'Abrir na ' + CASAS[p.casa] });
@@ -236,14 +227,18 @@
   function cartaoMonitorada(p) {
     return el('li', { class: 'item item-prop' }, [
       el('div', { class: 'item-topo' }, [selo(CASAS[p.casa], 'casa casa-' + p.casa), p.exemplo ? selo('Exemplo', 'exemplo') : null, el('span', { text: dataCurta(p.data_apresentacao) })]),
-      el('h2', {}, [el('a', { href: '?proposicao=' + encodeURIComponent(p.id), text: ident(p), onclick: function (ev) { ev.preventDefault(); P.irPara('?proposicao=' + encodeURIComponent(p.id)); } })]),
+      el('h2', {}, [botaoNumero(p, 'proposicoes')]),
       el('p', { class: 'ementa', text: p.ementa }),
       el('div', { class: 'selos' }, [
         p.especialidade_id ? selo(nomeEsp(p.especialidade_id), 'esp') : null,
         selo('Prioridade ' + PRIORIDADES[p.prioridade].toLowerCase(), 'prio prio-' + p.prioridade),
         selo(POSICOES[p.posicionamento], 'pos pos-' + p.posicionamento)
       ]),
-      p.situacao ? el('p', { class: 'situacao', text: p.situacao }) : null
+      p.situacao ? el('p', { class: 'situacao', text: p.situacao }) : null,
+      el('div', { class: 'item-acoes' }, [
+        el('a', { href: '?proposicao=' + encodeURIComponent(p.id), class: 'acao-forte', text: 'Ver detalhes', onclick: function (ev) { ev.preventDefault(); P.irPara('?proposicao=' + encodeURIComponent(p.id)); } }),
+        el('button', { type: 'button', text: 'Inteiro teor', onclick: function () { abrirTeor(p, 'proposicoes'); } })
+      ])
     ]);
   }
 
@@ -251,7 +246,7 @@
   function renderNovas(analise) {
     banco.ultimaBusca().then(function (quando) {
       $('info-coleta').textContent = (quando ? 'Última busca: ' + new Date(quando).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '. ' : '') +
-        (P.estado.demo ? 'Na demonstração, a busca usa proposições de exemplo.' : 'A busca roda sozinha todo dia às 7h.');
+        (P.estado.demo ? 'A busca consulta a Câmara e o Senado (ontem e hoje).' : 'A busca roda sozinha todo dia às 7h.');
     });
     var visiveis = analise.filter(function (a) { return a.entra || mostrarAbaixo; });
     var abaixo = analise.length - analise.filter(function (a) { return a.entra; }).length;
@@ -275,7 +270,7 @@
     if (c.tema_casa) sinais.push(selo('Tema na ' + CASAS[c.casa] + ': ' + c.tema_casa, 'tema-casa'));
     return el('li', { class: 'item item-prop' + (a.entra ? '' : ' item-fraco') }, [
       el('div', { class: 'item-topo' }, [selo(CASAS[c.casa], 'casa casa-' + c.casa), c.exemplo ? selo('Exemplo', 'exemplo') : null, el('span', { text: dataCurta(c.data_apresentacao) })]),
-      el('h2', { text: ident(c) }),
+      el('h2', {}, [botaoNumero(c, 'candidatas')]),
       el('p', { class: 'ementa', text: c.ementa }),
       el('div', { class: 'selos' }, sinais),
       el('div', { class: 'item-acoes' }, [
@@ -359,7 +354,11 @@
   function renderResumoSoma() { var n = analiseDasNovas().filter(function (a) { return a.entra; }).length; $('contador-novas').textContent = n ? String(n) : ''; }
 
   ['monitoradas', 'novas', 'filtros'].forEach(function (v) {
-    $('sub-' + v).addEventListener('click', function () { vista = v; renderPainel(); });
+    $('sub-' + v).addEventListener('click', function () {
+      vista = v; renderPainel();
+      // Sem o Supabase, a primeira vez em Novas já busca nas Casas
+      if (v === 'novas' && P.estado.demo && !local().ultima_busca && !$('buscar-agora').disabled) $('buscar-agora').click();
+    });
   });
   $('busca-prop').addEventListener('input', renderMonitoradas);
   $('nova-prop').addEventListener('click', function () { P.irPara('?cadastrar=1'); });
@@ -367,7 +366,9 @@
   $('buscar-agora').addEventListener('click', function () {
     var b = this; b.disabled = true; b.textContent = 'Buscando…';
     banco.coletar().then(function (r) {
-      P.avisar(r && r.novas ? r.novas + (r.novas === 1 ? ' proposição coletada' : ' proposições coletadas') : 'Nenhuma proposição nova');
+      var falta = r && r.erros && r.erros.length === 1 ? (r.erros[0] === 'CD' ? ' (a Câmara não respondeu)' : ' (o Senado não respondeu)') : '';
+      P.avisar((r && r.novas ? r.novas + (r.novas === 1 ? ' proposição de interesse' : ' proposições de interesse') : 'Nenhuma proposição nova de interesse') +
+        (r && r.consultadas ? ' entre ' + r.consultadas.toLocaleString('pt-BR') + ' apresentadas' : '') + falta);
       return abrirPainel();
     }, function () { P.avisar('A busca falhou. Tente de novo em instantes.'); }).then(function () { b.disabled = false; b.textContent = 'Buscar agora'; });
   });
@@ -403,7 +404,7 @@
       });
       art.replaceChildren.apply(art, [
         el('div', { class: 'item-topo' }, [selo(CASAS[p.casa], 'casa casa-' + p.casa), p.exemplo ? selo('Exemplo', 'exemplo') : null]),
-        el('h1', { text: ident(p) }),
+        el('h1', {}, [botaoNumero(p, 'proposicoes')]),
         el('p', { class: 'ementa-grande', text: p.ementa }),
         dl,
         parecidas.length ? el('section', { class: 'bloco' }, [
@@ -455,7 +456,12 @@
   // No app real, a função inteiro-teor no Supabase baixa o PDF da Casa e extrai o texto; o texto fica guardado
   function obterTeor(p, tabela) {
     if (p.inteiro_teor) return Promise.resolve({ texto: p.inteiro_teor, url: p.url_inteiro_teor || '' });
-    if (p.exemplo || P.estado.demo) return Promise.resolve({ texto: teorExemplo(p), url: p.url_inteiro_teor || '' });
+    if (p.exemplo) return Promise.resolve({ texto: teorExemplo(p), url: p.url_inteiro_teor || '' });
+    // Sem o Supabase não há como extrair o texto do PDF: mostra a ementa e o link do PDF oficial
+    if (P.estado.demo) return window.PanoramaCasas.urlInteiroTeor(p).then(function (url) {
+      return { texto: ident(p) + ' (' + CASAS[p.casa] + ')\n\nEmenta: ' + (p.ementa || '') + '\n\nO texto completo está no PDF oficial da Casa' +
+        (url ? ': toque em "Abrir PDF".\n' + url : '. O link ainda não foi publicado pela Casa.'), url: url };
+    });
     return P.sb.functions.invoke('inteiro-teor', { body: { casa: p.casa, id_externo: p.id_externo || null, url: p.url_inteiro_teor || null } }).then(function (r) {
       if (r.error) throw r.error;
       var d = r.data || {};
@@ -495,10 +501,11 @@
     });
   }
   function estadoBotoesTeor(temTexto) {
-    ['teor-compartilhar', 'teor-txt', 'teor-doc', 'teor-copiar'].forEach(function (id) { $(id).disabled = !temTexto; });
-    var pdf = $('teor-pdf');
-    pdf.hidden = !(teor && teor.url);
-    if (teor && teor.url) pdf.href = teor.url;
+    ['teor-compartilhar', 'teor-doc', 'teor-copiar'].forEach(function (id) { $(id).disabled = !temTexto; });
+    var link = $('teor-pdf'), oficial = Boolean(teor && teor.url);
+    link.hidden = !(oficial || temTexto);
+    link.textContent = oficial ? 'Baixar PDF oficial (.pdf)' : 'Baixar PDF (.pdf)';
+    if (oficial) { link.href = teor.url; link.target = '_blank'; } else { link.href = '#'; link.removeAttribute('target'); }
   }
   function fecharTeor() { var d = $('dialogo-teor'); if (d.close) d.close(); else d.removeAttribute('open'); teor = null; }
   // Dentro do Claude a página não pode baixar sozinha: pede ao visualizador (capacidade downloads); no app, link comum
@@ -552,6 +559,42 @@
     fim.setUint32(12, tamCentral, true); fim.setUint32(16, pos, true);
     return new Blob(partes.concat(central, [new Uint8Array(fim.buffer)]));
   }
+  // PDF simples (A4, Helvetica), sem biblioteca: quebra as linhas, pagina e escreve a estrutura do arquivo
+  function pdf(texto) {
+    var TROCAS = { '\u201c': '"', '\u201d': '"', '\u2018': "'", '\u2019': "'", '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00ba': '\u00ba', '\u2022': '-' };
+    function latin(t) { return t.replace(/[^\x00-\xff]/g, function (c) { return TROCAS[c] || '?'; }); }
+    function escapar(t) { return latin(t).replace(/[\\()]/g, '\\$&'); }
+    var LARG = 92, POR_PAGINA = 50, linhas = [];
+    texto.split('\n').forEach(function (par) {
+      var atual = '';
+      par.split(/\s+/).forEach(function (palavra) {
+        if ((atual + ' ' + palavra).trim().length > LARG && atual) { linhas.push(atual); atual = palavra; }
+        else atual = (atual ? atual + ' ' : '') + palavra;
+      });
+      linhas.push(atual);
+    });
+    var paginas = [];
+    for (var i = 0; i < linhas.length; i += POR_PAGINA) paginas.push(linhas.slice(i, i + POR_PAGINA));
+    if (!paginas.length) paginas.push(['']);
+    var objetos = [], n = paginas.length;
+    objetos[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+    objetos[2] = '<< /Type /Pages /Count ' + n + ' /Kids [' + paginas.map(function (_, k) { return (4 + 2 * k) + ' 0 R'; }).join(' ') + '] >>';
+    objetos[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+    paginas.forEach(function (ls, k) {
+      var fluxo = 'BT /F1 10.5 Tf 15 TL 56 786 Td\n' + ls.map(function (l) { return '(' + escapar(l) + ') Tj T*'; }).join('\n') + '\nET';
+      objetos[4 + 2 * k] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ' + (5 + 2 * k) + ' 0 R >>';
+      objetos[5 + 2 * k] = '<< /Length ' + fluxo.length + ' >>\nstream\n' + fluxo + '\nendstream';
+    });
+    var saida = '%PDF-1.4\n', posicoes = [];
+    for (var o = 1; o < objetos.length; o++) { posicoes[o] = saida.length; saida += o + ' 0 obj\n' + objetos[o] + '\nendobj\n'; }
+    var xref = saida.length;
+    saida += 'xref\n0 ' + objetos.length + '\n0000000000 65535 f \n';
+    for (o = 1; o < objetos.length; o++) saida += String(posicoes[o]).padStart(10, '0') + ' 00000 n \n';
+    saida += 'trailer\n<< /Size ' + objetos.length + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF';
+    var bytes = new Uint8Array(saida.length);
+    for (var b = 0; b < saida.length; b++) bytes[b] = saida.charCodeAt(b) & 255;
+    return new Blob([bytes], { type: 'application/pdf' });
+  }
   function docx(texto) {
     var cabecalho = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
     var paragrafos = texto.split(/\n{2,}/).map(function (par, i) {
@@ -565,6 +608,7 @@
     ]);
   }
 
+  window.PanoramaTeor = { abrir: function (p) { abrirTeor(p, null); } };
   $('teor-fechar').addEventListener('click', fecharTeor);
   $('dialogo-teor').addEventListener('click', function (ev) { if (ev.target === this) fecharTeor(); });
   $('dialogo-teor').addEventListener('close', function () { teor = null; });
@@ -573,14 +617,19 @@
     var t = teor.texto;
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { P.avisar('Texto copiado'); }, function () { P.avisar('Não foi possível copiar'); });
   });
-  $('teor-txt').addEventListener('click', function () { if (teor) baixar(nomeArquivo(teor.p, 'txt'), teor.texto, 'text/plain;charset=utf-8'); });
+  // PDF: o oficial da Casa quando existe; senão, um PDF montado aqui com o texto
+  $('teor-pdf').addEventListener('click', function (ev) {
+    if (!teor || teor.url) return;
+    ev.preventDefault();
+    if (teor.texto) baixar(nomeArquivo(teor.p, 'pdf'), pdf(teor.texto), 'application/pdf');
+  });
   $('teor-doc').addEventListener('click', function () {
     if (teor) baixar(nomeArquivo(teor.p, 'docx'), docx(teor.texto), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   });
   $('teor-compartilhar').addEventListener('click', function () {
     if (!teor) return;
     var p = teor.p, resumo = ident(p) + ' (' + CASAS[p.casa] + ')\n' + p.ementa + (teor.url ? '\nInteiro teor: ' + teor.url : '');
-    var arquivo = typeof File === 'function' ? new File([teor.texto], nomeArquivo(p, 'txt'), { type: 'text/plain' }) : null;
+    var arquivo = typeof File === 'function' ? new File([docx(teor.texto)], nomeArquivo(p, 'docx'), { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }) : null;
     // Com arquivo quando o sistema aceita (WhatsApp, e-mail); senão o resumo com o link do PDF
     var dadosShare = arquivo && navigator.canShare && navigator.canShare({ files: [arquivo] }) ? { title: ident(p), text: resumo, files: [arquivo] } : { title: ident(p), text: resumo };
     if (navigator.share) navigator.share(dadosShare).catch(function (e) { if (e && e.name !== 'AbortError') P.copiar(resumo); });

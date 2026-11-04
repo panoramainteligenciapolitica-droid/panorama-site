@@ -1,12 +1,13 @@
 // Guarda a casca do app para abrir sem internet. Só cuida dos arquivos em /app/;
 // login e dados (Supabase) passam direto pela rede.
 // Ao mudar qualquer arquivo da lista, aumente a versão para os celulares baixarem a nova.
-var VERSAO = 'panorama-app-v5';
+var VERSAO = 'panorama-app-v6';
 var CASCA = [
   './',
   'app.css',
   'app.js',
   'similaridade.js',
+  'casas.js',
   'geral.js',
   'proposicoes.js',
   'config.js',
