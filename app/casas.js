@@ -23,7 +23,9 @@ window.PanoramaCasas = (function () {
   // A Câmara às vezes responde 504 ou 429 numa página: tenta de novo duas vezes antes de desistir
   function json(url, tentativas) {
     tentativas = tentativas || 3;
-    return fetch(url, { headers: { Accept: 'application/json' } }).then(function (r) {
+    var denovo = function () { return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return json(url, tentativas - 1); }); };
+    // Um 504 da Câmara chega sem cabeçalho CORS e aparece como falha de rede: tenta de novo também nesse caso
+    return fetch(url, { headers: { Accept: 'application/json' } }).catch(function (e) { if (tentativas > 1) return denovo().then(function (v) { return { ok: true, json: function () { return v; } }; }); throw e; }).then(function (r) {
       if (r.ok) return r.json();
       if (tentativas > 1 && (r.status >= 500 || r.status === 429)) {
         return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return json(url, tentativas - 1); });

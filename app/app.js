@@ -109,17 +109,17 @@
   }
 
   // ---------- conta: perfil, clientes liberados e cliente escolhido ----------
-  // Cada cliente tem banco próprio; o administrador vê todos. A escolha fica guardada neste aparelho.
+  // Cada cliente tem banco próprio; master e coordenador veem todos os da sua alçada. A escolha fica guardada neste aparelho.
   function carregarConta() {
     if (estado.demo || !estado.sessao) return Promise.resolve();
     var uid = estado.sessao.user.id;
     return Promise.all([
-      sb.from('perfis').select('user_id, email, nome, admin').eq('user_id', uid).maybeSingle(),
+      sb.from('perfis').select('*').eq('user_id', uid).maybeSingle(),
       sb.from('clientes').select('id, nome').order('nome')
     ]).then(function (r) {
       if (r[0].error) throw r[0].error;
       if (r[1].error) throw r[1].error;
-      estado.perfil = r[0].data || { user_id: uid, email: estado.sessao.user.email, admin: false };
+      estado.perfil = r[0].data || { user_id: uid, email: estado.sessao.user.email, papel: 'atendimento' };
       estado.clientes = r[1].data || [];
       var guardado = ler('panorama-cliente');
       var existe = estado.clientes.some(function (c) { return c.id === guardado; });
@@ -127,6 +127,8 @@
       estado.contaCarregada = true;
     });
   }
+  // Nível de acesso: master, coordenador ou atendimento (bancos antigos só tinham "admin")
+  function papel(perfil) { return (perfil && (perfil.papel || (perfil.admin ? 'master' : ''))) || 'atendimento'; }
   function nomeCliente(id) { var c = (estado.clientes || []).find(function (x) { return x.id === id; }); return c ? c.nome : ''; }
   function renderSeletorCliente() {
     var linha = $('linha-cliente'), sel = $('seletor-cliente');
@@ -393,7 +395,8 @@
   var modulos = (window.PanoramaModulos || []).map(function (iniciar) {
     return iniciar({ $: $, el: el, avisar: avisar, data: data, mostrar: mostrar, irPara: irPara, copiar: copiar,
       ler: ler, gravar: gravar, estado: estado, sb: sb, voltar: function () { irPara(''); },
-      carregarConta: carregarConta, nomeCliente: nomeCliente, trocarCliente: trocarCliente });
+      carregarConta: carregarConta, nomeCliente: nomeCliente, trocarCliente: trocarCliente,
+      renderSeletorCliente: renderSeletorCliente, papel: papel });
   });
 
   // ---------- início ----------

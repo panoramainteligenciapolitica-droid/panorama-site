@@ -77,38 +77,75 @@
       .then(function (res) { if (res.error) throw res.error; return { itens: res.data || [], total: res.count || 0 }; });
   }
 
+  function bancoContar(r) {
+    return P.sb.rpc('contar_entradas', { inicio: r.inicio, fim: r.fim }).then(function (res) {
+      if (res.error) throw res.error;
+      return (res.data || []).map(function (l) { return { casa: l.casa, sigla: l.sigla, total: Number(l.total) || 0 }; });
+    });
+  }
+  function separarFora(linhas) {
+    var fora = 0, ok = linhas.filter(function (l) {
+      var conta = filtro.docs || C.principal(l); if (!conta && (!filtro.casa || l.casa === filtro.casa)) fora += l.total; return conta;
+    });
+    ok.fora = fora;
+    return ok;
+  }
+  // No app com login, os dias até ontem vêm do banco (a coleta diária guarda tudo em "entradas"), que é rápido e
+  // não depende da Câmara responder; só o dia de hoje é consultado na hora. Se o banco falhar, consulta tudo na hora.
+  function partes(r) {
+    var h = iso(hoje()), ontem = iso(somar(hoje(), -1));
+    return {
+      banco: r.inicio <= ontem ? { inicio: r.inicio, fim: r.fim < h ? r.fim : ontem } : null,
+      vivo: r.fim >= h ? { inicio: r.inicio > h ? r.inicio : h, fim: r.fim } : null
+    };
+  }
+  function vivoLinhas(r) {
+    return aoVivo(r).then(function (itens) { return itens.map(function (p) { return { casa: p.casa, sigla: p.sigla, total: 1 }; }); });
+  }
+  function ordenar(lista) {
+    return lista.sort(function (a, b) { return a.data_apresentacao < b.data_apresentacao ? 1 : a.data_apresentacao > b.data_apresentacao ? -1 : Number(b.numero) - Number(a.numero); });
+  }
+
   var fonte = {
     ultimoDia: function () {
       var h = hoje();
-      return aoVivo({ inicio: iso(somar(h, -9)), fim: iso(h) }).then(function (itens) {
-        return itens.reduce(function (m, p) { return p.data_apresentacao > m ? p.data_apresentacao : m; }, '');
+      if (!doBanco()) {
+        return aoVivo({ inicio: iso(somar(h, -9)), fim: iso(h) }).then(function (itens) {
+          return itens.reduce(function (m, p) { return p.data_apresentacao > m ? p.data_apresentacao : m; }, '');
+        });
+      }
+      return aoVivo({ inicio: iso(h), fim: iso(h) }).catch(function () { return []; }).then(function (itens) {
+        if (itens.some(function (p) { return C.principal(p); })) return iso(h);
+        return P.sb.from('entradas').select('data_apresentacao').lte('data_apresentacao', iso(h)).order('data_apresentacao', { ascending: false }).limit(1)
+          .then(function (res) { return (res.data && res.data[0] && res.data[0].data_apresentacao) || iso(somar(h, -1)); });
       });
     },
     listar: function (casa, siglas, r, de, quantos) {
-      return aoVivo(r).then(function (itens) {
-        var todos = itens.filter(function (p) { return (!casa || p.casa === casa) && siglas.indexOf(p.sigla) >= 0; })
-          .sort(function (a, b) { return a.data_apresentacao < b.data_apresentacao ? 1 : a.data_apresentacao > b.data_apresentacao ? -1 : Number(b.numero) - Number(a.numero); });
-        return { itens: todos.slice(de, de + quantos), total: todos.length };
-      }).catch(function (e) { if (doBanco()) return bancoListar(casa, siglas, r, de, quantos); throw e; });
+      var tudoAoVivo = function () {
+        return aoVivo(r).then(function (itens) {
+          var todos = ordenar(itens.filter(function (p) { return (!casa || p.casa === casa) && siglas.indexOf(p.sigla) >= 0; }));
+          return { itens: todos.slice(de, de + quantos), total: todos.length };
+        });
+      };
+      if (!doBanco()) return tudoAoVivo();
+      var pt = partes(r);
+      return (pt.vivo ? aoVivo(pt.vivo).catch(function () { return []; }) : Promise.resolve([])).then(function (itens) {
+        var deHoje = ordenar(itens.filter(function (p) { return (!casa || p.casa === casa) && siglas.indexOf(p.sigla) >= 0; }));
+        var mostrar = deHoje.slice(de, de + quantos);
+        if (!pt.banco) return { itens: mostrar, total: deHoje.length };
+        var inicioBanco = Math.max(0, de - deHoje.length), falta = quantos - mostrar.length;
+        return bancoListar(casa, siglas, pt.banco, inicioBanco, Math.max(falta, 1)).then(function (b) {
+          return { itens: mostrar.concat(falta > 0 ? b.itens : []), total: deHoje.length + b.total };
+        });
+      }).catch(function () { return tudoAoVivo(); });
     },
     contar: function (r) {
-      return aoVivo(r).then(function (itens) {
-        var fora = 0;
-        var linhas = itens.filter(function (p) { var ok = filtro.docs || C.principal(p); if (!ok && (!filtro.casa || p.casa === filtro.casa)) fora++; return ok; })
-          .map(function (p) { return { casa: p.casa, sigla: p.sigla, total: 1 }; });
-        linhas.fora = fora;
-        return linhas;
-      }).catch(function (e) {
-        if (!doBanco()) throw e;
-        return P.sb.rpc('contar_entradas', { inicio: r.inicio, fim: r.fim }).then(function (res) {
-          if (res.error) throw res.error;
-          var fora = 0, linhas = (res.data || []).filter(function (l) {
-            var ok = filtro.docs || C.principal(l); if (!ok && (!filtro.casa || l.casa === filtro.casa)) fora += Number(l.total) || 0; return ok;
-          });
-          linhas.fora = fora;
-          return linhas;
-        });
-      });
+      if (!doBanco()) return vivoLinhas(r).then(separarFora);
+      var pt = partes(r);
+      return Promise.all([
+        pt.banco ? bancoContar(pt.banco) : Promise.resolve([]),
+        pt.vivo ? vivoLinhas(pt.vivo).catch(function () { faltou = ['CD', 'SF']; return []; }) : Promise.resolve((faltou = [], []))
+      ]).then(function (x) { return separarFora(x[0].concat(x[1])); }, function () { return vivoLinhas(r).then(separarFora); });
     }
   };
 
@@ -196,7 +233,7 @@
     };
     var previo = intervalo('');
     if ((deIso(previo.fim) - deIso(previo.inicio)) / 864e5 + 1 > C.MAX_DIAS) { aviso('Escolha um período de até ' + C.MAX_DIAS + ' dias.'); return; }
-    $('total-geral').replaceChildren(el('p', { class: 'discreto', text: 'Consultando a Câmara e o Senado…' }));
+    $('total-geral').replaceChildren(el('p', { class: 'discreto', text: 'Contando as proposições…' }));
     (filtro.periodo === 'dia' ? fonte.ultimoDia() : Promise.resolve('')).then(function (ultimo) {
       var r = intervalo(ultimo); atual = r;
       return fonte.contar(r).then(function (linhas) {
@@ -210,11 +247,12 @@
         );
         renderTabela(tipos);
         var notas = [];
-        if (faltou.length === 1) notas.push((faltou[0] === 'CD' ? 'A Câmara' : 'O Senado') + ' não respondeu agora; os números são só ' + (faltou[0] === 'CD' ? 'do Senado.' : 'da Câmara.'));
+        if (faltou.length === 2 && doBanco()) notas.push('A Câmara e o Senado não responderam agora; os números de hoje ainda não entraram.');
+        if (faltou.length === 1) notas.push((faltou[0] === 'CD' ? 'A Câmara' : 'O Senado') + ' não respondeu agora; os números' + (doBanco() ? ' de hoje' : '') + ' são só ' + (faltou[0] === 'CD' ? 'do Senado.' : 'da Câmara.'));
         if (!total) notas.push('Nada apresentado neste período.');
         if (linhas.fora) notas.push('Fora da conta: ' + numero(linhas.fora) + ' documentos de tramitação (pareceres, emendas, substitutivos, redações e requerimentos de pauta).');
         if (filtro.periodo === 'dia' && ultimo && ultimo !== iso(hoje())) notas.push('Último dia com proposições apresentadas: ' + longa(ultimo) + '.');
-        notas.push('Fonte: dados abertos da Câmara e do Senado, consultados agora.');
+        notas.push(doBanco() ? 'Fonte: dados abertos da Câmara e do Senado, guardados pela coleta diária; o dia de hoje é consultado agora.' : 'Fonte: dados abertos da Câmara e do Senado, consultados agora.');
         var docs = $('incluir-docs');
         docs.hidden = !linhas.fora && !filtro.docs;
         docs.textContent = filtro.docs ? 'Contar só as proposições' : 'Incluir os documentos de tramitação';
