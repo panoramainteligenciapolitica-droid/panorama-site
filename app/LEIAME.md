@@ -51,14 +51,19 @@ select net.http_post(
 );
 ```
 
-## Clientes e pessoas
-Rode `supabase/clientes.sql` uma vez no SQL Editor, depois de `esquema.sql`. Cada cliente (Magistratura, ATRICON...)
-tem banco próprio de especialidades, palavras-chave, proposições monitoradas, novas e alertas. Quem já tinha login
-vira administrador. No app, o botão **Configurações** abre:
-- para todos: nome e senha;
-- para administradores: criar, renomear e apagar clientes; cadastrar pessoas com senha provisória; marcar quem é
-  administrador (vê todos os clientes) e quais clientes cada pessoa acessa. O cadastro usa a função `gerenciar-pessoas`.
+## Organizações, clientes e pessoas
+Rode `supabase/clientes.sql` e depois `supabase/niveis.sql` no SQL Editor. Níveis de acesso:
+- **Master** (dono do app): vê e configura todas as organizações, clientes e pessoas, e muda o nível de qualquer um.
+- **Organização** (Serafim, Panorama...): agrupa clientes e pessoas.
+- **Coordenador**: vê todos os clientes da sua organização, cria clientes, cadastra atendimentos e libera clientes para eles.
+- **Atendimento**: vê só os clientes liberados para ele.
+
+Cada cliente tem banco próprio de especialidades, palavras-chave, proposições monitoradas, novas e alertas.
+O botão **Configurações** separa os temas: Minha conta (todos), Organizações (master), Clientes e Pessoas
+(master e coordenador). Cadastro, senha, remoção e nível passam pela função `gerenciar-pessoas`.
 Os alertas são publicados pelo Table Editor escolhendo o cliente na coluna `cliente_id`. A coleta diária roda para cada cliente.
+
+A aba Geral lê do banco (tabela `entradas`, preenchida pela coleta diária) os dias até ontem e consulta na hora só o dia de hoje.
 
 ## Prévia dentro do Claude
 
