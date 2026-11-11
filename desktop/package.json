@@ -1,0 +1,70 @@
+{
+  "name": "panorama-relgov",
+  "productName": "Panorama RelGov",
+  "version": "1.0.0",
+  "description": "Panorama Inteligência Política para Windows",
+  "author": "Panorama Inteligência Política",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "copiar-app": "node copiar-app.js",
+    "dist": "node copiar-app.js && electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.10.0",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "br.com.panoramaip.relgov",
+    "productName": "Panorama RelGov",
+    "artifactName": "Panorama-RelGov-Instalador-${version}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "offline.html",
+      "app-local/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icone.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Panorama RelGov",
+      "language": "1046",
+      "installerLanguages": [
+        "pt_BR"
+      ]
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "panoramainteligenciapolitica-droid",
+        "repo": "panorama-site",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/panoramainteligenciapolitica-droid/panorama-site.git"
+  }
+}

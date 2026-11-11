@@ -22,6 +22,7 @@
 <body>
 
 <header class="barra">
+  <button class="botao-menu" id="abrir-menu" type="button" aria-label="Abrir o menu" aria-controls="menu" aria-expanded="false" hidden><span></span><span></span><span></span></button>
   <a class="marca" href="./" aria-label="Panorama, início">
     <svg viewBox="0 0 526.07 526.07" aria-hidden="true"><path d="M244.25,0h0C244.25,134.89,134.89,244.25,0,244.25h0v18.79h263.03V0h-18.79Z"/><path d="M281.82,526.07h0c0-134.89,109.35-244.25,244.25-244.25h0v-18.79h-263.03v263.03h18.79Z"/><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.73-93.94,66.42h187.88Z"/><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg>
     <span>Panorama</span>
@@ -35,6 +36,42 @@
   <p>Para instalar no iPhone: toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</p>
   <button type="button" id="fechar-aviso-ios" aria-label="Fechar aviso">×</button>
 </div>
+
+<nav class="menu-lateral" id="menu" aria-label="Seções do app" hidden>
+  <div class="menu-grupo"><a href="?secao=geral" data-secao="geral">Painel geral</a></div>
+  <details class="menu-grupo" open>
+    <summary>Legislativo</summary>
+    <a href="?secao=monitoradas" data-secao="monitoradas">Proposições monitoradas</a>
+    <a href="?secao=novas" data-secao="novas">Novas proposições <span class="contador" id="menu-novas"></span></a>
+    <a href="?secao=filtros" data-secao="filtros">Palavras-chave e especialidades</a>
+    <a href="?secao=agenda" data-secao="agenda">Agenda do Congresso</a>
+  </details>
+  <details class="menu-grupo" open>
+    <summary>Parlamentares</summary>
+    <a href="?secao=deputados" data-secao="deputados">Deputados</a>
+    <a href="?secao=senadores" data-secao="senadores">Senadores</a>
+    <a href="?secao=mapa" data-secao="mapa">Mapa de stakeholders</a>
+  </details>
+  <details class="menu-grupo" open>
+    <summary>Relacionamento</summary>
+    <a href="?secao=contatos" data-secao="contatos">Contatos</a>
+    <a href="?secao=interacoes" data-secao="interacoes">Reuniões e interações</a>
+    <a href="?secao=tarefas" data-secao="tarefas">Tarefas e prazos <span class="contador" id="menu-tarefas"></span></a>
+  </details>
+  <details class="menu-grupo" open>
+    <summary>Comunicação</summary>
+    <a href="?secao=alertas" data-secao="alertas">Alertas</a>
+    <a href="?secao=emails" data-secao="emails">Envio de e-mails</a>
+    <a href="?secao=listas" data-secao="listas">Listas de e-mail</a>
+    <a href="?secao=recebidos" data-secao="recebidos">Recebidos</a>
+  </details>
+  <details class="menu-grupo" open>
+    <summary>Relatórios</summary>
+    <a href="?secao=relatorio" data-secao="relatorio">Relatório do cliente</a>
+  </details>
+  <div class="menu-grupo menu-rodape"><a href="?config=1" data-secao="config">Configurações</a></div>
+</nav>
+<div class="veu-menu" id="veu-menu" hidden></div>
 
 <main id="conteudo">
 
@@ -81,13 +118,8 @@
       <select id="seletor-cliente"></select>
     </div>
     <p class="aviso-sem-cliente" id="sem-cliente" hidden>Você ainda não tem acesso a nenhum cliente. Peça a um administrador para liberar.</p>
-    <div class="abas" role="tablist" aria-label="Seções">
-      <button role="tab" type="button" id="aba-geral" aria-selected="true" aria-controls="painel-geral">Geral</button>
-      <button role="tab" type="button" id="aba-proposicoes" aria-selected="false" aria-controls="painel-proposicoes">Proposições</button>
-      <button role="tab" type="button" id="aba-alertas" aria-selected="false" aria-controls="painel-alertas">Alertas</button>
-      <button role="tab" type="button" id="aba-recebidos" aria-selected="false" aria-controls="painel-recebidos">Recebidos</button>
-    </div>
-    <div role="tabpanel" id="painel-geral" aria-labelledby="aba-geral">
+    <div role="tabpanel" id="painel-geral">
+      <div id="resumo-cliente"></div>
       <h2 class="titulo-geral">Proposições apresentadas</h2>
       <div class="chips-filtro" id="periodo-geral" role="group" aria-label="Período">
         <button type="button" data-periodo="dia" aria-pressed="false">Último dia</button>
@@ -114,7 +146,8 @@
       <button class="botao-texto" type="button" id="incluir-docs" hidden></button>
       <p class="discreto nota-geral" id="nota-geral"></p>
     </div>
-    <div role="tabpanel" id="painel-proposicoes" aria-labelledby="aba-proposicoes" hidden>
+    <div role="tabpanel" id="painel-proposicoes" hidden>
+      <h2 class="titulo-secao">Proposições</h2>
       <div class="resumo-prop" id="resumo-prop"></div>
       <div class="subabas" role="group" aria-label="Proposições">
         <button type="button" id="sub-monitoradas" aria-pressed="true">Monitoradas</button>
@@ -169,10 +202,21 @@
         </section>
       </div>
     </div>
-    <div role="tabpanel" id="painel-alertas" aria-labelledby="aba-alertas" hidden>
+    <div role="tabpanel" id="painel-agenda" hidden></div>
+    <div role="tabpanel" id="painel-parlamentares" hidden></div>
+    <div role="tabpanel" id="painel-mapa" hidden></div>
+    <div role="tabpanel" id="painel-contatos" hidden></div>
+    <div role="tabpanel" id="painel-interacoes" hidden></div>
+    <div role="tabpanel" id="painel-tarefas" hidden></div>
+    <div role="tabpanel" id="painel-emails" hidden></div>
+    <div role="tabpanel" id="painel-listas" hidden></div>
+    <div role="tabpanel" id="painel-relatorio" hidden></div>
+    <div role="tabpanel" id="painel-alertas" hidden>
+      <div class="cabeca-secao"><h2 class="titulo-secao">Alertas</h2><button class="botao botao-pequeno" type="button" id="novo-alerta" hidden>Publicar alerta</button></div>
       <ul class="lista" id="lista-alertas"></ul>
     </div>
-    <div role="tabpanel" id="painel-recebidos" aria-labelledby="aba-recebidos" hidden>
+    <div role="tabpanel" id="painel-recebidos" hidden>
+      <h2 class="titulo-secao">Recebidos</h2>
       <p class="discreto explica">Conteúdo que você compartilhou de outros apps para a Panorama aparece aqui.</p>
       <ul class="lista" id="lista-recebidos"></ul>
     </div>
@@ -190,6 +234,11 @@
     <p class="discreto" id="sub-entradas" aria-live="polite"></p>
     <ul class="lista" id="lista-entradas"></ul>
     <button class="botao botao-linha" type="button" id="mais-entradas" hidden></button>
+  </section>
+
+  <section class="tela" id="tela-parlamentar" hidden>
+    <button class="botao-texto voltar" type="button" data-voltar>← Voltar</button>
+    <article id="parlamentar"></article>
   </section>
 
   <section class="tela" id="tela-proposicao" hidden>
@@ -247,6 +296,9 @@
       <button type="button" data-tema="organizacoes" aria-pressed="false" hidden>Organizações</button>
       <button type="button" data-tema="clientes" aria-pressed="false" hidden>Clientes</button>
       <button type="button" data-tema="pessoas" aria-pressed="false" hidden>Pessoas</button>
+      <button type="button" data-tema="perfis" aria-pressed="false">Perfis e permissões</button>
+      <button type="button" data-tema="emailcfg" aria-pressed="false" hidden>E-mail</button>
+      <button type="button" data-tema="programa" aria-pressed="false">Programa para Windows</button>
     </div>
 
     <div data-tema-painel="conta">
@@ -321,6 +373,9 @@
         </form>
       </section>
     </div>
+    <div data-tema-painel="perfis" hidden><div id="painel-perfis"></div></div>
+    <div data-tema-painel="emailcfg" hidden><div id="painel-emailcfg"></div></div>
+    <div data-tema-painel="programa" hidden><div id="painel-programa"></div></div>
   </section>
 
   <section class="tela" id="tela-recebido" hidden>
@@ -354,6 +409,15 @@
   <div class="teor-texto" id="teor-texto" tabindex="0"></div>
 </dialog>
 
+<dialog class="dialogo-form" id="dialogo-form" aria-labelledby="df-titulo">
+  <form method="dialog" id="df-form" novalidate>
+    <div class="teor-cabeca"><h2 id="df-titulo"></h2><button type="button" class="fechar" id="df-fechar" aria-label="Fechar">×</button></div>
+    <div class="df-campos" id="df-campos"></div>
+    <p class="mensagem erro" id="df-erro" role="alert"></p>
+    <div class="acoes"><button class="botao" type="submit" id="df-salvar">Salvar</button><button class="botao botao-linha" type="button" id="df-cancelar">Cancelar</button><button class="botao-texto df-apagar" type="button" id="df-apagar" hidden>Apagar</button></div>
+  </form>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="vendor/supabase-2.45.4.js"></script>
@@ -363,6 +427,12 @@
 <script src="geral.js"></script>
 <script src="proposicoes.js"></script>
 <script src="equipe.js"></script>
+<script src="relgov.js"></script>
+<script src="parlamentares.js"></script>
+<script src="agenda.js"></script>
+<script src="relacionamento.js"></script>
+<script src="emails.js"></script>
+<script src="relatorio.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

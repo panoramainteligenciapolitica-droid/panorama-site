@@ -1,0 +1,47 @@
+# Gera o instalador do Panorama RelGov para Windows (desktop/) numa máquina Windows do GitHub.
+# Roda ao mudar desktop/ ou app/ na main, ou à mão em Actions > Programa para Windows > Run workflow.
+# Ao rodar à mão com "publicar" marcado, cria um Release com o instalador para download.
+name: Programa para Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      publicar:
+        description: 'Publicar como Release (link de download)'
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+    paths: ['desktop/**', 'app/**']
+
+permissions:
+  contents: write
+
+jobs:
+  instalador:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Panorama-RelGov-Instalador
+          path: desktop/dist/*.exe
+      - name: Publicar Release
+        if: github.event_name == 'workflow_dispatch' && inputs.publicar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          versao=$(node -p "require('./package.json').version")
+          gh release create "desktop-v$versao" dist/*.exe dist/latest.yml dist/*.blockmap \
+            --title "Panorama RelGov $versao para Windows" \
+            --notes "Instalador do programa Panorama RelGov para Windows." || \
+          gh release upload "desktop-v$versao" dist/*.exe dist/latest.yml dist/*.blockmap --clobber

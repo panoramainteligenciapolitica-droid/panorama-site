@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Descadastro de e-mails</title>
+<style>
+  :root { --navy: #22355f; --text: #1b2e53; --muted: #5a667d; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; color: var(--text); background: #fff; }
+  header { background: var(--navy); color: #fff; padding: 14px 16px; font-weight: 600; }
+  main { max-width: 34rem; margin: 2rem auto; padding: 0 16px; line-height: 1.6; }
+  button { font: inherit; background: var(--navy); color: #fff; border: 0; border-radius: 999px; padding: .7rem 1.4rem; cursor: pointer; }
+  .discreto { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>Panorama</header>
+<main>
+  <h1>Não receber mais e-mails</h1>
+  <p id="texto" class="discreto">Confirme para não receber mais os e-mails deste remetente.</p>
+  <p><button type="button" id="confirmar">Confirmar descadastro</button></p>
+</main>
+<script src="config.js"></script>
+<script>
+  (function () {
+    var q = new URLSearchParams(location.search), cfg = window.PANORAMA_CONFIG || {};
+    var texto = document.getElementById('texto'), botao = document.getElementById('confirmar');
+    if (!q.get('e') || !q.get('t') || !q.get('c')) { texto.textContent = 'Este link está incompleto.'; botao.hidden = true; return; }
+    texto.textContent = 'Confirme para que ' + q.get('e') + ' não receba mais os e-mails deste remetente.';
+    botao.addEventListener('click', function () {
+      botao.disabled = true;
+      fetch(cfg.supabaseUrl + '/functions/v1/descadastrar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', apikey: cfg.supabaseAnonKey },
+        body: JSON.stringify({ c: q.get('c'), e: q.get('e'), t: q.get('t') })
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.ok) { texto.textContent = 'Pronto. ' + q.get('e') + ' não vai mais receber estes e-mails.'; botao.hidden = true; }
+        else { texto.textContent = j.erro || 'Não foi possível registrar.'; botao.disabled = false; }
+      }, function () { texto.textContent = 'Sem conexão. Tente de novo.'; botao.disabled = false; });
+    });
+  })();
+</script>
+</body>
+</html>
