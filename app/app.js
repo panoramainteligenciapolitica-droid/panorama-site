@@ -63,6 +63,13 @@
   // ---------- utilidades de tela ----------
   function mostrar(id) {
     document.querySelectorAll('main > .tela').forEach(function (t) { t.hidden = t.id !== id; });
+    var comMenu = Boolean(estado.sessao || estado.demo) && ['tela-login', 'tela-carregando', 'tela-recebido'].indexOf(id) < 0;
+    document.body.classList.toggle('com-menu', comMenu);
+    $('menu').hidden = !comMenu;
+    $('abrir-menu').hidden = !comMenu;
+    fecharMenu();
+    if (id === 'tela-config') marcarMenu('config');
+    else if (id !== 'tela-inicio') marcarMenu('');
     $('sair').hidden = !(estado.sessao || estado.demo) || id === 'tela-login';
     $('abrir-config').hidden = !estado.sessao || estado.demo || id === 'tela-login' || id === 'tela-config';
     $('faixa-demo').hidden = !estado.demo;
@@ -89,6 +96,54 @@
   var formatoData = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
   function data(iso) { try { return formatoData.format(new Date(iso)); } catch (e) { return ''; } }
   function linkDoAlerta(id) { return new URL('./?alerta=' + encodeURIComponent(id), location.href).href; }
+
+  // ---------- tabelas de cada cliente (Supabase) ou, no modo de teste, deste navegador ----------
+  function tabela(nome) {
+    var chave = 'panorama-demo-' + nome;
+    function local() { try { return JSON.parse(ler(chave) || '[]'); } catch (e) { return []; } }
+    function guardar(l) { gravar(chave, JSON.stringify(l)); }
+    function novoId() { return 'l-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+    return {
+      listar: function (opcoes) {
+        opcoes = opcoes || {};
+        if (estado.demo) {
+          var l = local().filter(function (o) { return Object.keys(opcoes.onde || {}).every(function (k) { return o[k] === opcoes.onde[k]; }); });
+          if (opcoes.ordem) l.sort(function (a, b) { var x = a[opcoes.ordem] || '', y = b[opcoes.ordem] || ''; return (x < y ? -1 : x > y ? 1 : 0) * (opcoes.desc ? -1 : 1); });
+          return Promise.resolve(l);
+        }
+        if (!estado.cliente) return Promise.resolve([]);
+        var q = sb.from(nome).select(opcoes.campos || '*');
+        if (!opcoes.semCliente) q = q.eq('cliente_id', estado.cliente);
+        Object.keys(opcoes.onde || {}).forEach(function (k) { q = q.eq(k, opcoes.onde[k]); });
+        if (opcoes.ordem) q = q.order(opcoes.ordem, { ascending: !opcoes.desc, nullsFirst: false });
+        return q.limit(opcoes.limite || 5000).then(function (r) { if (r.error) throw r.error; return r.data || []; });
+      },
+      inserir: function (obj) {
+        if (estado.demo) { var o = Object.assign({ id: novoId(), criado_em: new Date().toISOString() }, obj); var l = local(); l.push(o); guardar(l); return Promise.resolve(o); }
+        return sb.from(nome).insert(Object.assign({ cliente_id: estado.cliente }, obj)).select().single().then(function (r) { if (r.error) throw r.error; return r.data; });
+      },
+      inserirVarios: function (lista) {
+        if (estado.demo) { var l = local(); lista.forEach(function (o) { l.push(Object.assign({ id: novoId(), criado_em: new Date().toISOString() }, o)); }); guardar(l); return Promise.resolve(lista.length); }
+        if (!lista.length) return Promise.resolve(0);
+        return sb.from(nome).insert(lista.map(function (o) { return Object.assign({ cliente_id: estado.cliente }, o); })).then(function (r) { if (r.error) throw r.error; return lista.length; });
+      },
+      atualizar: function (id, campos) {
+        if (estado.demo) { var l = local(); l.forEach(function (o) { if (o.id === id) Object.assign(o, campos); }); guardar(l); return Promise.resolve(); }
+        return sb.from(nome).update(campos).eq('id', id).then(function (r) { if (r.error) throw r.error; });
+      },
+      apagar: function (id) {
+        if (estado.demo) { guardar(local().filter(function (o) { return o.id !== id; })); return Promise.resolve(); }
+        return sb.from(nome).delete().eq('id', id).then(function (r) { if (r.error) throw r.error; });
+      }
+    };
+  }
+  function baixar(nome, conteudo, tipo) {
+    var blob = conteudo instanceof Blob ? conteudo : new Blob([conteudo], { type: tipo || 'application/octet-stream' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = nome;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
 
   // ---------- compartilhar para outros apps (WhatsApp, e-mail etc.) ----------
   function copiar(texto) {
@@ -190,13 +245,29 @@
     }).catch(function () { lista.replaceChildren(el('li', { class: 'vazio', text: 'Não foi possível carregar os itens recebidos.' })); });
   }
 
-  function selecionarAba(nome) {
-    estado.aba = nome;
-    ['geral', 'proposicoes', 'alertas', 'recebidos'].forEach(function (n) {
-      $('aba-' + n).setAttribute('aria-selected', String(n === nome));
-      $('painel-' + n).hidden = n !== nome;
+  // ---------- menu lateral: cada seção abre um painel (e, nas proposições, uma das vistas) ----------
+  var SECOES = {
+    geral: ['geral'], proposicoes: ['proposicoes'], monitoradas: ['proposicoes', 'monitoradas'], novas: ['proposicoes', 'novas'],
+    filtros: ['proposicoes', 'filtros'], agenda: ['agenda'], deputados: ['parlamentares', 'CD'], senadores: ['parlamentares', 'SF'],
+    parlamentares: ['parlamentares', 'CD'], mapa: ['mapa'], contatos: ['contatos'], interacoes: ['interacoes'], tarefas: ['tarefas'],
+    alertas: ['alertas'], emails: ['emails'], listas: ['listas'], recebidos: ['recebidos'], relatorio: ['relatorio']
+  };
+  var PAINEIS = ['geral', 'proposicoes', 'agenda', 'parlamentares', 'mapa', 'contatos', 'interacoes', 'tarefas', 'emails', 'listas', 'alertas', 'recebidos', 'relatorio'];
+  function marcarMenu(secao) {
+    document.querySelectorAll('#menu a[data-secao]').forEach(function (a) {
+      if (a.dataset.secao === secao) { a.setAttribute('aria-current', 'page'); var d = a.closest('details'); if (d) d.open = true; }
+      else a.removeAttribute('aria-current');
     });
-    (modulos || []).forEach(function (m) { if (m.aoAbrirAba) m.aoAbrirAba(nome); });
+  }
+  function abrirMenu() { document.body.classList.add('menu-aberto'); $('veu-menu').hidden = false; $('abrir-menu').setAttribute('aria-expanded', 'true'); }
+  function fecharMenu() { document.body.classList.remove('menu-aberto'); $('veu-menu').hidden = true; $('abrir-menu').setAttribute('aria-expanded', 'false'); }
+
+  function selecionarAba(secao) {
+    var alvo = SECOES[secao] || SECOES.geral, nome = alvo[0], sub = alvo[1];
+    estado.aba = nome; estado.secao = SECOES[secao] ? secao : 'geral';
+    PAINEIS.forEach(function (n) { $('painel-' + n).hidden = n !== nome; });
+    marcarMenu(estado.secao === 'proposicoes' ? 'monitoradas' : estado.secao === 'parlamentares' ? 'deputados' : estado.secao);
+    (modulos || []).forEach(function (m) { if (m.aoAbrirAba) m.aoAbrirAba(nome, sub); });
   }
 
   function renderAlerta(id) {
@@ -263,7 +334,7 @@
     if (pendente) { renderRecebido(pendente); return; }
     for (var i = 0; i < (modulos || []).length; i++) if (modulos[i].rota && modulos[i].rota(params)) return;
     var id = params.get('alerta');
-    if (id) renderAlerta(id); else renderInicio(params.get('aba'));
+    if (id) renderAlerta(id); else renderInicio(params.get('secao') || params.get('aba'));
   }
 
   // ---------- login com e-mail e senha ----------
@@ -355,10 +426,17 @@
   // ---------- botões das telas ----------
   $('seletor-cliente').addEventListener('change', function () { trocarCliente(this.value); });
   $('abrir-config').addEventListener('click', function () { irPara('?config=1'); });
-  $('aba-geral').addEventListener('click', function () { selecionarAba('geral'); });
-  $('aba-proposicoes').addEventListener('click', function () { selecionarAba('proposicoes'); });
-  $('aba-alertas').addEventListener('click', function () { selecionarAba('alertas'); });
-  $('aba-recebidos').addEventListener('click', function () { selecionarAba('recebidos'); });
+  $('menu').addEventListener('click', function (ev) {
+    var a = ev.target.closest('a[data-secao]'); if (!a) return;
+    ev.preventDefault();
+    irPara(a.dataset.secao === 'config' ? '?config=1' : '?secao=' + a.dataset.secao);
+  });
+  $('abrir-menu').addEventListener('click', function () { if (document.body.classList.contains('menu-aberto')) fecharMenu(); else abrirMenu(); });
+  $('veu-menu').addEventListener('click', fecharMenu);
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') fecharMenu(); });
+  // O programa do Windows navega pelo menu nativo chamando esta função
+  window.PanoramaIr = function (rota) { irPara(rota); };
+  if (window.PanoramaDesktop) document.documentElement.classList.add('programa-windows');
   document.querySelectorAll('[data-voltar]').forEach(function (b) {
     b.addEventListener('click', function () { if (history.length > 1 && document.referrer.indexOf(location.origin) === 0) history.back(); else irPara(''); });
   });
@@ -396,7 +474,8 @@
     return iniciar({ $: $, el: el, avisar: avisar, data: data, mostrar: mostrar, irPara: irPara, copiar: copiar,
       ler: ler, gravar: gravar, estado: estado, sb: sb, voltar: function () { irPara(''); },
       carregarConta: carregarConta, nomeCliente: nomeCliente, trocarCliente: trocarCliente,
-      renderSeletorCliente: renderSeletorCliente, papel: papel });
+      renderSeletorCliente: renderSeletorCliente, papel: papel, tabela: tabela, baixar: baixar, selecionarAba: selecionarAba,
+      renderAlertas: renderAlertas });
   });
 
   // ---------- início ----------

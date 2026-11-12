@@ -169,6 +169,7 @@
       resumoItem(relevantes, relevantes === 1 ? 'nova para revisar' : 'novas para revisar')
     );
     $('contador-novas').textContent = relevantes ? String(relevantes) : '';
+    $('menu-novas').textContent = relevantes ? String(relevantes) : '';
     ['monitoradas', 'novas', 'filtros'].forEach(function (v) {
       $('sub-' + v).setAttribute('aria-pressed', String(v === vista));
       $('vista-' + v).hidden = v !== vista;
@@ -568,7 +569,7 @@
     ]);
   }
 
-  window.PanoramaTeor = { abrir: function (p) { abrirTeor(p, null); } };
+  window.PanoramaTeor = { abrir: function (p) { abrirTeor(p, null); }, docx: docx, pdf: pdf, baixar: baixar };
   $('teor-fechar').addEventListener('click', fecharTeor);
   $('dialogo-teor').addEventListener('click', function (ev) { if (ev.target === this) fecharTeor(); });
   $('dialogo-teor').addEventListener('close', function () { teor = null; });
@@ -725,7 +726,7 @@
   });
 
   return {
-    aoAbrirAba: function (nome) { if (nome === 'proposicoes') abrirPainel(); },
+    aoAbrirAba: function (nome, sub) { if (nome === 'proposicoes') { if (sub) vista = sub; abrirPainel(); } },
     aoTrocarCliente: function () { filtroEsp = ''; if (P.estado.aba === 'proposicoes') abrirPainel(); },
     rota: function (params) {
       if (params.get('proposicao')) { renderDetalhe(params.get('proposicao')); return true; }

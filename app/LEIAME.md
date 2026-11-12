@@ -65,6 +65,26 @@ Os alertas são publicados pelo Table Editor escolhendo o cliente na coluna `cli
 
 A aba Geral lê do banco (tabela `entradas`, preenchida pela coleta diária) os dias até ontem e consulta na hora só o dia de hoje.
 
+## Funções de relações governamentais (menu lateral)
+Rode `supabase/relgov.sql` no SQL Editor (depois de `niveis.sql`). O menu lateral organiza o app em seções:
+
+- **Painel geral**: resumo do cliente (monitoradas, tarefas atrasadas, prazos da semana, reuniões, apoios mapeados) e as entradas por tipo.
+- **Legislativo**: proposições monitoradas, novas, palavras-chave e especialidades, e a **Agenda do Congresso** (comissões e plenários
+  das duas Casas, com as monitoradas em pauta em destaque).
+- **Parlamentares**: deputados e senadores em exercício (dados oficiais), perfil com gabinete, comissões e autorias, e o **mapa de
+  stakeholders** do cliente (apoiador a opositor, influência, temas e notas).
+- **Relacionamento**: contatos (com importação e exportação de planilha), reuniões e interações, tarefas e prazos.
+- **Comunicação**: alertas (publicados pelo app por coordenadores), **envio de e-mails em massa** e listas de e-mail, recebidos.
+- **Relatórios**: relatório do cliente por período, para imprimir, salvar em PDF ou baixar em Word.
+
+Envio de e-mails: publique as funções `enviar-emails` e `descadastrar` (esta com "Verify JWT" desligado) e crie os segredos
+`RESEND_API_KEY` e `EMAIL_REMETENTE` em Edge Functions > Secrets. Master e coordenadores enviam; atendimentos só quando liberados
+em Configurações > Perfis e permissões. Todo e-mail leva o link de descadastro (`descadastro.html`).
+
+## Programa para Windows
+A pasta `desktop/` gera o instalador do Panorama RelGov (veja `desktop/LEIAME.md`). O programa abre este app publicado, então
+recebe as novidades sem reinstalar.
+
 ## Prévia dentro do Claude
 
 `python3 ferramentas/montar-previa.py . app-panorama.html` gera uma página única em modo de demonstração.

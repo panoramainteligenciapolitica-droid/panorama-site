@@ -62,7 +62,7 @@
     document.querySelectorAll('[data-tema-painel]').forEach(function (d) { d.hidden = d.dataset.temaPainel !== t; });
   }
   $('temas-config').addEventListener('click', function (ev) {
-    var b = ev.target.closest('button[data-tema]'); if (b) mostrarTema(b.dataset.tema);
+    var b = ev.target.closest('button[data-tema]'); if (b) { mostrarTema(b.dataset.tema); document.dispatchEvent(new CustomEvent('panorama-tema', { detail: b.dataset.tema })); }
   });
 
   // ---------- minha conta ----------
@@ -312,13 +312,15 @@
     P.mostrar('tela-config');
     var pode = gere();
     document.querySelectorAll('#temas-config button').forEach(function (b) {
-      b.hidden = b.dataset.tema === 'conta' ? false : b.dataset.tema === 'organizacoes' ? !ehMaster() : !pode;
+      var livre = ['conta', 'perfis', 'programa'].indexOf(b.dataset.tema) >= 0;
+      b.hidden = livre ? false : b.dataset.tema === 'organizacoes' ? !ehMaster() : !pode;
     });
-    if (!pode || (tema === 'organizacoes' && !ehMaster())) tema = 'conta';
+    var botaoTema = document.querySelector('#temas-config button[data-tema="' + tema + '"]');
+    if (!botaoTema || botaoTema.hidden) tema = 'conta';
     mostrarTema(tema);
-    $('temas-config').hidden = !pode;
     renderConta();
     if (pode) atualizarTudo();
+    document.dispatchEvent(new CustomEvent('panorama-config'));
   }
 
   return {
