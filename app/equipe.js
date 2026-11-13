@@ -164,6 +164,21 @@
             P.avisar('Cliente renomeado'); atualizarTudo();
           });
         } }),
+        ehMaster() && dados.orgs.length > 1 ? (function () {
+          // Só o master troca a organização do cliente; as liberações de atendimentos da organização antiga saem
+          var sel = el('select', { 'aria-label': 'Organização de ' + c.nome, class: 'trocar-org' });
+          opcoes(sel, dados.orgs, c.organizacao_id);
+          sel.addEventListener('change', function () {
+            var nova = sel.value, nomeNova = nomeOrg(nova);
+            P.sb.from('clientes').update({ organizacao_id: nova }).eq('id', c.id).then(function (r) {
+              if (r.error) { sel.value = c.organizacao_id; P.avisar(erroAmigavel(r.error)); return; }
+              var deFora = dados.pessoas.filter(function (p) { return p.organizacao_id && p.organizacao_id !== nova; }).map(function (p) { return p.user_id; });
+              var limpar = deFora.length ? P.sb.from('acessos').delete().eq('cliente_id', c.id).in('user_id', deFora) : Promise.resolve();
+              Promise.resolve(limpar).then(function () { P.avisar(c.nome + ' agora é da ' + nomeNova); atualizarTudo(); });
+            });
+          });
+          return el('label', { class: 'discreto rotulo-org' }, [el('span', { text: 'Organização ' }), sel]);
+        })() : null,
         el('button', { type: 'button', class: 'remover', text: 'Apagar', onclick: function () {
           confirmar(this, 'Apaga tudo de ' + c.nome + '? Toque de novo', function () {
             P.sb.from('clientes').delete().eq('id', c.id).then(function (r) {
