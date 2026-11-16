@@ -303,6 +303,17 @@
     });
   }
 
+  // Outras telas (alerta, nota técnica, relatório) abrem um rascunho de e-mail já preenchido
+  window.PanoramaEmails = {
+    escrever: function (v) {
+      if (!G.podeEnviar || !G.podeEnviar()) { P.avisar('Seu perfil não envia e-mails por este cliente'); return; }
+      P.tabela('listas_email').listar({ ordem: 'nome' }).then(function (listas) {
+        editarCampanha(Object.assign({ lista_id: (listas[0] && listas[0].id) || '', remetente_nome: P.nomeCliente(P.estado.cliente) || 'Panorama', status: 'rascunho',
+          responder_para: (P.estado.perfil && P.estado.perfil.email) || '' }, v || {}), listas);
+      }, function (e) { P.avisar(G.erroAmigavel(e)); });
+    }
+  };
+
   return {
     aoAbrirAba: function (nome) { if (nome === 'emails') renderEmails(); if (nome === 'listas') renderListas(); },
     aoTrocarCliente: function () { if (P.estado.aba === 'emails') renderEmails(); if (P.estado.aba === 'listas') renderListas(); }

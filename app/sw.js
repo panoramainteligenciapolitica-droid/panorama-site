@@ -1,7 +1,7 @@
 // Guarda a casca do app para abrir sem internet. Só cuida dos arquivos em /app/;
 // login e dados (Supabase) passam direto pela rede.
 // Ao mudar qualquer arquivo da lista, aumente a versão para os celulares baixarem a nova.
-var VERSAO = 'panorama-app-v15';
+var VERSAO = 'panorama-app-v16';
 var CASCA = [
   './',
   'app.css',
@@ -17,6 +17,9 @@ var CASCA = [
   'relacionamento.js',
   'emails.js',
   'relatorio.js',
+  'avisos.js',
+  'detalhe.js',
+  'indicadores.js',
   'config.js',
   'manifest.webmanifest',
   'vendor/supabase-2.45.4.js',
@@ -52,5 +55,24 @@ self.addEventListener('fetch', function (e) {
     return r;
   }).catch(function () {
     return caches.match(req.mode === 'navigate' ? './' : req, { ignoreSearch: req.mode === 'navigate' });
+  }));
+});
+
+// ---------- notificações (Web Push, função avisos) ----------
+self.addEventListener('push', function (e) {
+  var d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (x) { d = { titulo: e.data ? e.data.text() : 'Panorama' }; }
+  e.waitUntil(self.registration.showNotification(d.titulo || 'Panorama RelGov', {
+    body: d.texto || '', tag: d.tag || undefined, icon: 'icones/icone-192.png', badge: 'icones/icone-192.png',
+    data: { link: d.link || './?secao=avisos' }
+  }));
+});
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  var link = (e.notification.data && e.notification.data.link) || './?secao=avisos';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (janelas) {
+    var aberta = janelas.find(function (j) { return j.url.indexOf(self.registration.scope) === 0; });
+    if (aberta) { aberta.postMessage({ tipo: 'abrir', link: link }); return aberta.focus(); }
+    return self.clients.openWindow(link);
   }));
 });

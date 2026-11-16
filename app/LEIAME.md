@@ -110,9 +110,34 @@ Enquanto o app do Google não passar pela verificação, quem conecta vê o avis
 "Avançado" e continuar) e o limite é de 100 contas. Se o app ficar em "Teste", a conexão cai a cada 7 dias. Em empresas que
 usam Microsoft 365, o administrador pode ter que aprovar o app uma vez para a organização.
 
+## Avisos, tramitação, resumo por IA e demais melhorias (melhorias.sql)
+
+Rode `supabase/melhorias.sql` no SQL Editor depois de `relgov.sql` e `contas-email.sql`. Ele:
+
+- tira das funções internas (SECURITY DEFINER) a permissão de quem não entrou no app;
+- cria `tramitacoes`, `avisos`, `avisos_lidos`, `push_inscricoes`, `config_servidor`, `notas_tecnicas` e `historico`;
+- acrescenta limiar por cliente, responsável nas tarefas, preferências de aviso e campos de tramitação nas proposições;
+- agenda três tarefas: `acompanhar-tramitacao` (todo dia às 7h20 de Brasília), `avisos` a cada 15 minutos (notificações) e
+  `avisos` às 8h (resumo diário por e-mail, tarefas que vencem e rascunho do relatório mensal no dia 1).
+
+Edge Functions (todas com "Verify JWT" ligado):
+
+| Função | O que faz | Segredos |
+| --- | --- | --- |
+| `coletar-proposicoes` | coleta diária, agora por cliente, com palavras-chave e similaridade, e avisos de novas | — |
+| `acompanhar-tramitacao` | lê andamento, relator, situação e prazos de emendas das monitoradas e avisa as mudanças | — |
+| `avisos` | notificações no celular e no PC (Web Push), resumo diário por e-mail, avisos de tarefas | `RESEND_API_KEY`, `EMAIL_REMETENTE` |
+| `resumir` | resumo da proposição pelo Claude, a partir do inteiro teor | `ANTHROPIC_API_KEY` |
+
+As chaves das notificações (VAPID) são criadas sozinhas na primeira vez e ficam na tabela `config_servidor`, que só o servidor lê.
+Cada pessoa liga as notificações em Configurações > Minha conta, em cada aparelho. No iPhone, só funciona com o app
+adicionado à tela de início (iOS 16.4 ou mais novo). No programa do Windows, o app confere os avisos a cada 3 minutos
+enquanto estiver aberto.
+
 ## Programa para Windows
 A pasta `desktop/` gera o instalador do Panorama RelGov (veja `desktop/LEIAME.md`). O programa abre este app publicado, então
-recebe as novidades sem reinstalar.
+recebe as novidades sem reinstalar. A partir da versão 1.1.0, o próprio programa também se atualiza: procura versão nova
+nas Releases do GitHub ao abrir, baixa em segundo plano e instala ao fechar (menu Ajuda > Procurar atualização do programa).
 
 ## Prévia dentro do Claude
 

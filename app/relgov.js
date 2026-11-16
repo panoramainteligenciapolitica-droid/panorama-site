@@ -179,25 +179,34 @@
   };
 
   // ---------- alertas publicados pelo app ----------
-  $('novo-alerta').addEventListener('click', function () {
+  // Publicar um alerta para o cliente, com a opção de mandar o mesmo texto por e-mail a uma lista
+  function publicarAlerta(valores) {
+    var campos = [
+      { nome: 'titulo', rotulo: 'Título', obrigatorio: true },
+      { nome: 'tema', rotulo: 'Tema', placeholder: 'Ex.: Tributário', largura: 'meia' },
+      { nome: 'link', rotulo: 'Link da fonte', tipo: 'url', placeholder: 'https://', largura: 'meia' },
+      { nome: 'resumo', rotulo: 'Resumo', tipo: 'textarea', linhas: 2 },
+      { nome: 'conteudo', rotulo: 'Análise completa', tipo: 'textarea', linhas: 8 }
+    ];
+    if (window.PanoramaEmails && podeEnviar()) campos.push({ nome: 'por_email', rotulo: 'Depois de publicar, preparar um e-mail com este alerta para uma lista', tipo: 'checkbox' });
     formulario({
       titulo: 'Publicar alerta para ' + (P.nomeCliente(P.estado.cliente) || 'o cliente'),
-      campos: [
-        { nome: 'titulo', rotulo: 'Título', obrigatorio: true },
-        { nome: 'tema', rotulo: 'Tema', placeholder: 'Ex.: Tributário', largura: 'meia' },
-        { nome: 'link', rotulo: 'Link da fonte', tipo: 'url', placeholder: 'https://', largura: 'meia' },
-        { nome: 'resumo', rotulo: 'Resumo', tipo: 'textarea', linhas: 2 },
-        { nome: 'conteudo', rotulo: 'Análise completa', tipo: 'textarea', linhas: 8 }
-      ],
+      campos: campos, valores: valores || {},
       botao: 'Publicar',
       aoSalvar: function (v) {
         if (v.link && !/^https?:\/\//.test(v.link)) throw new Error('O link precisa começar com https://');
+        var porEmail = v.por_email; delete v.por_email;
         return P.sb.from('alertas').insert(Object.assign({ cliente_id: P.estado.cliente }, v)).then(function (r) {
           if (r.error) throw r.error; P.avisar('Alerta publicado'); P.renderAlertas();
+          if (porEmail) setTimeout(function () {
+            window.PanoramaEmails.escrever({ assunto: v.titulo, corpo: 'Prezado(a) {{tratamento}} {{nome}},\n\n' + [v.resumo, v.conteudo].filter(Boolean).join('\n\n') + (v.link ? '\n\nFonte: ' + v.link : '') + '\n\nColocamo-nos à disposição.' });
+          }, 50);
         });
       }
     });
-  });
+  }
+  window.PanoramaRG.publicarAlerta = publicarAlerta;
+  $('novo-alerta').addEventListener('click', function () { publicarAlerta(); });
 
   // ---------- resumo do cliente no Painel geral ----------
   function renderResumo() {
@@ -240,6 +249,11 @@
     ['Listas de e-mail e rascunhos de campanhas', 1, 1, 1],
     ['Enviar e-mails em massa', 1, 1, 'se liberado'],
     ['Publicar alertas para o cliente', 1, 1, 0],
+    ['Avisos no app, notificações e resumo diário por e-mail', 1, 1, 1],
+    ['Resumo por IA, notas técnicas e chance de aprovação', 1, 1, 1],
+    ['Indicadores da equipe', 1, 1, 1],
+    ['Histórico de alterações', 1, 1, 0],
+    ['Mudar o limiar de similaridade do cliente', 1, 1, 0],
     ['Ver todos os clientes da organização', 1, 1, 0],
     ['Criar clientes e cadastrar atendimentos', 1, 1, 0],
     ['Liberar clientes e envio de e-mail para atendimentos', 1, 1, 0],

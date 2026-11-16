@@ -27,6 +27,27 @@
     ]);
   }
 
+  // Relatório mensal automático: no dia 1 o app prepara um rascunho de e-mail para a lista escolhida
+  function envioMensal() {
+    if (P.estado.demo || !G.gere()) return null;
+    var cli = (P.estado.clientes || []).find(function (c) { return c.id === P.estado.cliente; });
+    if (!cli || !('relatorio_lista_id' in cli)) return null;
+    var sel = el('select', { 'aria-label': 'Lista do relatório mensal' }, [el('option', { value: '', text: 'Não preparar' })]);
+    P.tabela('listas_email').listar({ ordem: 'nome' }).then(function (listas) {
+      listas.forEach(function (l) { sel.appendChild(el('option', { value: l.id, text: l.nome })); });
+      sel.value = cli.relatorio_lista_id || '';
+    }, function () { /* sem listas */ });
+    sel.addEventListener('change', function () {
+      var v = sel.value || null;
+      P.sb.from('clientes').update({ relatorio_lista_id: v }).eq('id', cli.id).then(function (r) {
+        if (r.error) { P.avisar(G.erroAmigavel(r.error)); sel.value = cli.relatorio_lista_id || ''; return; }
+        cli.relatorio_lista_id = v;
+        P.avisar(v ? 'Todo dia 1 um rascunho do relatório do mês anterior fica pronto em E-mails' : 'Relatório mensal desligado');
+      });
+    });
+    return el('label', { class: 'linha-mensal discreto' }, [el('span', { text: 'Relatório mensal automático para a lista: ' }), sel]);
+  }
+
   function render() {
     var painel = $('painel-relatorio');
     if (G.semCliente(painel)) return;
@@ -39,8 +60,14 @@
           if (!texto) return;
           window.PanoramaTeor.baixar('relatorio-' + (P.nomeCliente(P.estado.cliente) || 'cliente').replace(/\W+/g, '-') + '-' + G.hojeIso() + '.docx', window.PanoramaTeor.docx(texto),
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        }, 'botao-linha')
-      ]),
+        }, 'botao-linha'),
+        window.PanoramaEmails && !P.estado.demo && G.podeEnviar() ? G.botao('Enviar por e-mail', function () {
+          if (!texto) return;
+          window.PanoramaEmails.escrever({ assunto: 'Relatório de acompanhamento · ' + (P.nomeCliente(P.estado.cliente) || 'cliente') + ' · ' + G.dataBr(G.hojeIso()),
+            corpo: 'Prezado(a) {{tratamento}} {{nome}},\n\nSegue o relatório de acompanhamento do período.\n\n' + texto + '\n\nColocamo-nos à disposição.' });
+        }, 'botao-linha') : null
+      ].filter(Boolean)),
+      envioMensal(),
       el('div', { class: 'chips-filtro' }, [['30', 'Últimos 30 dias'], ['7', 'Últimos 7 dias'], ['mes', 'Este mês'], ['anterior', 'Mês passado'], ['90', 'Últimos 90 dias']].map(function (p) {
         return el('button', { type: 'button', 'aria-pressed': String(periodo === p[0]), text: p[1], onclick: function () { periodo = p[0]; render(); } });
       })),
