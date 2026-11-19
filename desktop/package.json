@@ -1,7 +1,7 @@
 {
   "name": "panorama-relgov",
   "productName": "Panorama RelGov",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Panorama Inteligência Política para Windows",
   "author": "Panorama Inteligência Política",
   "license": "UNLICENSED",
@@ -65,5 +65,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/panoramainteligenciapolitica-droid/panorama-site.git"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.12"
   }
 }

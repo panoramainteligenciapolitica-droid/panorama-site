@@ -404,3 +404,46 @@ select { font: inherit; font-size: .95rem; padding: .6rem .7rem; border: 1px sol
 
 .rotulo-org { display: flex; align-items: center; gap: .35rem; font-size: .8rem; margin-left: auto; }
 .rotulo-org select { padding: .3rem .5rem; font-size: .82rem; }
+
+/* ---------- avisos ---------- */
+.lista-avisos { list-style: none; padding: 0; margin: 0; display: grid; gap: .6rem; }
+.item.aviso { border-left: 4px solid var(--gold); }
+.item.aviso.lido { border-left-color: var(--line); opacity: .75; }
+.texto-aviso { white-space: pre-line; }
+
+/* ---------- detalhe da proposição ---------- */
+.detalhe-extra { display: grid; gap: 1rem; margin-top: 1rem; }
+.bloco-detalhe h2 { font-size: 1rem; margin: 0 0 .5rem; }
+.chance { display: grid; gap: .35rem; max-width: 26rem; }
+.barra-chance { display: block; height: 8px; border-radius: 4px; background: var(--surface); overflow: hidden; }
+.barra-chance > span { display: block; height: 100%; background: var(--navy); }
+.chance-alta, .chance-virou-norma { color: var(--bom); }
+.chance-media { color: var(--media); }
+.chance-baixa, .chance-encerrada { color: var(--alta); }
+.motivos { margin: .3rem 0 0; padding-left: 1.1rem; font-size: .82rem; color: var(--muted); }
+.linha-tempo { list-style: none; margin: 0; padding: 0 0 0 1rem; border-left: 2px solid var(--line); display: grid; gap: .7rem; }
+.linha-tempo li { position: relative; font-size: .88rem; }
+.linha-tempo li::before { content: ""; position: absolute; left: calc(-1rem - 6px); top: .35rem; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); }
+.lista-votacoes li { display: block; }
+.votos { margin-top: .5rem; font-size: .84rem; display: grid; gap: .35rem; }
+.texto-resumo { white-space: pre-line; background: var(--surface); border-radius: 10px; padding: .8rem 1rem; font-size: .9rem; line-height: 1.5; }
+.linha-nota { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem; justify-content: space-between; }
+.acoes-nota { display: flex; flex-wrap: wrap; gap: .4rem; }
+
+/* ---------- tarefas em quadro ---------- */
+.quadro-tarefas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; align-items: start; }
+.coluna-quadro { background: var(--surface); border-radius: 12px; padding: .7rem; }
+.coluna-quadro h3 { font-size: .9rem; margin: 0 0 .5rem; }
+.cartao-tarefa { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .6rem; display: grid !important; gap: .3rem; }
+.cartao-tarefa.atrasado { border-left: 4px solid var(--alta); }
+.mover-tarefa { display: flex; justify-content: space-between; gap: .4rem; font-size: .78rem; }
+@media (max-width: 720px) { .quadro-tarefas { grid-template-columns: 1fr; } }
+
+/* ---------- relatório, indicadores e histórico ---------- */
+.linha-mensal { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .2rem 0 .8rem; font-size: .84rem; }
+.linha-mensal select { padding: .3rem .5rem; font-size: .84rem; }
+.tabela-indicadores td.num, .tabela-indicadores th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.lista-historico { list-style: none; margin: 0; padding: 0; display: grid; gap: .45rem; font-size: .85rem; }
+.lista-historico li { border-bottom: 1px solid var(--line); padding-bottom: .4rem; }
+@media print { .linha-mensal { display: none; } }
+span.atrasado { color: var(--alta); font-weight: 600; }

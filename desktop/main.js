@@ -55,6 +55,7 @@ function montarMenu() {
   const modelo = [
     { label: '&Arquivo', submenu: [
       item('Painel geral', '?secao=geral', 'Ctrl+1'),
+      item('Avisos', '?secao=avisos'),
       { type: 'separator' },
       { label: 'Imprimir', accelerator: 'Ctrl+P', click: () => janela && janela.webContents.print() },
       { type: 'separator' },
@@ -83,7 +84,7 @@ function montarMenu() {
       item('Listas de e-mail', '?secao=listas'),
       item('Recebidos', '?secao=recebidos')
     ] },
-    { label: 'R&elatórios', submenu: [item('Relatório do cliente', '?secao=relatorio', 'Ctrl+7')] },
+    { label: 'R&elatórios', submenu: [item('Relatório do cliente', '?secao=relatorio', 'Ctrl+7'), item('Indicadores da equipe', '?secao=indicadores')] },
     { label: '&Exibir', submenu: [
       { role: 'reload', label: 'Recarregar' },
       { role: 'forceReload', label: 'Recarregar sem cache' },
@@ -98,6 +99,7 @@ function montarMenu() {
       item('Configurações', '?config=1', 'Ctrl+,'),
       { label: 'Abrir no navegador', click: () => shell.openExternal(ENDERECO) },
       { label: 'Site da Panorama', click: () => shell.openExternal('https://panoramaip.com.br/') },
+      { label: 'Procurar atualização do programa', click: () => procurarAtualizacao(true) },
       { type: 'separator' },
       { label: 'Sobre', click: () => dialog.showMessageBox(janela, {
         type: 'info', title: 'Panorama RelGov',
@@ -162,10 +164,39 @@ function criarJanela() {
   janela.loadURL(ENDERECO);
 }
 
+// ---------- atualização do próprio programa ----------
+// As telas vêm do site e se atualizam sozinhas. O programa (janela, menu) se atualiza pelas versões
+// publicadas no GitHub (Releases): baixa em segundo plano e instala ao fechar.
+let atualizador = null;
+function procurarAtualizacao(avisarSemNovidade) {
+  if (!app.isPackaged) { if (avisarSemNovidade) dialog.showMessageBox(janela, { type: 'info', message: 'A atualização automática só funciona no programa instalado.' }); return; }
+  try {
+    if (!atualizador) {
+      atualizador = require('electron-updater').autoUpdater;
+      atualizador.autoInstallOnAppQuit = true;
+      atualizador.on('update-downloaded', (info) => {
+        dialog.showMessageBox(janela, {
+          type: 'info', buttons: ['Reiniciar agora', 'Depois'], defaultId: 0, cancelId: 1,
+          title: 'Atualização pronta', message: 'A versão ' + info.version + ' do Panorama RelGov foi baixada.',
+          detail: 'Ela será instalada quando você fechar o programa, ou agora se preferir.'
+        }).then((r) => { if (r.response === 0) atualizador.quitAndInstall(); });
+      });
+    }
+    atualizador.checkForUpdates().then((r) => {
+      if (avisarSemNovidade && (!r || !r.isUpdateAvailable)) dialog.showMessageBox(janela, { type: 'info', message: 'Você já está na versão mais nova (' + app.getVersion() + ').' });
+    }).catch((e) => {
+      if (avisarSemNovidade) dialog.showMessageBox(janela, { type: 'warning', message: 'Não foi possível procurar atualização agora.', detail: String(e && e.message || e) });
+    });
+  } catch (e) {
+    if (avisarSemNovidade) dialog.showMessageBox(janela, { type: 'warning', message: 'Atualização indisponível nesta versão.' });
+  }
+}
+
 app.whenReady().then(() => {
   app.setAppUserModelId('br.com.panoramaip.relgov');
   servirLocal();
   montarMenu();
   criarJanela();
+  setTimeout(() => procurarAtualizacao(false), 15000);
 });
 app.on('window-all-closed', () => app.quit());

@@ -110,9 +110,24 @@
   // ---------- estado da tela ----------
   var dados = { especialidades: [], palavras: [], proposicoes: [], candidatas: [] };
   var vista = 'monitoradas', filtroEsp = '', mostrarAbaixo = false;
-  // A similaridade mínima vale por cliente, guardada neste aparelho
+  // A similaridade mínima vale por cliente e fica no banco (clientes.limiar), igual para toda a equipe.
+  // No modo de teste, ou antes de rodar melhorias.sql, fica neste aparelho.
   function chaveLimiar() { return 'panorama-limiar' + (P.estado.cliente ? '-' + P.estado.cliente : ''); }
-  function limiar() { var v = parseInt(P.ler(chaveLimiar()) || P.ler('panorama-limiar'), 10); return isNaN(v) ? 20 : v; }
+  function clienteAtual() { return (P.estado.clientes || []).find(function (c) { return c.id === P.estado.cliente; }); }
+  function limiarNoBanco() { var c = clienteAtual(); return Boolean(c && typeof c.limiar === 'number'); }
+  function limiar() {
+    if (limiarNoBanco()) return clienteAtual().limiar;
+    var v = parseInt(P.ler(chaveLimiar()) || P.ler('panorama-limiar'), 10); return isNaN(v) ? 20 : v;
+  }
+  var gravarLimiar = null;
+  function mudarLimiar(v) {
+    if (!limiarNoBanco()) { P.gravar(chaveLimiar(), String(v)); return; }
+    var c = clienteAtual(); c.limiar = v;
+    clearTimeout(gravarLimiar);
+    gravarLimiar = setTimeout(function () {
+      P.sb.from('clientes').update({ limiar: v }).eq('id', c.id).then(function (r) { P.avisar(r.error ? 'Não foi possível salvar a similaridade mínima' : 'Similaridade mínima salva para toda a equipe'); });
+    }, 600);
+  }
 
   function carregar() {
     return Promise.all(['especialidades', 'palavras', 'proposicoes', 'candidatas'].map(function (t) { return banco.listar(t); }))
@@ -304,6 +319,10 @@
 
     $('limiar').value = limiar();
     $('limiar-valor').textContent = limiar() + '%';
+    // No banco, só master e coordenador mudam (vale para toda a equipe do cliente)
+    var podeMudar = !limiarNoBanco() || ['master', 'coordenador'].indexOf(P.papel(P.estado.perfil)) >= 0;
+    $('limiar').disabled = !podeMudar;
+    $('limiar-nota').textContent = limiarNoBanco() ? (podeMudar ? 'Vale para toda a equipe deste cliente.' : 'Definida pelo coordenador; vale para toda a equipe deste cliente.') : 'Guardada neste aparelho.';
   }
 
   $('form-palavra').addEventListener('submit', function (ev) {
@@ -324,7 +343,7 @@
       dados.especialidades.push(o); $('nova-esp').value = ''; P.avisar('Especialidade criada'); renderFiltros();
     }, function () { P.avisar('Não foi possível criar'); });
   });
-  $('limiar').addEventListener('input', function () { $('limiar-valor').textContent = this.value + '%'; P.gravar(chaveLimiar(), this.value); renderResumoSoma(); });
+  $('limiar').addEventListener('input', function () { $('limiar-valor').textContent = this.value + '%'; mudarLimiar(parseInt(this.value, 10)); renderResumoSoma(); });
   function renderResumoSoma() { var n = analiseDasNovas().filter(function (a) { return a.entra; }).length; $('contador-novas').textContent = n ? String(n) : ''; }
 
   ['monitoradas', 'novas', 'filtros'].forEach(function (v) {
@@ -396,7 +415,8 @@
           el('button', { class: 'botao botao-linha', type: 'button', text: 'Compartilhar', onclick: function () { compartilharProp(p); } }),
           parar
         ]),
-        linkCasa(p) ? el('p', {}, [linkCasa(p)]) : null
+        linkCasa(p) ? el('p', {}, [linkCasa(p)]) : null,
+        window.PanoramaDetalhe ? window.PanoramaDetalhe.montar(p, function () { renderDetalhe(id); }) : null
       ].filter(Boolean));
     });
   }
@@ -563,7 +583,7 @@
     ]);
   }
 
-  window.PanoramaTeor = { abrir: function (p) { abrirTeor(p, null); }, docx: docx, pdf: pdf, baixar: baixar };
+  window.PanoramaTeor = { abrir: function (p) { abrirTeor(p, null); }, obter: obterTeor, docx: docx, pdf: pdf, baixar: baixar };
   $('teor-fechar').addEventListener('click', fecharTeor);
   $('dialogo-teor').addEventListener('click', function (ev) { if (ev.target === this) fecharTeor(); });
   $('dialogo-teor').addEventListener('close', function () { teor = null; });

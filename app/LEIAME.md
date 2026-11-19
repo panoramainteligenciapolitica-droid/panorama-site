@@ -87,6 +87,61 @@ Cada e-mail traz o descadastro em um clique dos provedores (cabeçalho `List-Uns
 O envio reserva a campanha: duas chamadas ao mesmo tempo não mandam em dobro, e um envio parado há mais de 10 minutos pode continuar. Master e coordenadores enviam; atendimentos só quando liberados
 em Configurações > Perfis e permissões. Todo e-mail leva o link de descadastro (`descadastro.html`).
 
+### Enviar pelo próprio Gmail ou Outlook
+Cada pessoa da equipe pode conectar a própria conta em Configurações > Minha conta > "Meu e-mail para envios". Os envios dela
+(em massa e testes) passam a sair do endereço dela, com as respostas na caixa dela e cópia em Enviados. Sem conta conectada,
+o envio continua pelo Resend. Na hora de enviar dá para escolher entre "Minha conta" e "Servidor do app".
+
+- O app pede só a permissão de enviar (Gmail: `gmail.send`; Microsoft: `Mail.Send`). Não lê a caixa de entrada.
+- Os tokens ficam na tabela `contas_email`, com RLS ligado e sem regra nenhuma para usuários: só as funções do servidor leem.
+  O app vê apenas o provedor e o endereço, pela função `minha_conta_email()`.
+- Envio pela conta é um e-mail por vez (Gmail cerca de 2 por segundo; Outlook até 30 por minuto). Se o tempo da função acaba,
+  o app chama de novo sozinho até terminar. Se o Gmail ou o Outlook avisarem que a cota do dia acabou, o envio para e fica
+  "Parcialmente enviada" para continuar depois.
+
+Para ligar (uma vez):
+1. SQL Editor: rode `supabase/contas-email.sql`.
+2. Edge Functions: publique `conta-email` com "Verify JWT" **desligado** (o Google e a Microsoft voltam para ela sem o login
+   do app) e atualize `enviar-emails` com o código novo.
+3. Google Cloud (console.cloud.google.com): crie um projeto, ative a Gmail API, configure a tela de consentimento (Externo,
+   domínio autorizado `crshelcvnyisecueknzd.supabase.co`, escopos `openid`, `email`, `profile` e `gmail.send`), publique
+   o app ("Em produção") e crie um ID do cliente OAuth do tipo "Aplicativo da Web" com o URI de redirecionamento
+   `https://crshelcvnyisecueknzd.supabase.co/functions/v1/conta-email`.
+4. Microsoft (entra.microsoft.com > Registros de aplicativo): novo registro para "contas em qualquer diretório organizacional
+   e contas Microsoft pessoais", URI de redirecionamento Web igual ao de cima, um segredo do cliente e as permissões
+   delegadas do Microsoft Graph `Mail.Send`, `User.Read`, `offline_access`, `openid`, `email` e `profile`.
+5. Edge Functions > Secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MICROSOFT_CLIENT_ID` e `MICROSOFT_CLIENT_SECRET`.
+
+Enquanto o app do Google não passar pela verificação, quem conecta vê o aviso "O Google não verificou este app" (clicar em
+"Avançado" e continuar) e o limite é de 100 contas. Se o app ficar em "Teste", a conexão cai a cada 7 dias. Em empresas que
+usam Microsoft 365, o administrador pode ter que aprovar o app uma vez para a organização.
+
+## Avisos, tramitação, resumo por IA e demais melhorias (melhorias.sql)
+
+Rode `supabase/melhorias.sql` no SQL Editor depois de `relgov.sql`, `agendamento.sql` e `contas-email.sql`. Ele:
+
+- confirma que quem não entrou no app não chama nenhuma função do banco (a mesma regra do `relgov.sql`, sem abrir nada);
+- cria `tramitacoes`, `avisos`, `avisos_lidos`, `push_inscricoes`, `config_servidor`, `notas_tecnicas` e `historico`;
+- acrescenta limiar por cliente, responsável nas tarefas, preferências de aviso e campos de tramitação nas proposições;
+- agenda três tarefas: `acompanhar-tramitacao` (todo dia às 7h20 de Brasília), `avisos` a cada 15 minutos (notificações) e
+  `avisos` às 8h (resumo diário por e-mail, tarefas que vencem e rascunho do relatório mensal no dia 1).
+
+Edge Functions (todas com "Verify JWT" ligado). Como a coleta, as rodadas agendadas de `acompanhar-tramitacao` e de `avisos`
+só aceitam o cabeçalho `x-coleta-segredo` com o segredo do Vault criado pelo `agendamento.sql`; com login, o app só atualiza
+uma proposição que a pessoa vê e testa as notificações do próprio aparelho.
+
+| Função | O que faz | Segredos |
+| --- | --- | --- |
+| `coletar-proposicoes` | coleta diária, agora por cliente, com palavras-chave e similaridade, e avisos de novas | — |
+| `acompanhar-tramitacao` | lê andamento, relator, situação e prazos de emendas das monitoradas e avisa as mudanças | — |
+| `avisos` | notificações no celular e no PC (Web Push), resumo diário por e-mail, avisos de tarefas | `RESEND_API_KEY`, `EMAIL_REMETENTE` |
+| `resumir` | resumo da proposição pelo Claude, a partir do inteiro teor | `ANTHROPIC_API_KEY` |
+
+As chaves das notificações (VAPID) são criadas sozinhas na primeira vez e ficam na tabela `config_servidor`, que só o servidor lê.
+Cada pessoa liga as notificações em Configurações > Minha conta, em cada aparelho. No iPhone, só funciona com o app
+adicionado à tela de início (iOS 16.4 ou mais novo). No programa do Windows, o app confere os avisos a cada 3 minutos
+enquanto estiver aberto.
+
 ## Banco: ordem dos arquivos
 Sempre `esquema.sql`, `clientes.sql`, `niveis.sql`, `relgov.sql`. Todos podem rodar de novo sem abrir nada: o `relgov.sql`, por último,
 também fecha regras antigas, confere que listas, contatos e proposições ligados a um registro são do mesmo cliente, aceita só links
@@ -101,7 +156,8 @@ http(s) em alertas e recebidos, e tira de quem não tem login o acesso às funç
 
 ## Programa para Windows
 A pasta `desktop/` gera o instalador do Panorama RelGov (veja `desktop/LEIAME.md`). O programa abre este app publicado, então
-recebe as novidades sem reinstalar.
+recebe as novidades sem reinstalar. A partir da versão 1.1.0, o próprio programa também se atualiza: procura versão nova
+nas Releases do GitHub ao abrir, baixa em segundo plano e instala ao fechar (menu Ajuda > Procurar atualização do programa).
 
 ## Prévia dentro do Claude
 
