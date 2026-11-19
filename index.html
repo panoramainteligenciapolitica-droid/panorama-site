@@ -532,6 +532,25 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
 @media (max-width: 1200px) { .why .wrap { padding-top: calc(clamp(150px, 22vw, 300px) * .75 + 1.5rem); } }
 @media (max-width: 860px) { .contact .wrap { padding-bottom: calc(clamp(140px, 20vw, 280px) * .75 + 1.5rem); } }
 
+
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem clamp(.75rem, 3vw, 2rem); }
+.facts b { font-size: clamp(2.3rem, 4.6vw, 3.5rem); }
+.facts span { text-wrap: balance; line-height: 1.35; }
+/* Marco de 2026 e princípios de atuação, em cartões de vidro */
+.marco, .principio-base { position: relative; isolation: isolate; border-radius: var(--r-vidro); background: var(--vidro); box-shadow: var(--vidro-sombra); -webkit-backdrop-filter: var(--vidro-desfoque); backdrop-filter: var(--vidro-desfoque); }
+.marco::before, .principio-base::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(140deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .25) 32%, rgba(255, 255, 255, .06) 58%, rgba(255, 255, 255, .55));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+.marco { display: grid; gap: .5rem; padding: 1.4rem 1.5rem; margin-top: .5rem; border-left: 3px solid var(--gold); }
+.marco h3 { font-size: 1.2rem; font-weight: 500; color: var(--text); }
+.marco p:not(.eyebrow) { color: var(--muted); }
+.principios { display: grid; gap: .9rem; margin-top: 2rem; }
+.principio-base { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 1rem; padding: 1.4rem 1.5rem; }
+.principio-base h3 { font-size: 1.1rem; font-weight: 500; margin-bottom: .35rem; }
+.principio-base p { color: var(--muted); font-size: .95rem; text-align: left; hyphens: manual; }
+.principios + .values { margin-top: 1.25rem; }
+.marco p, .principio-base p { text-align: left; hyphens: manual; }
+@media (max-width: 480px) { .principio-base { grid-template-columns: minmax(0, 1fr); } }
 </style>
 <script>document.documentElement.classList.add('js');setTimeout(function(){if(!window.__mov)document.documentElement.classList.remove('js')},2500);</script>
 </head>
@@ -585,11 +604,27 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
       <div class="rule" aria-hidden="true"></div>
       <div>
         <div class="about-text">
-          <p>A Panorama é uma <strong>consultoria boutique</strong> de relações governamentais. Atendemos um cliente por setor, o que garante dedicação e evita conflito de interesses, e acreditamos que esse trabalho se faz com <strong>transparência, técnica e compromisso com a entrega</strong>.</p>
+          <p>A Panorama é uma <strong>consultoria boutique</strong> de relações governamentais. Atuamos com <strong>um único cliente por setor</strong>, um dos princípios que guiam o nosso trabalho, e acreditamos que esse trabalho se faz com <strong>transparência, técnica e compromisso com a entrega</strong>.</p>
           <p>Nossa missão é ajudar empresas, entidades e associações de classe a atuar junto ao Congresso Nacional e ao Poder Executivo federal, com informação confiável e orientação estratégica em um cenário que muda o tempo todo.</p>
           <div class="facts">
             <div><b>2018</b><span>início da atuação</span></div>
             <div><b>2024</b><span>nova estrutura da empresa</span></div>
+            <div><b>2026</b><span>Hub Legislativo próprio</span></div>
+          </div>
+          <div class="marco">
+            <p class="eyebrow">2026 · Ponto de inflexão</p>
+            <h3>Hub Legislativo</h3>
+            <p>Reunimos o monitoramento e a inteligência legislativa numa plataforma própria, o <strong>Hub Legislativo</strong>. Ele acompanha proposições, tramitação, pautas e agendas e consolida em um só lugar toda a atuação feita para cada cliente. A análise ficou mais rápida, o histórico de cada trabalho está sempre à mão e cada recomendação chega com mais base técnica.</p>
+          </div>
+        </div>
+        <div class="principios">
+          <p class="eyebrow">Princípios de atuação</p>
+          <div class="principio-base">
+            <svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg>
+            <div>
+              <h3>Um único cliente por setor</h3>
+              <p>É o princípio basilar da nossa atuação como consultoria boutique. Representamos uma só organização em cada setor, para que a nossa dedicação, as nossas informações e as nossas posições nunca se dividam entre interesses concorrentes. Assim evitamos os conflitos de interesse que podem surgir quando uma mesma consultoria atende partes com agendas opostas, e tratamos o compliance como compromisso diário, não como formalidade.</p>
+            </div>
           </div>
         </div>
         <ul class="values">
@@ -814,7 +849,7 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
       // Entradas: cada grupo aparece em sequência, um item depois do outro
       var groups = [
         ['.hero-text > *'], ['.hero-art img', 'rv-zoom'], ['.head > :not(.statement)'], ['.about-side > :not(svg)'],
-        ['.about-text > *'], ['.facts > div'], ['.values > li'], ['.reasons > li'], ['.axis'], ['.products > li'],
+        ['.about-text > *'], ['.facts > div'], ['.values > li'], ['.principios > *'], ['.reasons > li'], ['.axis'], ['.products > li'],
         ['.axes-note'], ['.steps > li'], ['.sector'], ['.contact-intro > *'], ['#contact-form'], ['footer .item']
       ];
       groups.forEach(function (g) {
