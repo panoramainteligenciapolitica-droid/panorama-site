@@ -495,38 +495,43 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
   .top .wrap, .sector, .axis, .steps li, .reasons li, #contact-form, .card, .selo, .btn-line, footer { -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 
-/* Tons de azul: o azul escuro da marca fica só na abertura e no destaque do Eixo 1.
-   "Por que atuar" e os demais eixos usam um azul névoa claro, e o contato um azul médio mais suave,
-   para as áreas azuis não se repetirem iguais. Todos os textos passam de 4,5:1. */
-:root { --nevoa: #e3eaf5; --nevoa-2: #d7e1f0; --azul-medio: #34528a; --azul-medio-2: #2f4c7e; --ouro-escuro: #7a5a28; --ouro-claro: #e3c697; }
+/* Tons de azul: os fundos das faixas seguem no azul da marca, e tudo o que flutua sobre eles
+   (painel da abertura, cartões de "Por que atuar", formulário) usa um azul vidro dois ou três tons mais claro,
+   para cartão e fundo não terem o mesmo azul. Os cabeçalhos dos quatro eixos ficam no azul da marca.
+   Textos acima de 4,5:1. */
+:root { --azul-vidro: rgba(78, 110, 165, .55); --azul-vidro-hover: rgba(88, 122, 180, .6); --texto-sobre-azul: #dbe3f0; }
+.hero-text { background: var(--azul-vidro); }
+.hero .lead, .hero-chips span { color: var(--texto-sobre-azul); }
+.reasons li { background: var(--azul-vidro); }
+.reasons li:hover { background: var(--azul-vidro-hover); }
+.reasons p, .contact p, .contact .field label { color: var(--texto-sobre-azul); }
+#contact-form { background: var(--azul-vidro); }
+.field input, .field textarea { background: rgba(34, 53, 95, .35); border-color: rgba(255, 255, 255, .22); }
+.field input:focus, .field textarea:focus { background: rgba(34, 53, 95, .5); }
 
-.why { position: relative; overflow: hidden; background: linear-gradient(180deg, var(--nevoa), var(--nevoa-2)); color: var(--text); }
-.why-bg { opacity: .07; filter: grayscale(1); }
-.why .eyebrow { color: var(--ouro-escuro); }
-.why .head p { color: var(--muted); }
-.why .padrao { --pn-cor: var(--nevoa); }
-.reasons li { background: rgba(255, 255, 255, .7); box-shadow: var(--vidro-sombra); }
-.reasons li::before { background: linear-gradient(140deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .25) 32%, rgba(255, 255, 255, .06) 58%, rgba(255, 255, 255, .55)); }
-.reasons li::after { background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 255, 255, .6), transparent 60%); }
-.reasons li:hover { background: rgba(255, 255, 255, .85); }
-.reasons h3 { color: var(--navy-ink); }
-.reasons p { color: var(--muted); }
-
-/* Eixos 2 a 4 com cabeçalho em azul névoa; o Eixo 1, base recomendada, segue no azul da marca */
-.axis:not(:first-child) .axis-head { background: var(--nevoa); color: var(--text); }
-.axis:not(:first-child) .axis-head p { color: #4f5c74; }
-.axis:not(:first-child) .axis-head .n { color: var(--ouro-escuro); }
-@media (min-width: 861px) {
-  .axis:not(:first-child) { background: linear-gradient(90deg, var(--nevoa) calc(100% * 4 / 11), var(--vidro) 0); }
-  .axis:not(:first-child) .axis-head { background: transparent; }
+/* Liquid glass em tudo o que flutua: botões, selos, etiquetas, menu e destaques ganham borda com reflexo */
+.btn, .badge, .freq, .hero-chips li, .nav a.on, .rolar, .steps .num, .top .cta { position: relative; isolation: isolate; }
+.btn::before, .badge::before, .freq::before, .hero-chips li::before, .rolar::before, .steps .num::before, .top .cta::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(150deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, .12) 40%, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, .45));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
+.btn, .badge, .freq, .hero-chips li, .top .cta { -webkit-backdrop-filter: blur(14px) saturate(170%); backdrop-filter: blur(14px) saturate(170%); }
+.badge { background: linear-gradient(180deg, rgba(232, 204, 160, .95), rgba(197, 157, 97, .92)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 6px 14px -8px rgba(0, 0, 0, .6); }
+.freq { background: rgba(255, 255, 255, .6); border-color: rgba(197, 157, 97, .55); box-shadow: inset 0 1px 0 #fff, 0 4px 10px -6px rgba(27, 46, 83, .35); }
+.hero-chips { gap: .6rem; border-top: 0; padding-top: .4rem; }
+.hero-chips li { padding: .55rem .95rem; border-radius: 18px; background: rgba(255, 255, 255, .1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 10px 20px -14px rgba(0, 0, 0, .6); }
+.nav a.on { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 
-/* Contato em azul médio, mais leve que a abertura */
-.contact { background: linear-gradient(160deg, var(--azul-medio), var(--azul-medio-2)); }
-.contact .eyebrow { color: var(--ouro-claro); }
-.contact p, .contact .field label { color: #dbe3f0; }
-.contact .padrao { --pn-cor: var(--azul-medio-2); }
-.contact .form-note { color: var(--ouro-claro) !important; }
+@media (prefers-reduced-transparency: reduce) { :root { --azul-vidro: #3a5486; --azul-vidro-hover: #415d92; } }
+
+@media (max-height: 940px) { .rolar { display: none; } }
+
+/* O padrão dourado no canto não fica por baixo dos textos */
+@media (max-width: 1200px) { .why .wrap { padding-top: calc(clamp(150px, 22vw, 300px) * .75 + 1.5rem); } }
+@media (max-width: 860px) { .contact .wrap { padding-bottom: calc(clamp(140px, 20vw, 280px) * .75 + 1.5rem); } }
+
 </style>
 <script>document.documentElement.classList.add('js');setTimeout(function(){if(!window.__mov)document.documentElement.classList.remove('js')},2500);</script>
 </head>
@@ -598,7 +603,7 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
     </div>
   </section>
 
-  <section class="block why" id="por-que">
+  <section class="block navy why" id="por-que">
     <img class="why-bg" src="assets/brasilia.jpg" alt="" aria-hidden="true">
     <svg class="padrao c-tl" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf3" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph3"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl3" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf3" x="0" y="0" class="pg" style="--k:7"/><use href="#pl3" x="100" y="0" class="pg" style="--k:6"/><use href="#ph3" x="200" y="0" style="--k:5"/><use href="#pl3" x="300" y="0" class="pg" style="--k:4"/><use href="#ph3" x="400" y="0" style="--k:3"/><use href="#pl3" x="500" y="0" class="pg" style="--k:2"/><use href="#ph3" x="600" y="0" style="--k:1"/><use href="#pl3" x="700" y="0" class="pg" style="--k:0"/><use href="#pf3" x="100" y="100" class="pg" style="--k:7"/><use href="#pl3" x="200" y="100" class="pg" style="--k:6"/><use href="#ph3" x="300" y="100" style="--k:5"/><use href="#pl3" x="400" y="100" class="pg" style="--k:4"/><use href="#ph3" x="500" y="100" style="--k:3"/><use href="#pl3" x="600" y="100" class="pg" style="--k:2"/><use href="#ph3" x="700" y="100" style="--k:1"/><use href="#pf3" x="200" y="200" class="pg" style="--k:7"/><use href="#pl3" x="300" y="200" class="pg" style="--k:6"/><use href="#ph3" x="400" y="200" style="--k:5"/><use href="#pl3" x="500" y="200" class="pg" style="--k:4"/><use href="#ph3" x="600" y="200" style="--k:3"/><use href="#pl3" x="700" y="200" class="pg" style="--k:2"/><use href="#pf3" x="300" y="300" class="pg" style="--k:7"/><use href="#pl3" x="400" y="300" class="pg" style="--k:6"/><use href="#ph3" x="500" y="300" style="--k:5"/><use href="#pl3" x="600" y="300" class="pg" style="--k:4"/><use href="#ph3" x="700" y="300" style="--k:3"/><use href="#pf3" x="400" y="400" class="pg" style="--k:7"/><use href="#pl3" x="500" y="400" class="pg" style="--k:6"/><use href="#ph3" x="600" y="400" style="--k:5"/><use href="#pl3" x="700" y="400" class="pg" style="--k:4"/><use href="#pf3" x="500" y="500" class="pg" style="--k:7"/><use href="#pl3" x="600" y="500" class="pg" style="--k:6"/><use href="#ph3" x="700" y="500" style="--k:5"/></svg>
     <div class="wrap">
