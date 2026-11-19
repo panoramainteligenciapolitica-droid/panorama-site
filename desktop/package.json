@@ -27,7 +27,6 @@
     "files": [
       "main.js",
       "preload.js",
-      "offline.html",
       "app-local/**/*",
       "package.json"
     ],

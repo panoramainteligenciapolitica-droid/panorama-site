@@ -715,8 +715,8 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
   document.getElementById('contact-form').addEventListener('submit', function (e) {
     e.preventDefault();
     var note = document.getElementById('form-note');
-    if (!this.checkValidity()) { note.textContent = 'Preencha nome, e-mail e mensagem para enviar.'; return; }
     var f = this.elements;
+    if (!this.checkValidity() || !f.nome.value.trim() || !f.mensagem.value.trim()) { note.textContent = 'Preencha nome, e-mail e mensagem para enviar.'; return; }
     var assunto = 'Contato pelo site: ' + f.nome.value + (f.organizacao.value ? ' (' + f.organizacao.value + ')' : '');
     var corpo = f.mensagem.value + '\n\n' + f.nome.value + (f.organizacao.value ? '\n' + f.organizacao.value : '') + '\n' + f.email.value;
     window.location.href = 'mailto:panorama@panoramaip.com.br?subject=' + encodeURIComponent(assunto) + '&body=' + encodeURIComponent(corpo);

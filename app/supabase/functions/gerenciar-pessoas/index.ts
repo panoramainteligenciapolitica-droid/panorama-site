@@ -50,17 +50,26 @@ Deno.serve(async (req) => {
     if (senha.length < 8) return resposta({ erro: 'A senha precisa de pelo menos 8 caracteres.' }, 400);
     if (!PAPEIS.includes(papel)) return resposta({ erro: 'Nível inválido.' }, 400);
     if (papel !== 'master' && !org) return resposta({ erro: 'Escolha a organização.' }, 400);
+    if (org && !(await sb.from('organizacoes').select('id').eq('id', org).maybeSingle()).data) return resposta({ erro: 'Organização não encontrada.' }, 400);
     const { data, error } = await sb.auth.admin.createUser({ email, password: senha, email_confirm: true });
     if (error) return resposta({ erro: /already|registered|exists/i.test(error.message) ? 'Este e-mail já tem cadastro.' : error.message }, 400);
     const id = data.user.id;
     // O perfil nasce pelo gatilho em auth.users; aqui completa nome, nível e organização
-    await sb.from('perfis').upsert({ user_id: id, email, nome: String(corpo.nome ?? '').trim() || null, papel, organizacao_id: org });
+    const { error: erroPerfil } = await sb.from('perfis').upsert({ user_id: id, email, nome: String(corpo.nome ?? '').trim().slice(0, 200) || null, papel, organizacao_id: org });
+    if (erroPerfil) {
+      // Sem perfil completo a pessoa ficaria sem organização: desfaz o cadastro
+      await sb.auth.admin.deleteUser(id);
+      return resposta({ erro: 'Não foi possível completar o cadastro. Nada foi criado; tente de novo.' }, 500);
+    }
     let clientes: string[] = Array.isArray(corpo.clientes) ? corpo.clientes.filter((c: unknown) => typeof c === 'string') : [];
     if (papel === 'atendimento' && clientes.length) {
       // Só clientes da organização da pessoa
       const { data: daOrg } = await sb.from('clientes').select('id').eq('organizacao_id', org).in('id', clientes);
       clientes = (daOrg ?? []).map((c: any) => c.id);
-      if (clientes.length) await sb.from('acessos').insert(clientes.map((cliente_id) => ({ user_id: id, cliente_id })));
+      if (clientes.length) {
+        const { error: erroAcessos } = await sb.from('acessos').insert(clientes.map((cliente_id) => ({ user_id: id, cliente_id })));
+        if (erroAcessos) return resposta({ user_id: id, aviso: 'Pessoa criada, mas os clientes não foram liberados. Libere em Configurações > Pessoas.' });
+      }
     }
     return resposta({ user_id: id });
   }
@@ -86,6 +95,7 @@ Deno.serve(async (req) => {
     const papel = String(corpo.papel ?? '');
     if (!PAPEIS.includes(papel)) return resposta({ erro: 'Nível inválido.' }, 400);
     const org = papel === 'master' ? null : (corpo.organizacao_id ? String(corpo.organizacao_id) : null);
+    if (papel !== 'master' && !org) return resposta({ erro: 'Escolha a organização.' }, 400);
     const { error } = await sb.from('perfis').update({ papel, organizacao_id: org }).eq('user_id', String(corpo.user_id));
     if (error) return resposta({ erro: error.message }, 400);
     // Ao mudar de organização ou deixar de ser atendimento, os clientes liberados de outra organização saem

@@ -15,6 +15,19 @@ const resposta = (corpo: unknown, status = 200) =>
 const LOTE = 100; // máximo do envio em lote do Resend
 const LIMITE_MS = 110_000;
 const PAGINA_DESCADASTRO = 'https://panoramaip.com.br/app/descadastro.html';
+const RESERVA_MS = 10 * 60_000; // envio "Enviando" parado há mais que isso (função que caiu) pode ser retomado
+
+// O Supabase devolve no máximo 1000 linhas por consulta (Max rows): lê em páginas até acabar.
+// Sem isso, listas grandes eram cortadas e descadastrados acima do milésimo voltavam a receber.
+async function todas<T>(consulta: (de: number, ate: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>) {
+  const PAGINA = 1000, linhas: T[] = [];
+  for (let de = 0; ; de += PAGINA) {
+    const { data, error } = await consulta(de, de + PAGINA - 1);
+    if (error) throw new Error(error.message);
+    linhas.push(...(data ?? []));
+    if (!data || data.length < PAGINA) return linhas;
+  }
+}
 
 async function assinatura(segredo: string, texto: string) {
   const chave = await crypto.subtle.importKey('raw', new TextEncoder().encode(segredo), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -57,7 +70,9 @@ Deno.serve(async (req) => {
   const segredo = Deno.env.get('DESCADASTRO_SEGREDO') || servico;
 
   const corpoReq = await req.json().catch(() => ({}));
-  const { data: camp } = await sb.from('campanhas_email').select('*').eq('id', String(corpoReq.campanha_id ?? '')).maybeSingle();
+  const idCampanha = String(corpoReq.campanha_id ?? '');
+  if (!/^[0-9a-f-]{36}$/i.test(idCampanha)) return resposta({ erro: 'Campanha não encontrada.' }, 404);
+  const { data: camp } = await sb.from('campanhas_email').select('*').eq('id', idCampanha).maybeSingle();
   if (!camp) return resposta({ erro: 'Campanha não encontrada.' }, 404);
   const { data: pode } = await comoQuemChama.rpc('pode_enviar', { cliente: camp.cliente_id });
   if (!pode) return resposta({ erro: 'Você não tem permissão para enviar e-mails deste cliente.' }, 403);
@@ -65,6 +80,8 @@ Deno.serve(async (req) => {
   const { data: cliente } = await sb.from('clientes').select('nome').eq('id', camp.cliente_id).maybeSingle();
   const de = (camp.remetente_nome ? camp.remetente_nome.replace(/[<>"]/g, '') + ' ' : '') + '<' + remetente + '>';
 
+  // Descadastro em um clique (exigido por Gmail e Yahoo para envio em massa): o provedor faz um POST direto na função
+  const funcaoDescadastro = url + '/functions/v1/descadastrar';
   async function montar(m: { nome?: string | null; tratamento?: string | null; email: string }) {
     const t = await assinatura(segredo, camp.cliente_id + ':' + m.email.toLowerCase());
     const link = PAGINA_DESCADASTRO + '?c=' + camp.cliente_id + '&e=' + encodeURIComponent(m.email) + '&t=' + t;
@@ -75,7 +92,10 @@ Deno.serve(async (req) => {
       from: de, to: [m.email], subject: preencher(camp.assunto, m),
       html: html(texto, rodape), text: texto + '\n\n--\nPara não receber mais: ' + link,
       reply_to: camp.responder_para || undefined,
-      headers: { 'List-Unsubscribe': '<' + link + '>' },
+      headers: {
+        'List-Unsubscribe': '<' + funcaoDescadastro + '?c=' + camp.cliente_id + '&e=' + encodeURIComponent(m.email) + '&t=' + t + '>',
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     };
   }
   async function mandar(lote: unknown[]) {
@@ -95,24 +115,49 @@ Deno.serve(async (req) => {
     } catch (e) { return resposta({ erro: String((e as Error).message) }, 502); }
   }
   if (!camp.lista_id) return resposta({ erro: 'Escolha a lista de destinatários.' }, 400);
+  // A lista tem de ser do mesmo cliente da campanha
+  const { data: lista } = await sb.from('listas_email').select('cliente_id').eq('id', camp.lista_id).maybeSingle();
+  if (!lista || lista.cliente_id !== camp.cliente_id) return resposta({ erro: 'Esta lista não é deste cliente.' }, 403);
+
+  // Reserva a campanha: só uma chamada por vez envia (dois cliques ou duas abas não mandam em dobro).
+  // A troca de status só acontece se a campanha ainda estiver como foi lida agora; quem chegar depois não acha nada para trocar.
+  const retomavel = camp.status === 'enviando' && (!camp.envio_iniciado_em || Date.parse(camp.envio_iniciado_em) < Date.now() - RESERVA_MS);
+  let reservada: unknown = null;
+  if (['rascunho', 'parcial', 'erro'].includes(camp.status) || retomavel) {
+    let troca = sb.from('campanhas_email').update({ status: 'enviando', envio_iniciado_em: new Date().toISOString() })
+      .eq('id', camp.id).eq('status', camp.status);
+    troca = camp.envio_iniciado_em ? troca.eq('envio_iniciado_em', camp.envio_iniciado_em) : troca.is('envio_iniciado_em', null);
+    reservada = (await troca.select('id').maybeSingle()).data;
+  }
+  if (!reservada) {
+    return resposta({ erro: camp.status === 'enviada' ? 'Este e-mail já foi enviado. Use "Duplicar" para mandar de novo.' : 'Este e-mail já está sendo enviado. Espere terminar.' }, 409);
+  }
 
   // Destinatários: membros da lista, sem repetidos, sem descadastrados e sem quem já recebeu esta campanha
-  const [{ data: membros }, { data: fora }, { data: feitos }] = await Promise.all([
-    sb.from('lista_membros').select('nome, email, tratamento').eq('lista_id', camp.lista_id).limit(20000),
-    sb.from('descadastros').select('email').eq('cliente_id', camp.cliente_id).limit(50000),
-    sb.from('envios_email').select('email').eq('campanha_id', camp.id).eq('status', 'enviado').limit(50000),
-  ]);
-  const pular = new Set([...(fora || []), ...(feitos || [])].map((x) => x.email.toLowerCase()));
+  type Membro = { nome: string | null; email: string; tratamento: string | null };
+  let membros: Membro[], fora: { email: string }[], feitos: { email: string }[];
+  try {
+    [membros, fora, feitos] = await Promise.all([
+      todas<Membro>((de, ate) => sb.from('lista_membros').select('nome, email, tratamento').eq('lista_id', camp.lista_id).order('id').range(de, ate)),
+      todas<{ email: string }>((de, ate) => sb.from('descadastros').select('email').eq('cliente_id', camp.cliente_id).order('email').range(de, ate)),
+      todas<{ email: string }>((de, ate) => sb.from('envios_email').select('email').eq('campanha_id', camp.id).eq('status', 'enviado').order('id').range(de, ate)),
+    ]);
+  } catch (e) {
+    // Sem a lista completa de descadastrados não envia nada (quem pediu para sair não pode receber)
+    await sb.from('campanhas_email').update({ status: camp.status === 'rascunho' ? 'rascunho' : 'parcial', envio_iniciado_em: null }).eq('id', camp.id);
+    return resposta({ erro: 'Não foi possível ler os destinatários agora. Nada foi enviado. Tente de novo.' }, 502);
+  }
+  const pular = new Set([...fora, ...feitos].map((x) => x.email.toLowerCase()));
   const vistos = new Set<string>();
-  const fila = (membros || []).filter((m) => {
+  const fila = membros.filter((m) => {
     const e = m.email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) || pular.has(e) || vistos.has(e)) return false;
     vistos.add(e); return true;
   });
-  const total = fila.length + (feitos || []).length;
-  await sb.from('campanhas_email').update({ status: 'enviando', total }).eq('id', camp.id);
+  const total = fila.length + feitos.length;
+  await sb.from('campanhas_email').update({ total }).eq('id', camp.id);
 
-  let enviados = (feitos || []).length, falhas = 0, i = 0;
+  let enviados = feitos.length, falhas = 0, i = 0;
   for (; i < fila.length; i += LOTE) {
     if (Date.now() - inicio > LIMITE_MS) break;
     const parte = fila.slice(i, i + LOTE);
@@ -131,6 +176,6 @@ Deno.serve(async (req) => {
   }
   const terminou = i >= fila.length;
   const status = terminou ? (enviados === 0 && falhas > 0 ? 'erro' : 'enviada') : 'parcial';
-  await sb.from('campanhas_email').update({ status, enviados, falhas, enviado_em: new Date().toISOString() }).eq('id', camp.id);
+  await sb.from('campanhas_email').update({ status, enviados, falhas, enviado_em: new Date().toISOString(), envio_iniciado_em: null }).eq('id', camp.id);
   return resposta({ ok: true, status, total, enviados, falhas, restantes: Math.max(0, fila.length - i) });
 });
