@@ -58,6 +58,7 @@ a { color: inherit; }
 .padrao .pg { fill: var(--gold); }
 .padrao .pn { fill: var(--navy); }
 .on-white .padrao .pn { fill: #fff; }
+.on-white .padrao { --pn-cor: #fff; }
 .c-tr { top: 0; right: 0; }
 .c-tl { top: 0; left: 0; transform: scaleX(-1); }
 .c-br { bottom: 0; right: 0; transform: scaleY(-1); }
@@ -260,7 +261,7 @@ footer .padrao { width: 130px; }
 .sector { position: relative; overflow: hidden; }
 .sector .padrao { width: 110px; }
 .sector .mark { margin-bottom: .9rem; }
-.sector .padrao .pn { fill: #fff; }
+.sector .padrao { --pn-cor: #fff; }
 .sector .padrao use { transition: transform .5s var(--ease); }
 .sector { transition: transform .45s var(--ease), box-shadow .45s, border-color .45s; }
 .sector:hover { transform: translateY(-4px); box-shadow: 0 22px 34px -26px rgba(27, 46, 83, .5); border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
@@ -302,10 +303,195 @@ footer .padrao { width: 130px; }
 @media (prefers-reduced-motion: no-preference) and (max-width: 860px) {
   .js .rule { transform: scaleX(0); transform-origin: left; }
 }
+
+/* ===== Vidro (inspirado no "liquid glass"): transparência como linguagem visual =====
+   A transparência é um dos valores da Panorama; aqui ela vira material. Camadas de vidro fosco
+   flutuam sobre uma luz ambiente em azul e dourado da marca. O texto fica sempre sobre vidro
+   bem opaco, para manter a leitura; quem pede menos transparência no sistema recebe superfícies sólidas. */
+:root {
+  --vidro: rgba(255, 255, 255, .58);
+  --vidro-forte: rgba(255, 255, 255, .78);
+  --vidro-borda: rgba(255, 255, 255, .75);
+  --vidro-desfoque: blur(22px) saturate(175%);
+  --vidro-sombra: inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 -1px 0 rgba(27, 46, 83, .05), 0 22px 44px -26px rgba(27, 46, 83, .38), 0 2px 6px -2px rgba(27, 46, 83, .08);
+  --vidro-escuro: rgba(255, 255, 255, .075);
+  --vidro-escuro-borda: rgba(255, 255, 255, .16);
+  --vidro-escuro-sombra: inset 0 1px 0 rgba(255, 255, 255, .22), 0 24px 48px -28px rgba(0, 0, 0, .6);
+  --r-vidro: 22px;
+}
+
+/* Luz ambiente fixa atrás da página, que o vidro refrata */
+body { background: #f2f4f8; }
+.ambiente { position: fixed; inset: -10vmax; z-index: -1; pointer-events: none; overflow: hidden; }
+.ambiente i { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; }
+.ambiente i:nth-child(1) { width: 52vmax; height: 52vmax; left: -6vmax; top: 2vmax; background: radial-gradient(circle, rgba(34, 53, 95, .42), transparent 68%); }
+.ambiente i:nth-child(2) { width: 46vmax; height: 46vmax; right: -4vmax; top: 18vmax; background: radial-gradient(circle, rgba(197, 157, 97, .55), transparent 66%); }
+.ambiente i:nth-child(3) { width: 40vmax; height: 40vmax; left: 34vmax; bottom: -6vmax; background: radial-gradient(circle, rgba(120, 150, 205, .4), transparent 68%); }
+@media (prefers-reduced-motion: no-preference) {
+  .ambiente i { animation: deriva 26s ease-in-out infinite alternate; }
+  .ambiente i:nth-child(2) { animation-duration: 32s; animation-delay: -8s; }
+  .ambiente i:nth-child(3) { animation-duration: 38s; animation-delay: -15s; }
+}
+@keyframes deriva { to { transform: translate3d(6vmax, -4vmax, 0) scale(1.12); } }
+
+/* Peças de vidro: base comum, borda com reflexo e brilho que segue o ponteiro */
+.top .wrap, .sector, .axis, .steps li, .reasons li, #contact-form, .card, .selo, .btn-line, footer .wrap {
+  position: relative; isolation: isolate;
+  -webkit-backdrop-filter: var(--vidro-desfoque); backdrop-filter: var(--vidro-desfoque);
+}
+.top .wrap::before, .sector::before, .axis::before, .steps li::before, .reasons li::before, #contact-form::before, .card::before, .selo::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 2;
+  background: linear-gradient(140deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .25) 32%, rgba(255, 255, 255, .06) 58%, rgba(255, 255, 255, .55));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.sector::after, .axis::after, .steps li::after, .reasons li::after, #contact-form::after, .card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1; opacity: 0; transition: opacity .5s;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 255, 255, .55), transparent 55%);
+}
+.reasons li::after, #contact-form::after { background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 255, 255, .13), transparent 60%); }
+@media (hover: hover) { .sector:hover::after, .axis:hover::after, .steps li:hover::after, .reasons li:hover::after, #contact-form:hover::after, .card:hover::after { opacity: 1; } }
+
+/* Topo: uma cápsula de vidro que flutua sobre o conteúdo */
+.top { background: transparent; box-shadow: none !important; padding-top: max(10px, env(safe-area-inset-top, 0px)); top: 0; pointer-events: none; }
+.top .wrap {
+  pointer-events: auto; width: min(var(--wrap), calc(100% - 24px)); max-width: none;
+  padding: .7rem .8rem .7rem 1.4rem; border-radius: 999px;
+  background: var(--vidro); box-shadow: var(--vidro-sombra); transition: background .4s, box-shadow .4s;
+}
+.top.scrolled .wrap { background: var(--vidro-forte); }
+.top .progress { left: 1.6rem; right: 1.6rem; width: auto; bottom: 0; height: 2px; border-radius: 2px; }
+.top .cta { background: linear-gradient(180deg, #2d4679, var(--navy-ink)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 6px 14px -8px rgba(27, 46, 83, .7); }
+@media (max-width: 820px) {
+  .top .wrap { border-radius: 26px; padding: .6rem .6rem .55rem 1rem; }
+  .nav { background: rgba(27, 46, 83, .07); box-shadow: inset 0 1px 2px rgba(27, 46, 83, .08); }
+  .nav a.on { background: rgba(255, 255, 255, .92); box-shadow: inset 0 1px 0 #fff, 0 2px 8px -2px rgba(27, 46, 83, .3); }
+  .top .progress { left: 1.2rem; right: 1.2rem; }
+}
+
+/* A cápsula do topo se adapta ao que passa por baixo: escura sobre as faixas azuis, clara no resto */
+.top .logo, .nav a, .top .entrar { transition: color .4s; }
+.top.escuro .wrap { background: rgba(18, 30, 58, .42); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 22px 44px -26px rgba(0, 0, 0, .6); }
+.top.escuro .wrap::before { background: linear-gradient(140deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .08) 35%, rgba(255, 255, 255, .03) 60%, rgba(255, 255, 255, .3)); }
+.top.escuro .logo { color: #fff; }
+.top.escuro .nav a, .top.escuro .entrar { color: rgba(255, 255, 255, .78); }
+.top.escuro .nav a:hover, .top.escuro .nav a.on, .top.escuro .entrar:hover { color: #fff; }
+.top.escuro .cta { background: linear-gradient(180deg, #e0bf8c, var(--gold)); color: var(--navy-ink); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5); }
+@media (max-width: 820px) {
+  .top.escuro .nav { background: rgba(255, 255, 255, .08); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .2); }
+  .top.escuro .nav a { color: #fff; }
+  .top.escuro .nav a.on { background: rgba(255, 255, 255, .2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35); }
+}
+
+/* Botões com volume de vidro */
+.btn { border-radius: 999px; }
+.btn-navy { background: linear-gradient(180deg, #2d4679, var(--navy-ink)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 10px 22px -12px rgba(27, 46, 83, .8); }
+.btn-line { background: var(--vidro); border-color: var(--vidro-borda); box-shadow: var(--vidro-sombra); }
+.btn-line:hover { background: var(--vidro-forte); border-color: #fff; }
+.btn-gold { background: linear-gradient(180deg, #d9b67f, var(--gold)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 10px 22px -12px rgba(0, 0, 0, .55); }
+
+/* Abertura em tela cheia: Brasília ao fundo e o texto num painel de vidro escuro por cima */
+:root { --topo: 84px; }
+@media (max-width: 820px) { :root { --topo: 118px; } }
+.hero {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr); align-items: center;
+  min-height: max(36rem, 100svh); margin-top: calc(-1 * var(--topo)); padding: calc(var(--topo) + 1.5rem) 0 4.5rem;
+  background: var(--navy); color: #fff; overflow: hidden; isolation: isolate;
+}
+.hero-art { position: absolute; inset: 0; z-index: -1; background: none; display: block; overflow: hidden; }
+.hero-art img { position: absolute; right: -5%; top: 50%; width: min(62vw, 1080px); height: auto; padding: 0; margin-top: calc(min(62vw, 1080px) * -0.25); }
+.hero-art .padrao { width: clamp(150px, 19vw, 280px); top: 0; }
+.hero-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(26, 42, 76, .55), transparent 50%), linear-gradient(0deg, rgba(26, 42, 76, .6), transparent 30%); }
+.hero-text {
+  justify-self: start; margin-left: max(12px, env(safe-area-inset-left, 0px), calc((100vw - var(--wrap)) / 2 + 12px));
+  width: min(42rem, calc(100% - 24px)); padding: clamp(1.75rem, 3.5vw, 2.75rem); gap: 1.2rem;
+  justify-items: start; text-align: left; border-radius: 36px; position: relative; isolation: isolate;
+  background: rgba(255, 255, 255, .1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 40px 80px -40px rgba(0, 0, 0, .7);
+  -webkit-backdrop-filter: blur(26px) saturate(170%); backdrop-filter: blur(26px) saturate(170%);
+}
+.hero-text::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(140deg, rgba(255, 255, 255, .6), rgba(255, 255, 255, .1) 35%, rgba(255, 255, 255, .03) 60%, rgba(255, 255, 255, .35));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+.hero .eyebrow { color: var(--gold); }
+.hero h1 { text-align: left; color: #fff; font-size: clamp(2.3rem, 4.3vw, 3.5rem); }
+.hero h1 span { color: var(--gold); }
+.hero .lead { color: #d3dae8; text-align: left; hyphens: manual; }
+.hero .actions { justify-content: flex-start; }
+.hero .btn-line { color: #fff; background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .28); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25); }
+.hero .btn-line:hover { background: rgba(255, 255, 255, .18); border-color: rgba(255, 255, 255, .5); }
+.hero .btn-navy { background: linear-gradient(180deg, #e0bf8c, var(--gold)); color: var(--navy-ink); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 12px 26px -14px rgba(0, 0, 0, .8); }
+.hero-chips { list-style: none; margin: .6rem 0 0; padding: 1.1rem 0 0; display: flex; flex-wrap: wrap; gap: .6rem 1.75rem; border-top: 1px solid rgba(255, 255, 255, .14); width: 100%; }
+.hero-chips li { display: grid; line-height: 1.3; }
+.hero-chips b { font-weight: 500; font-size: .98rem; color: #fff; }
+.hero-chips span { font-size: .8rem; color: var(--on-navy-muted); }
+.rolar { position: absolute; left: 50%; bottom: 1.4rem; width: 28px; height: 44px; margin-left: -14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .4); background: rgba(255, 255, 255, .08); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.rolar span { position: absolute; left: 50%; top: 9px; width: 4px; height: 8px; margin-left: -2px; border-radius: 2px; background: var(--gold); }
+@media (prefers-reduced-motion: no-preference) { .rolar span { animation: rolar 2.2s var(--ease) infinite; } }
+@keyframes rolar { 0% { transform: translateY(0); opacity: 0; } 30% { opacity: 1; } 80% { transform: translateY(14px); opacity: 0; } 100% { opacity: 0; } }
+/* No celular, a arte fica em cima e o painel sobe sobre ela */
+@media (max-width: 900px) {
+  .hero { min-height: 0; align-items: end; padding: calc(var(--topo) + 1rem) 0 4.5rem; }
+  .hero-art img { right: auto; left: 50%; top: calc(var(--topo) - .5rem); width: 110vw; margin: 0 0 0 -55vw; }
+  .hero-art::after { background: linear-gradient(0deg, #1d2e53 38%, rgba(29, 46, 83, .3) 70%, transparent); }
+  .hero-text { margin: 52vw auto 0; justify-self: center; width: calc(100% - 24px); border-radius: 28px; }
+}
+@media (max-width: 480px) { .hero-chips { gap: .6rem 1.2rem; } .hero-chips b { font-size: .9rem; } .hero .actions .btn { flex: 1 1 auto; justify-content: center; } }
+
+/* Fundo claro das seções deixa a luz ambiente aparecer */
+.surface { background: rgba(255, 255, 255, .28); }
+
+/* Por que atuar: a foto de Brasília aparece através do vidro */
+.why-bg { opacity: .3; }
+.reasons { gap: 14px; background: none; border: 0; }
+.reasons li { background: var(--vidro-escuro); border-radius: var(--r-vidro); box-shadow: var(--vidro-escuro-sombra); }
+.reasons li::before { background: linear-gradient(140deg, rgba(255, 255, 255, .45), rgba(255, 255, 255, .08) 35%, rgba(255, 255, 255, .03) 60%, rgba(255, 255, 255, .25)); }
+.reasons li:hover { background: rgba(255, 255, 255, .11); }
+.reasons p, .steps p, .sector span { text-align: left; hyphens: manual; }
+
+/* Serviços: cartões de vidro, com o cabeçalho azul translúcido */
+.axis { border: 0; border-radius: 28px; background: var(--vidro); box-shadow: var(--vidro-sombra); overflow: clip; }
+.axis-head { background: rgba(34, 53, 95, .94); }
+@media (min-width: 861px) { .axis { background: linear-gradient(90deg, rgba(34, 53, 95, .94) calc(100% * 4 / 11), var(--vidro) 0); } .axis-head { background: transparent; } }
+.products li { border-top-color: rgba(27, 46, 83, .09); }
+.freq { background: rgba(255, 255, 255, .55); }
+.steps li { border-top: 0; padding: 1.25rem 1.25rem 1.4rem; border-radius: var(--r-vidro); background: var(--vidro); box-shadow: var(--vidro-sombra); }
+.steps .num { display: inline-flex; align-items: center; justify-content: center; width: 2.6rem; height: 2.6rem; border-radius: 50%; font-size: 1rem; font-weight: 500; color: var(--navy-ink); background: linear-gradient(180deg, #e2c393, var(--gold)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 6px 14px -8px rgba(138, 102, 48, .8); }
+
+/* Setores */
+.sector { border: 0; border-radius: var(--r-vidro); background: var(--vidro); box-shadow: var(--vidro-sombra); }
+.sector:hover { box-shadow: var(--vidro-sombra), 0 30px 50px -30px rgba(27, 46, 83, .55); }
+.sector .padrao { --pn-cor: #f4f5f8; }
+.card { border: 0; border-radius: var(--r-vidro); background: var(--vidro); box-shadow: var(--vidro-sombra); }
+
+/* Contato: brilho dourado atrás do formulário de vidro */
+.contact::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(40rem 26rem at 78% 40%, rgba(197, 157, 97, .28), transparent 65%), radial-gradient(30rem 22rem at 18% 85%, rgba(120, 150, 205, .22), transparent 70%); }
+#contact-form { background: var(--vidro-escuro); border: 0; border-radius: 28px; box-shadow: var(--vidro-escuro-sombra); }
+#contact-form::before { background: linear-gradient(140deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .1) 35%, rgba(255, 255, 255, .03) 60%, rgba(255, 255, 255, .3)); }
+.field input, .field textarea { border-radius: 14px; background: rgba(255, 255, 255, .07); border-color: rgba(255, 255, 255, .18); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .18); transition: border-color .3s, background .3s; }
+.field input:focus, .field textarea:focus { outline: none; border-color: var(--gold); background: rgba(255, 255, 255, .11); }
+
+/* Rodapé: faixa de vidro */
+footer { border-top: 0; background: rgba(255, 255, 255, .5); -webkit-backdrop-filter: var(--vidro-desfoque); backdrop-filter: var(--vidro-desfoque); box-shadow: inset 0 1px 0 #fff; }
+footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* Sem desfoque no navegador: o vidro fica mais opaco para não perder leitura */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  :root { --vidro: rgba(255, 255, 255, .88); --vidro-forte: rgba(255, 255, 255, .96); --vidro-escuro: rgba(255, 255, 255, .1); }
+  .selo { background: rgba(27, 46, 83, .75); }
+}
+/* Quem pede menos transparência no sistema recebe superfícies sólidas */
+@media (prefers-reduced-transparency: reduce) {
+  :root { --vidro: #fff; --vidro-forte: #fff; --vidro-escuro: #2a3f6b; }
+  .ambiente { display: none; }
+  .selo { background: var(--navy-ink); }
+  .top .wrap, .sector, .axis, .steps li, .reasons li, #contact-form, .card, .selo, .btn-line, footer { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
 </style>
 <script>document.documentElement.classList.add('js');setTimeout(function(){if(!window.__mov)document.documentElement.classList.remove('js')},2500);</script>
 </head>
 <body>
+<div class="ambiente" aria-hidden="true"><i></i><i></i><i></i></div>
 
 <header class="top">
   <div class="wrap">
@@ -318,12 +504,12 @@ footer .padrao { width: 130px; }
     </nav>
     <a class="entrar" href="/app/">Entrar</a>
     <a class="cta" href="#contato">Fale conosco</a>
+    <span class="progress" aria-hidden="true"></span>
   </div>
-  <span class="progress" aria-hidden="true"></span>
 </header>
 
 <main id="inicio" lang="pt-BR">
-  <section class="hero">
+  <section class="hero" aria-label="Apresentação">
     <div class="hero-text">
       <p class="eyebrow">Relações institucionais e governamentais</p>
       <h1>Decodificando dados, <span>direcionando decisões</span></h1>
@@ -332,11 +518,17 @@ footer .padrao { width: 130px; }
         <a class="btn btn-navy" href="#contato">Fale com a Panorama</a>
         <a class="btn btn-line" href="#servicos">Conheça os serviços</a>
       </div>
+      <ul class="hero-chips" aria-label="Destaques">
+        <li><b>Desde 2018</b><span>em Brasília</span></li>
+        <li><b>Um cliente</b><span>por setor</span></li>
+        <li><b>Congresso e Executivo</b><span>federal</span></li>
+      </ul>
     </div>
     <div class="hero-art">
-      <svg class="padrao c-tr" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf2" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph2"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl2" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf2" x="0" y="0" class="pg" style="--k:7"/><use href="#pl2" x="100" y="0" class="pg" style="--k:6"/><use href="#ph2" x="200" y="0" style="--k:5"/><use href="#pl2" x="300" y="0" class="pg" style="--k:4"/><use href="#ph2" x="400" y="0" style="--k:3"/><use href="#pl2" x="500" y="0" class="pg" style="--k:2"/><use href="#ph2" x="600" y="0" style="--k:1"/><use href="#pl2" x="700" y="0" class="pg" style="--k:0"/><use href="#pf2" x="100" y="100" class="pg" style="--k:7"/><use href="#pl2" x="200" y="100" class="pg" style="--k:6"/><use href="#ph2" x="300" y="100" style="--k:5"/><use href="#pl2" x="400" y="100" class="pg" style="--k:4"/><use href="#ph2" x="500" y="100" style="--k:3"/><use href="#pl2" x="600" y="100" class="pg" style="--k:2"/><use href="#ph2" x="700" y="100" style="--k:1"/><use href="#pf2" x="200" y="200" class="pg" style="--k:7"/><use href="#pl2" x="300" y="200" class="pg" style="--k:6"/><use href="#ph2" x="400" y="200" style="--k:5"/><use href="#pl2" x="500" y="200" class="pg" style="--k:4"/><use href="#ph2" x="600" y="200" style="--k:3"/><use href="#pl2" x="700" y="200" class="pg" style="--k:2"/><use href="#pf2" x="300" y="300" class="pg" style="--k:7"/><use href="#pl2" x="400" y="300" class="pg" style="--k:6"/><use href="#ph2" x="500" y="300" style="--k:5"/><use href="#pl2" x="600" y="300" class="pg" style="--k:4"/><use href="#ph2" x="700" y="300" style="--k:3"/><use href="#pf2" x="400" y="400" class="pg" style="--k:7"/><use href="#pl2" x="500" y="400" class="pg" style="--k:6"/><use href="#ph2" x="600" y="400" style="--k:5"/><use href="#pl2" x="700" y="400" class="pg" style="--k:4"/><use href="#pf2" x="500" y="500" class="pg" style="--k:7"/><use href="#pl2" x="600" y="500" class="pg" style="--k:6"/><use href="#ph2" x="700" y="500" style="--k:5"/></svg>
+      <svg class="padrao c-tr" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf2" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph2"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl2" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf2" x="0" y="0" class="pg" style="--k:7"/><use href="#pl2" x="100" y="0" class="pg" style="--k:6"/><use href="#ph2" x="200" y="0" style="--k:5"/><use href="#pl2" x="300" y="0" class="pg" style="--k:4"/><use href="#ph2" x="400" y="0" style="--k:3"/><use href="#pl2" x="500" y="0" class="pg" style="--k:2"/><use href="#ph2" x="600" y="0" style="--k:1"/><use href="#pl2" x="700" y="0" class="pg" style="--k:0"/><use href="#pf2" x="100" y="100" class="pg" style="--k:7"/><use href="#pl2" x="200" y="100" class="pg" style="--k:6"/><use href="#ph2" x="300" y="100" style="--k:5"/><use href="#pl2" x="400" y="100" class="pg" style="--k:4"/><use href="#ph2" x="500" y="100" style="--k:3"/><use href="#pl2" x="600" y="100" class="pg" style="--k:2"/><use href="#ph2" x="700" y="100" style="--k:1"/><use href="#pf2" x="200" y="200" class="pg" style="--k:7"/><use href="#pl2" x="300" y="200" class="pg" style="--k:6"/><use href="#ph2" x="400" y="200" style="--k:5"/><use href="#pl2" x="500" y="200" class="pg" style="--k:4"/><use href="#ph2" x="600" y="200" style="--k:3"/><use href="#pl2" x="700" y="200" class="pg" style="--k:2"/><use href="#pf2" x="300" y="300" class="pg" style="--k:7"/><use href="#pl2" x="400" y="300" class="pg" style="--k:6"/><use href="#ph2" x="500" y="300" style="--k:5"/><use href="#pl2" x="600" y="300" class="pg" style="--k:4"/><use href="#ph2" x="700" y="300" style="--k:3"/><use href="#pf2" x="400" y="400" class="pg" style="--k:7"/><use href="#pl2" x="500" y="400" class="pg" style="--k:6"/><use href="#ph2" x="600" y="400" style="--k:5"/><use href="#pl2" x="700" y="400" class="pg" style="--k:4"/><use href="#pf2" x="500" y="500" class="pg" style="--k:7"/><use href="#pl2" x="600" y="500" class="pg" style="--k:6"/><use href="#ph2" x="700" y="500" style="--k:5"/></svg>
       <img src="assets/brasilia.jpg" width="1300" height="701" alt="Congresso Nacional, Palácio do Planalto e espelho d'água em Brasília, recortados nas formas do símbolo do Panorama">
     </div>
+    <a class="rolar" href="#quem-somos" aria-label="Ir para Quem somos"><span></span></a>
   </section>
 
   <section class="block" id="quem-somos">
@@ -368,7 +560,7 @@ footer .padrao { width: 130px; }
 
   <section class="block navy why" id="por-que">
     <img class="why-bg" src="assets/brasilia.jpg" alt="" aria-hidden="true">
-    <svg class="padrao c-tl" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf3" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph3"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl3" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf3" x="0" y="0" class="pg" style="--k:7"/><use href="#pl3" x="100" y="0" class="pg" style="--k:6"/><use href="#ph3" x="200" y="0" style="--k:5"/><use href="#pl3" x="300" y="0" class="pg" style="--k:4"/><use href="#ph3" x="400" y="0" style="--k:3"/><use href="#pl3" x="500" y="0" class="pg" style="--k:2"/><use href="#ph3" x="600" y="0" style="--k:1"/><use href="#pl3" x="700" y="0" class="pg" style="--k:0"/><use href="#pf3" x="100" y="100" class="pg" style="--k:7"/><use href="#pl3" x="200" y="100" class="pg" style="--k:6"/><use href="#ph3" x="300" y="100" style="--k:5"/><use href="#pl3" x="400" y="100" class="pg" style="--k:4"/><use href="#ph3" x="500" y="100" style="--k:3"/><use href="#pl3" x="600" y="100" class="pg" style="--k:2"/><use href="#ph3" x="700" y="100" style="--k:1"/><use href="#pf3" x="200" y="200" class="pg" style="--k:7"/><use href="#pl3" x="300" y="200" class="pg" style="--k:6"/><use href="#ph3" x="400" y="200" style="--k:5"/><use href="#pl3" x="500" y="200" class="pg" style="--k:4"/><use href="#ph3" x="600" y="200" style="--k:3"/><use href="#pl3" x="700" y="200" class="pg" style="--k:2"/><use href="#pf3" x="300" y="300" class="pg" style="--k:7"/><use href="#pl3" x="400" y="300" class="pg" style="--k:6"/><use href="#ph3" x="500" y="300" style="--k:5"/><use href="#pl3" x="600" y="300" class="pg" style="--k:4"/><use href="#ph3" x="700" y="300" style="--k:3"/><use href="#pf3" x="400" y="400" class="pg" style="--k:7"/><use href="#pl3" x="500" y="400" class="pg" style="--k:6"/><use href="#ph3" x="600" y="400" style="--k:5"/><use href="#pl3" x="700" y="400" class="pg" style="--k:4"/><use href="#pf3" x="500" y="500" class="pg" style="--k:7"/><use href="#pl3" x="600" y="500" class="pg" style="--k:6"/><use href="#ph3" x="700" y="500" style="--k:5"/></svg>
+    <svg class="padrao c-tl" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf3" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph3"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl3" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf3" x="0" y="0" class="pg" style="--k:7"/><use href="#pl3" x="100" y="0" class="pg" style="--k:6"/><use href="#ph3" x="200" y="0" style="--k:5"/><use href="#pl3" x="300" y="0" class="pg" style="--k:4"/><use href="#ph3" x="400" y="0" style="--k:3"/><use href="#pl3" x="500" y="0" class="pg" style="--k:2"/><use href="#ph3" x="600" y="0" style="--k:1"/><use href="#pl3" x="700" y="0" class="pg" style="--k:0"/><use href="#pf3" x="100" y="100" class="pg" style="--k:7"/><use href="#pl3" x="200" y="100" class="pg" style="--k:6"/><use href="#ph3" x="300" y="100" style="--k:5"/><use href="#pl3" x="400" y="100" class="pg" style="--k:4"/><use href="#ph3" x="500" y="100" style="--k:3"/><use href="#pl3" x="600" y="100" class="pg" style="--k:2"/><use href="#ph3" x="700" y="100" style="--k:1"/><use href="#pf3" x="200" y="200" class="pg" style="--k:7"/><use href="#pl3" x="300" y="200" class="pg" style="--k:6"/><use href="#ph3" x="400" y="200" style="--k:5"/><use href="#pl3" x="500" y="200" class="pg" style="--k:4"/><use href="#ph3" x="600" y="200" style="--k:3"/><use href="#pl3" x="700" y="200" class="pg" style="--k:2"/><use href="#pf3" x="300" y="300" class="pg" style="--k:7"/><use href="#pl3" x="400" y="300" class="pg" style="--k:6"/><use href="#ph3" x="500" y="300" style="--k:5"/><use href="#pl3" x="600" y="300" class="pg" style="--k:4"/><use href="#ph3" x="700" y="300" style="--k:3"/><use href="#pf3" x="400" y="400" class="pg" style="--k:7"/><use href="#pl3" x="500" y="400" class="pg" style="--k:6"/><use href="#ph3" x="600" y="400" style="--k:5"/><use href="#pl3" x="700" y="400" class="pg" style="--k:4"/><use href="#pf3" x="500" y="500" class="pg" style="--k:7"/><use href="#pl3" x="600" y="500" class="pg" style="--k:6"/><use href="#ph3" x="700" y="500" style="--k:5"/></svg>
     <div class="wrap">
       <div class="head center">
         <p class="eyebrow">Por que investir em relações governamentais</p>
@@ -475,16 +667,16 @@ footer .padrao { width: 130px; }
         <p>Nossa equipe atende empresas, associações e entidades representativas que atuam junto ao Congresso Nacional e ao Poder Executivo federal.</p>
       </div>
       <div class="sectors">
-        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf6" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph6"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl6" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf6" x="0" y="0" class="pg" style="--k:4"/><use href="#pl6" x="100" y="0" class="pg" style="--k:3"/><use href="#ph6" x="200" y="0" style="--k:2"/><use href="#pl6" x="300" y="0" class="pg" style="--k:1"/><use href="#ph6" x="400" y="0" style="--k:0"/><use href="#pf6" x="100" y="100" class="pg" style="--k:4"/><use href="#pl6" x="200" y="100" class="pg" style="--k:3"/><use href="#ph6" x="300" y="100" style="--k:2"/><use href="#pl6" x="400" y="100" class="pg" style="--k:1"/><use href="#pf6" x="200" y="200" class="pg" style="--k:4"/><use href="#pl6" x="300" y="200" class="pg" style="--k:3"/><use href="#ph6" x="400" y="200" style="--k:2"/><use href="#pf6" x="300" y="300" class="pg" style="--k:4"/><use href="#pl6" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><b>Sistema de Justiça</b><span>Pautas de organização e funcionamento do sistema de Justiça.</span></div>
-        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf7" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph7"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl7" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf7" x="0" y="0" class="pg" style="--k:4"/><use href="#pl7" x="100" y="0" class="pg" style="--k:3"/><use href="#ph7" x="200" y="0" style="--k:2"/><use href="#pl7" x="300" y="0" class="pg" style="--k:1"/><use href="#ph7" x="400" y="0" style="--k:0"/><use href="#pf7" x="100" y="100" class="pg" style="--k:4"/><use href="#pl7" x="200" y="100" class="pg" style="--k:3"/><use href="#ph7" x="300" y="100" style="--k:2"/><use href="#pl7" x="400" y="100" class="pg" style="--k:1"/><use href="#pf7" x="200" y="200" class="pg" style="--k:4"/><use href="#pl7" x="300" y="200" class="pg" style="--k:3"/><use href="#ph7" x="400" y="200" style="--k:2"/><use href="#pf7" x="300" y="300" class="pg" style="--k:4"/><use href="#pl7" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.730-93.94,66.42h187.88Z"/></svg><b>Segurança pública</b><span>Pautas de estrutura, gestão e financiamento da segurança pública.</span></div>
-        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf8" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph8"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl8" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf8" x="0" y="0" class="pg" style="--k:4"/><use href="#pl8" x="100" y="0" class="pg" style="--k:3"/><use href="#ph8" x="200" y="0" style="--k:2"/><use href="#pl8" x="300" y="0" class="pg" style="--k:1"/><use href="#ph8" x="400" y="0" style="--k:0"/><use href="#pf8" x="100" y="100" class="pg" style="--k:4"/><use href="#pl8" x="200" y="100" class="pg" style="--k:3"/><use href="#ph8" x="300" y="100" style="--k:2"/><use href="#pl8" x="400" y="100" class="pg" style="--k:1"/><use href="#pf8" x="200" y="200" class="pg" style="--k:4"/><use href="#pl8" x="300" y="200" class="pg" style="--k:3"/><use href="#ph8" x="400" y="200" style="--k:2"/><use href="#pf8" x="300" y="300" class="pg" style="--k:4"/><use href="#pl8" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg><b>Serviços financeiros</b><span>Regulação, tributação e inovação no setor financeiro.</span></div>
-        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf9" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph9"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl9" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf9" x="0" y="0" class="pg" style="--k:4"/><use href="#pl9" x="100" y="0" class="pg" style="--k:3"/><use href="#ph9" x="200" y="0" style="--k:2"/><use href="#pl9" x="300" y="0" class="pg" style="--k:1"/><use href="#ph9" x="400" y="0" style="--k:0"/><use href="#pf9" x="100" y="100" class="pg" style="--k:4"/><use href="#pl9" x="200" y="100" class="pg" style="--k:3"/><use href="#ph9" x="300" y="100" style="--k:2"/><use href="#pl9" x="400" y="100" class="pg" style="--k:1"/><use href="#pf9" x="200" y="200" class="pg" style="--k:4"/><use href="#pl9" x="300" y="200" class="pg" style="--k:3"/><use href="#ph9" x="400" y="200" style="--k:2"/><use href="#pf9" x="300" y="300" class="pg" style="--k:4"/><use href="#pl9" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="263 263 263 263" aria-hidden="true"><path d="M281.82,526.07c0-134.89,109.35-244.25,244.25-244.25v-18.79h-263.03v263.03h18.79Z"/></svg><b>Comércio exterior e logística</b><span>Comércio internacional, aduana, transporte e infraestrutura logística.</span></div>
+        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf6" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph6"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl6" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf6" x="0" y="0" class="pg" style="--k:4"/><use href="#pl6" x="100" y="0" class="pg" style="--k:3"/><use href="#ph6" x="200" y="0" style="--k:2"/><use href="#pl6" x="300" y="0" class="pg" style="--k:1"/><use href="#ph6" x="400" y="0" style="--k:0"/><use href="#pf6" x="100" y="100" class="pg" style="--k:4"/><use href="#pl6" x="200" y="100" class="pg" style="--k:3"/><use href="#ph6" x="300" y="100" style="--k:2"/><use href="#pl6" x="400" y="100" class="pg" style="--k:1"/><use href="#pf6" x="200" y="200" class="pg" style="--k:4"/><use href="#pl6" x="300" y="200" class="pg" style="--k:3"/><use href="#ph6" x="400" y="200" style="--k:2"/><use href="#pf6" x="300" y="300" class="pg" style="--k:4"/><use href="#pl6" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><b>Sistema de Justiça</b><span>Pautas de organização e funcionamento do sistema de Justiça.</span></div>
+        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf7" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph7"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl7" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf7" x="0" y="0" class="pg" style="--k:4"/><use href="#pl7" x="100" y="0" class="pg" style="--k:3"/><use href="#ph7" x="200" y="0" style="--k:2"/><use href="#pl7" x="300" y="0" class="pg" style="--k:1"/><use href="#ph7" x="400" y="0" style="--k:0"/><use href="#pf7" x="100" y="100" class="pg" style="--k:4"/><use href="#pl7" x="200" y="100" class="pg" style="--k:3"/><use href="#ph7" x="300" y="100" style="--k:2"/><use href="#pl7" x="400" y="100" class="pg" style="--k:1"/><use href="#pf7" x="200" y="200" class="pg" style="--k:4"/><use href="#pl7" x="300" y="200" class="pg" style="--k:3"/><use href="#ph7" x="400" y="200" style="--k:2"/><use href="#pf7" x="300" y="300" class="pg" style="--k:4"/><use href="#pl7" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.730-93.94,66.42h187.88Z"/></svg><b>Segurança pública</b><span>Pautas de estrutura, gestão e financiamento da segurança pública.</span></div>
+        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf8" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph8"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl8" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf8" x="0" y="0" class="pg" style="--k:4"/><use href="#pl8" x="100" y="0" class="pg" style="--k:3"/><use href="#ph8" x="200" y="0" style="--k:2"/><use href="#pl8" x="300" y="0" class="pg" style="--k:1"/><use href="#ph8" x="400" y="0" style="--k:0"/><use href="#pf8" x="100" y="100" class="pg" style="--k:4"/><use href="#pl8" x="200" y="100" class="pg" style="--k:3"/><use href="#ph8" x="300" y="100" style="--k:2"/><use href="#pl8" x="400" y="100" class="pg" style="--k:1"/><use href="#pf8" x="200" y="200" class="pg" style="--k:4"/><use href="#pl8" x="300" y="200" class="pg" style="--k:3"/><use href="#ph8" x="400" y="200" style="--k:2"/><use href="#pf8" x="300" y="300" class="pg" style="--k:4"/><use href="#pl8" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg><b>Serviços financeiros</b><span>Regulação, tributação e inovação no setor financeiro.</span></div>
+        <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf9" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph9"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl9" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf9" x="0" y="0" class="pg" style="--k:4"/><use href="#pl9" x="100" y="0" class="pg" style="--k:3"/><use href="#ph9" x="200" y="0" style="--k:2"/><use href="#pl9" x="300" y="0" class="pg" style="--k:1"/><use href="#ph9" x="400" y="0" style="--k:0"/><use href="#pf9" x="100" y="100" class="pg" style="--k:4"/><use href="#pl9" x="200" y="100" class="pg" style="--k:3"/><use href="#ph9" x="300" y="100" style="--k:2"/><use href="#pl9" x="400" y="100" class="pg" style="--k:1"/><use href="#pf9" x="200" y="200" class="pg" style="--k:4"/><use href="#pl9" x="300" y="200" class="pg" style="--k:3"/><use href="#ph9" x="400" y="200" style="--k:2"/><use href="#pf9" x="300" y="300" class="pg" style="--k:4"/><use href="#pl9" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="263 263 263 263" aria-hidden="true"><path d="M281.82,526.07c0-134.89,109.35-244.25,244.25-244.25v-18.79h-263.03v263.03h18.79Z"/></svg><b>Comércio exterior e logística</b><span>Comércio internacional, aduana, transporte e infraestrutura logística.</span></div>
       </div>
     </div>
   </section>
 
   <section class="navy contact" id="contato">
-    <svg class="padrao c-bl" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf5" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph5"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl5" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf5" x="0" y="0" class="pg" style="--k:7"/><use href="#pl5" x="100" y="0" class="pg" style="--k:6"/><use href="#ph5" x="200" y="0" style="--k:5"/><use href="#pl5" x="300" y="0" class="pg" style="--k:4"/><use href="#ph5" x="400" y="0" style="--k:3"/><use href="#pl5" x="500" y="0" class="pg" style="--k:2"/><use href="#ph5" x="600" y="0" style="--k:1"/><use href="#pl5" x="700" y="0" class="pg" style="--k:0"/><use href="#pf5" x="100" y="100" class="pg" style="--k:7"/><use href="#pl5" x="200" y="100" class="pg" style="--k:6"/><use href="#ph5" x="300" y="100" style="--k:5"/><use href="#pl5" x="400" y="100" class="pg" style="--k:4"/><use href="#ph5" x="500" y="100" style="--k:3"/><use href="#pl5" x="600" y="100" class="pg" style="--k:2"/><use href="#ph5" x="700" y="100" style="--k:1"/><use href="#pf5" x="200" y="200" class="pg" style="--k:7"/><use href="#pl5" x="300" y="200" class="pg" style="--k:6"/><use href="#ph5" x="400" y="200" style="--k:5"/><use href="#pl5" x="500" y="200" class="pg" style="--k:4"/><use href="#ph5" x="600" y="200" style="--k:3"/><use href="#pl5" x="700" y="200" class="pg" style="--k:2"/><use href="#pf5" x="300" y="300" class="pg" style="--k:7"/><use href="#pl5" x="400" y="300" class="pg" style="--k:6"/><use href="#ph5" x="500" y="300" style="--k:5"/><use href="#pl5" x="600" y="300" class="pg" style="--k:4"/><use href="#ph5" x="700" y="300" style="--k:3"/><use href="#pf5" x="400" y="400" class="pg" style="--k:7"/><use href="#pl5" x="500" y="400" class="pg" style="--k:6"/><use href="#ph5" x="600" y="400" style="--k:5"/><use href="#pl5" x="700" y="400" class="pg" style="--k:4"/><use href="#pf5" x="500" y="500" class="pg" style="--k:7"/><use href="#pl5" x="600" y="500" class="pg" style="--k:6"/><use href="#ph5" x="700" y="500" style="--k:5"/></svg>
+    <svg class="padrao c-bl" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf5" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph5"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl5" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf5" x="0" y="0" class="pg" style="--k:7"/><use href="#pl5" x="100" y="0" class="pg" style="--k:6"/><use href="#ph5" x="200" y="0" style="--k:5"/><use href="#pl5" x="300" y="0" class="pg" style="--k:4"/><use href="#ph5" x="400" y="0" style="--k:3"/><use href="#pl5" x="500" y="0" class="pg" style="--k:2"/><use href="#ph5" x="600" y="0" style="--k:1"/><use href="#pl5" x="700" y="0" class="pg" style="--k:0"/><use href="#pf5" x="100" y="100" class="pg" style="--k:7"/><use href="#pl5" x="200" y="100" class="pg" style="--k:6"/><use href="#ph5" x="300" y="100" style="--k:5"/><use href="#pl5" x="400" y="100" class="pg" style="--k:4"/><use href="#ph5" x="500" y="100" style="--k:3"/><use href="#pl5" x="600" y="100" class="pg" style="--k:2"/><use href="#ph5" x="700" y="100" style="--k:1"/><use href="#pf5" x="200" y="200" class="pg" style="--k:7"/><use href="#pl5" x="300" y="200" class="pg" style="--k:6"/><use href="#ph5" x="400" y="200" style="--k:5"/><use href="#pl5" x="500" y="200" class="pg" style="--k:4"/><use href="#ph5" x="600" y="200" style="--k:3"/><use href="#pl5" x="700" y="200" class="pg" style="--k:2"/><use href="#pf5" x="300" y="300" class="pg" style="--k:7"/><use href="#pl5" x="400" y="300" class="pg" style="--k:6"/><use href="#ph5" x="500" y="300" style="--k:5"/><use href="#pl5" x="600" y="300" class="pg" style="--k:4"/><use href="#ph5" x="700" y="300" style="--k:3"/><use href="#pf5" x="400" y="400" class="pg" style="--k:7"/><use href="#pl5" x="500" y="400" class="pg" style="--k:6"/><use href="#ph5" x="600" y="400" style="--k:5"/><use href="#pl5" x="700" y="400" class="pg" style="--k:4"/><use href="#pf5" x="500" y="500" class="pg" style="--k:7"/><use href="#pl5" x="600" y="500" class="pg" style="--k:6"/><use href="#ph5" x="700" y="500" style="--k:5"/></svg>
     <div class="wrap">
       <div class="contact-intro">
         <p class="eyebrow">Contato</p>
@@ -508,7 +700,7 @@ footer .padrao { width: 130px; }
 </main>
 
 <footer class="on-white">
-  <svg class="padrao c-br" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf4" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph4"><rect width="100" height="100" class="pg"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn"/></g><path id="pl4" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf4" x="0" y="0" class="pg" style="--k:7"/><use href="#pl4" x="100" y="0" class="pg" style="--k:6"/><use href="#ph4" x="200" y="0" style="--k:5"/><use href="#pl4" x="300" y="0" class="pg" style="--k:4"/><use href="#ph4" x="400" y="0" style="--k:3"/><use href="#pl4" x="500" y="0" class="pg" style="--k:2"/><use href="#ph4" x="600" y="0" style="--k:1"/><use href="#pl4" x="700" y="0" class="pg" style="--k:0"/><use href="#pf4" x="100" y="100" class="pg" style="--k:7"/><use href="#pl4" x="200" y="100" class="pg" style="--k:6"/><use href="#ph4" x="300" y="100" style="--k:5"/><use href="#pl4" x="400" y="100" class="pg" style="--k:4"/><use href="#ph4" x="500" y="100" style="--k:3"/><use href="#pl4" x="600" y="100" class="pg" style="--k:2"/><use href="#ph4" x="700" y="100" style="--k:1"/><use href="#pf4" x="200" y="200" class="pg" style="--k:7"/><use href="#pl4" x="300" y="200" class="pg" style="--k:6"/><use href="#ph4" x="400" y="200" style="--k:5"/><use href="#pl4" x="500" y="200" class="pg" style="--k:4"/><use href="#ph4" x="600" y="200" style="--k:3"/><use href="#pl4" x="700" y="200" class="pg" style="--k:2"/><use href="#pf4" x="300" y="300" class="pg" style="--k:7"/><use href="#pl4" x="400" y="300" class="pg" style="--k:6"/><use href="#ph4" x="500" y="300" style="--k:5"/><use href="#pl4" x="600" y="300" class="pg" style="--k:4"/><use href="#ph4" x="700" y="300" style="--k:3"/><use href="#pf4" x="400" y="400" class="pg" style="--k:7"/><use href="#pl4" x="500" y="400" class="pg" style="--k:6"/><use href="#ph4" x="600" y="400" style="--k:5"/><use href="#pl4" x="700" y="400" class="pg" style="--k:4"/><use href="#pf4" x="500" y="500" class="pg" style="--k:7"/><use href="#pl4" x="600" y="500" class="pg" style="--k:6"/><use href="#ph4" x="700" y="500" style="--k:5"/></svg>
+  <svg class="padrao c-br" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf4" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph4"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl4" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf4" x="0" y="0" class="pg" style="--k:7"/><use href="#pl4" x="100" y="0" class="pg" style="--k:6"/><use href="#ph4" x="200" y="0" style="--k:5"/><use href="#pl4" x="300" y="0" class="pg" style="--k:4"/><use href="#ph4" x="400" y="0" style="--k:3"/><use href="#pl4" x="500" y="0" class="pg" style="--k:2"/><use href="#ph4" x="600" y="0" style="--k:1"/><use href="#pl4" x="700" y="0" class="pg" style="--k:0"/><use href="#pf4" x="100" y="100" class="pg" style="--k:7"/><use href="#pl4" x="200" y="100" class="pg" style="--k:6"/><use href="#ph4" x="300" y="100" style="--k:5"/><use href="#pl4" x="400" y="100" class="pg" style="--k:4"/><use href="#ph4" x="500" y="100" style="--k:3"/><use href="#pl4" x="600" y="100" class="pg" style="--k:2"/><use href="#ph4" x="700" y="100" style="--k:1"/><use href="#pf4" x="200" y="200" class="pg" style="--k:7"/><use href="#pl4" x="300" y="200" class="pg" style="--k:6"/><use href="#ph4" x="400" y="200" style="--k:5"/><use href="#pl4" x="500" y="200" class="pg" style="--k:4"/><use href="#ph4" x="600" y="200" style="--k:3"/><use href="#pl4" x="700" y="200" class="pg" style="--k:2"/><use href="#pf4" x="300" y="300" class="pg" style="--k:7"/><use href="#pl4" x="400" y="300" class="pg" style="--k:6"/><use href="#ph4" x="500" y="300" style="--k:5"/><use href="#pl4" x="600" y="300" class="pg" style="--k:4"/><use href="#ph4" x="700" y="300" style="--k:3"/><use href="#pf4" x="400" y="400" class="pg" style="--k:7"/><use href="#pl4" x="500" y="400" class="pg" style="--k:6"/><use href="#ph4" x="600" y="400" style="--k:5"/><use href="#pl4" x="700" y="400" class="pg" style="--k:4"/><use href="#pf4" x="500" y="500" class="pg" style="--k:7"/><use href="#pl4" x="600" y="500" class="pg" style="--k:6"/><use href="#ph4" x="700" y="500" style="--k:5"/></svg>
   <div class="wrap">
     <span class="item"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.300.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3Z"/></svg>+55 61 4042-9203</span>
     <span class="item"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm9 7.2L20 7H4l8 5.2ZM4 9.2V17h16V9.2l-8 5.2-8-5.2Z"/></svg>panorama@panoramaip.com.br</span>
@@ -531,6 +723,17 @@ footer .padrao { width: 130px; }
     note.textContent = 'Abrimos o seu e-mail com a mensagem pronta. Se nada abriu, escreva para panorama@panoramaip.com.br.';
   });
 
+  // O brilho do vidro acompanha o ponteiro
+  if (window.matchMedia('(hover: hover)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.addEventListener('pointermove', function (e) {
+      var el = e.target.closest && e.target.closest('.sector, .axis, .steps li, .reasons li, #contact-form, .card');
+      if (!el) return;
+      var r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', (e.clientX - r.left).toFixed(0) + 'px');
+      el.style.setProperty('--my', (e.clientY - r.top).toFixed(0) + 'px');
+    }, { passive: true });
+  }
+
   // Movimento ao rolar a página
   (function () {
     var root = document.documentElement;
@@ -538,6 +741,7 @@ footer .padrao { width: 130px; }
     var hasIO = 'IntersectionObserver' in window;
     var header = document.querySelector('.top');
     var bar = document.querySelector('.progress');
+    var escuras = [].slice.call(document.querySelectorAll('.hero, main .navy'));
 
     // Destaca no menu a seção que está na tela
     var links = [].slice.call(document.querySelectorAll('.nav a[href^="#"]:not(.cta)'));
@@ -620,6 +824,8 @@ footer .padrao { width: 130px; }
       var y = window.scrollY, vh = window.innerHeight, vw = window.innerWidth;
       var max = root.scrollHeight - vh;
       header.classList.toggle('scrolled', y > 8);
+      var meio = header.querySelector('.wrap').getBoundingClientRect(), linha = (meio.top + meio.bottom) / 2;
+      header.classList.toggle('escuro', escuras.some(function (el) { var r = el.getBoundingClientRect(); return r.top < linha && r.bottom > linha; }));
       if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? Math.min(1, y / max) : 0) + ')';
       if (reduce || !hasIO) return;
 
