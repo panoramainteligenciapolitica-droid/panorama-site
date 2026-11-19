@@ -73,15 +73,44 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { t.classList.remove('visivel'); }, 2600);
   }
+  // Links que vêm de dados (alertas, Casas, recebidos) só abrem se forem web, e-mail, telefone ou do próprio app:
+  // um "javascript:" gravado num alerta rodaria código no app de quem clica.
+  function linkSeguro(u) {
+    u = String(u === null || u === undefined ? '' : u).trim();
+    // O navegador ignora tabulações, quebras e controles no endereço ("java\nscript:" vira "javascript:"): confere sem eles
+    var limpo = u.replace(/[\u0000-\u0020\u007f]/g, '');
+    return !/^[a-z][a-z0-9+.-]*:/i.test(limpo) || /^(https?|mailto|tel|blob):/i.test(limpo) ? u : '#';
+  }
+  var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  function emailValido(t) { return EMAIL.test(String(t || '').trim()); }
   function el(tag, attrs, filhos) {
     var e = document.createElement(tag);
     Object.keys(attrs || {}).forEach(function (k) {
       if (k === 'text') e.textContent = attrs[k];
       else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), attrs[k]);
-      else e.setAttribute(k, attrs[k]);
+      else e.setAttribute(k, k === 'href' || k === 'src' ? linkSeguro(attrs[k]) : attrs[k]);
     });
     (filhos || []).forEach(function (f) { if (f) e.appendChild(f); });
     return e;
+  }
+  // Ações que apagam pedem um segundo toque no mesmo botão. O segundo toque só vale depois de um instante,
+  // para um clique duplo não confirmar sozinho.
+  function confirmar(botao, texto, acao) {
+    var agora = Date.now(), desde = Number(botao.dataset.confirmando || 0);
+    if (desde && agora - desde >= 600) { delete botao.dataset.confirmando; if (botao.dataset.original) botao.textContent = botao.dataset.original; acao(); return; }
+    if (desde) return;
+    botao.dataset.original = botao.textContent;
+    botao.dataset.confirmando = String(agora); botao.textContent = texto;
+    setTimeout(function () { if (botao.dataset.confirmando === String(agora)) { delete botao.dataset.confirmando; botao.textContent = botao.dataset.original; } }, 4000);
+  }
+  // Chama uma função do Supabase; os erros dela vêm no corpo da resposta ({ erro })
+  function chamarFuncao(nome, corpo) {
+    return sb.functions.invoke(nome, { body: corpo }).then(function (r) {
+      if (!r.error) return r.data;
+      var ctx = r.error.context;
+      if (ctx && ctx.json) return ctx.json().then(function (j) { throw new Error(j.erro || r.error.message); }, function () { throw r.error; });
+      throw new Error(/not found|404/i.test(r.error.message || '') ? 'A função ' + nome + ' ainda não foi publicada no Supabase.' : r.error.message);
+    });
   }
   var formatoData = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
   function data(iso) { try { return formatoData.format(new Date(iso)); } catch (e) { return ''; } }
@@ -102,11 +131,27 @@
           return Promise.resolve(l);
         }
         if (!estado.cliente) return Promise.resolve([]);
-        var q = sb.from(nome).select(opcoes.campos || '*');
-        if (!opcoes.semCliente) q = q.eq('cliente_id', estado.cliente);
-        Object.keys(opcoes.onde || {}).forEach(function (k) { q = q.eq(k, opcoes.onde[k]); });
-        if (opcoes.ordem) q = q.order(opcoes.ordem, { ascending: !opcoes.desc, nullsFirst: false });
-        return q.limit(opcoes.limite || 5000).then(function (r) { if (r.error) throw r.error; return r.data || []; });
+        var cliente = estado.cliente, limite = opcoes.limite || 5000, PAGINA = 1000, todos = [];
+        // O Supabase devolve no máximo 1000 linhas por consulta: lê em páginas até o limite pedido
+        function pagina(de) {
+          var q = sb.from(nome).select(opcoes.campos || '*');
+          if (!opcoes.semCliente) q = q.eq('cliente_id', cliente);
+          Object.keys(opcoes.onde || {}).forEach(function (k) { q = q.eq(k, opcoes.onde[k]); });
+          if (opcoes.ordem) q = q.order(opcoes.ordem, { ascending: !opcoes.desc, nullsFirst: false });
+          var chave = nome === 'descadastros' ? 'email' : 'id'; // desempate estável entre as páginas
+          if (opcoes.ordem !== chave) q = q.order(chave, { ascending: true });
+          var ate = Math.min(de + PAGINA, limite) - 1;
+          return q.range(de, ate).then(function (r) {
+            if (r.error) throw r.error;
+            todos = todos.concat(r.data || []);
+            return (r.data || []).length === ate - de + 1 && todos.length < limite ? pagina(ate + 1) : todos;
+          });
+        }
+        return pagina(0).then(function (l) {
+          // Trocou de cliente enquanto carregava: não entrega dados do cliente anterior para a tela do atual
+          if (!opcoes.semCliente && estado.cliente !== cliente) return new Promise(function () {});
+          return l;
+        });
       },
       inserir: function (obj) {
         if (estado.demo) { var o = Object.assign({ id: novoId(), criado_em: new Date().toISOString() }, obj); var l = local(); l.push(o); guardar(l); return Promise.resolve(o); }
@@ -119,14 +164,16 @@
       },
       atualizar: function (id, campos) {
         if (estado.demo) { var l = local(); l.forEach(function (o) { if (o.id === id) Object.assign(o, campos); }); guardar(l); return Promise.resolve(); }
-        return sb.from(nome).update(campos).eq('id', id).then(function (r) { if (r.error) throw r.error; });
+        return sb.from(nome).update(campos).eq('id', id).select('id').then(function (r) { if (r.error) throw r.error; semEfeito(r); });
       },
       apagar: function (id) {
         if (estado.demo) { guardar(local().filter(function (o) { return o.id !== id; })); return Promise.resolve(); }
-        return sb.from(nome).delete().eq('id', id).then(function (r) { if (r.error) throw r.error; });
+        return sb.from(nome).delete().eq('id', id).select('id').then(function (r) { if (r.error) throw r.error; semEfeito(r); });
       }
     };
   }
+  // O banco não avisa quando a regra de acesso barra uma alteração: ela só não acontece. Aqui vira erro visível.
+  function semEfeito(r) { if (!r.data || !r.data.length) throw new Error('Você não tem permissão para isso, ou o item já foi apagado. Recarregue a tela.'); }
   function baixar(nome, conteudo, tipo) {
     var blob = conteudo instanceof Blob ? conteudo : new Blob([conteudo], { type: tipo || 'application/octet-stream' });
     var a = document.createElement('a');
@@ -294,7 +341,7 @@
     $('recebido-texto').textContent = r.texto || '';
     var a = $('recebido-link');
     a.hidden = !r.link;
-    if (r.link) { a.href = r.link; a.textContent = r.link; }
+    if (r.link) { a.href = linkSeguro(r.link); a.textContent = r.link; }
   }
   function lerCompartilhado(params) {
     var titulo = params.get('titulo') || '', texto = params.get('texto') || '', link = params.get('link') || '';
@@ -354,7 +401,7 @@
   function mensagem(texto, erro) { var m = $('mensagem-login'); m.textContent = texto; m.classList.toggle('erro', Boolean(erro)); }
   function emailDigitado() {
     var email = $('email').value.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { mensagem('Digite um e-mail válido.', true); return ''; }
+    if (!emailValido(email)) { mensagem('Digite um e-mail válido.', true); return ''; }
     return email;
   }
 
@@ -379,7 +426,7 @@
       }
       $('senha').value = '';
       mensagem('');
-    });
+    }, function () { botao.disabled = false; mensagem('Sem conexão com o servidor. Verifique a internet e tente de novo.', true); });
   });
 
   $('esqueci').addEventListener('click', function () {
@@ -392,7 +439,7 @@
       if (r.error) { mensagem('Não foi possível enviar agora. Tente de novo em instantes.', true); return; }
       // Mesma resposta para e-mail cadastrado ou não, para não revelar quem tem acesso
       mensagem('Se este e-mail tiver acesso, chega em instantes um link para criar a senha. Abra o link neste aparelho.');
-    });
+    }, function () { botao.disabled = false; mensagem('Sem conexão com o servidor. Verifique a internet e tente de novo.', true); });
   });
 
   $('form-nova-senha').addEventListener('submit', function (ev) {
@@ -409,12 +456,14 @@
       estado.trocandoSenha = false;
       avisar('Senha salva');
       rotear();
-    });
+    }, function () { botao.disabled = false; mensagem('Sem conexão com o servidor. Tente de novo.', true); });
   });
 
   $('ver-demo').addEventListener('click', function () { estado.demo = true; rotear(); });
   $('sair').addEventListener('click', function () {
     if (estado.demo) { estado.demo = false; rotear(); return; }
+    // Aparelho compartilhado: o que ficou guardado desta conta não passa para a próxima pessoa
+    gravar('panorama-recebido', null); gravar('panorama-cliente', null);
     sb.auth.signOut();
   });
 
@@ -470,7 +519,7 @@
       ler: ler, gravar: gravar, estado: estado, sb: sb, voltar: function () { irPara(''); },
       carregarConta: carregarConta, nomeCliente: nomeCliente, trocarCliente: trocarCliente,
       renderSeletorCliente: renderSeletorCliente, papel: papel, tabela: tabela, baixar: baixar, selecionarAba: selecionarAba,
-      renderAlertas: renderAlertas });
+      renderAlertas: renderAlertas, confirmar: confirmar, chamarFuncao: chamarFuncao, emailValido: emailValido, linkSeguro: linkSeguro });
   });
 
   // ---------- início ----------

@@ -67,14 +67,14 @@
         local()[tabela].forEach(function (o) { if (o.id === id) Object.assign(o, campos); });
         guardarLocal(); return Promise.resolve();
       }
-      return P.sb.from(tabela).update(campos).eq('id', id).then(function (r) { if (r.error) throw r.error; });
+      return P.sb.from(tabela).update(campos).eq('id', id).select('id').then(function (r) { if (r.error) throw r.error; if (!r.data || !r.data.length) throw new Error('Você não tem permissão para isso, ou o item já foi apagado.'); });
     },
     apagar: function (tabela, id) {
       if (P.estado.demo) {
         local()[tabela] = local()[tabela].filter(function (o) { return o.id !== id; });
         guardarLocal(); return Promise.resolve();
       }
-      return P.sb.from(tabela).delete().eq('id', id).then(function (r) { if (r.error) throw r.error; });
+      return P.sb.from(tabela).delete().eq('id', id).select('id').then(function (r) { if (r.error) throw r.error; if (!r.data || !r.data.length) throw new Error('Você não tem permissão para isso, ou o item já foi apagado.'); });
     },
     // Busca agora: no app real, chama a mesma função que roda todo dia no Supabase
     // Sem o Supabase, consulta as Casas daqui mesmo (ontem e hoje) e guarda neste navegador só o que pode interessar:
@@ -97,7 +97,7 @@
           return { novas: novas.length, consultadas: res.itens.length, erros: res.erros };
         });
       }
-      return P.sb.functions.invoke('coletar-proposicoes', { body: {} }).then(function (r) { if (r.error) throw r.error; return r.data || {}; });
+      return P.chamarFuncao('coletar-proposicoes', {}).then(function (d) { return d || {}; });
     },
     ultimaBusca: function () {
       if (P.estado.demo) return Promise.resolve(local().ultima_busca);
@@ -151,13 +151,7 @@
     if (!p.url) return null;
     return el('a', { href: p.url, target: '_blank', rel: 'noopener', text: 'Abrir na ' + CASAS[p.casa] });
   }
-  function confirmar(botao, texto, acao) {
-    // Pede um segundo toque no mesmo botão, já que a confirmação fica na própria tela
-    if (botao.dataset.confirmando) { acao(); return; }
-    var original = botao.textContent;
-    botao.dataset.confirmando = '1'; botao.textContent = texto;
-    setTimeout(function () { delete botao.dataset.confirmando; botao.textContent = original; }, 3500);
-  }
+  var confirmar = P.confirmar; // segundo toque no mesmo botão, que não vale num clique duplo
 
   // ---------- painel ----------
   function abrirPainel() {
@@ -369,7 +363,7 @@
       P.avisar((r && r.novas ? r.novas + (r.novas === 1 ? ' proposição de interesse' : ' proposições de interesse') : 'Nenhuma proposição nova de interesse') +
         (r && r.consultadas ? ' entre ' + r.consultadas.toLocaleString('pt-BR') + ' apresentadas' : '') + falta);
       return abrirPainel();
-    }, function () { P.avisar('A busca falhou. Tente de novo em instantes.'); }).then(function () { b.disabled = false; b.textContent = 'Buscar agora'; });
+    }, function (e) { P.avisar((e && e.message && !/fetch|network|non-2xx/i.test(e.message)) ? e.message : 'A busca falhou. Tente de novo em instantes.'); }).then(function () { b.disabled = false; b.textContent = 'Buscar agora'; });
   });
 
   // ---------- detalhe ----------

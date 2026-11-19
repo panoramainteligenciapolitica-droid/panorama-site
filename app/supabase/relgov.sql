@@ -185,3 +185,110 @@ create policy "Vê os envios do cliente" on public.envios_email for select to au
 
 -- Alertas também podem ser publicados pelo app (coordenador e master)
 alter table public.alertas add column if not exists autor uuid default auth.uid();
+
+-- ---------- segurança (revisão de 2026-11) ----------
+-- Pode rodar de novo. Rode este arquivo inteiro depois de cada atualização do app.
+
+-- 1) Regras abertas da primeira instalação (esquema.sql) não podem conviver com as regras por cliente:
+--    se esquema.sql foi rodado de novo antes da correção, elas liberavam todos os clientes para qualquer login.
+drop policy if exists "Clientes com login leem os alertas" on public.alertas;
+do $$
+declare t text;
+begin
+  foreach t in array array['especialidades', 'palavras', 'proposicoes', 'candidatas'] loop
+    execute format('drop policy if exists "Equipe com login usa %1$s" on public.%1$I', t);
+  end loop;
+end $$;
+
+-- 2) O que aponta para outro registro tem de ser do mesmo cliente (lista de outro cliente, contato de outro cliente...)
+create or replace function public.conferir_mesmo_cliente() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  dono uuid;
+begin
+  -- (um "if" dentro do outro: o plpgsql não para no primeiro "and", e new.contato_id não existe em outras tabelas)
+  if tg_table_name in ('lista_membros', 'campanhas_email') then
+    if new.lista_id is not null then
+      select cliente_id into dono from public.listas_email where id = new.lista_id;
+      if dono is distinct from new.cliente_id then raise exception 'A lista não é deste cliente' using errcode = '42501'; end if;
+    end if;
+  end if;
+  if tg_table_name = 'interacoes' then
+    if new.contato_id is not null then
+      select cliente_id into dono from public.contatos where id = new.contato_id;
+      if dono is distinct from new.cliente_id then raise exception 'O contato não é deste cliente' using errcode = '42501'; end if;
+    end if;
+  end if;
+  if tg_table_name in ('interacoes', 'tarefas') then
+    if new.proposicao_id is not null then
+      select cliente_id into dono from public.proposicoes where id = new.proposicao_id;
+      if dono is distinct from new.cliente_id then raise exception 'A proposição não é deste cliente' using errcode = '42501'; end if;
+    end if;
+  end if;
+  return new;
+end $$;
+do $$
+declare t text;
+begin
+  foreach t in array array['lista_membros', 'campanhas_email', 'interacoes', 'tarefas'] loop
+    execute format('create or replace trigger conferir_mesmo_cliente before insert or update on public.%I for each row execute function public.conferir_mesmo_cliente()', t);
+  end loop;
+end $$;
+
+-- 3) Links abertos pelo app: só http e https (um link "javascript:" rodaria código no app de quem clica).
+--    "not valid": vale para o que for gravado daqui em diante, sem travar se já houver um link antigo diferente.
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'alertas_link_http') then
+    alter table public.alertas add constraint alertas_link_http check (link is null or link ~* '^https?://') not valid;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'notas_link_http') then
+    alter table public.notas add constraint notas_link_http check (link is null or link ~* '^https?://') not valid;
+  end if;
+end $$;
+
+-- 3b) Regras restritivas (valem por cima das outras): descadastro não se apaga nem se altera pelo app (quem pediu para sair
+--     não volta a receber por engano ou má-fé; um pedido legítimo se desfaz pelo Table Editor) e campanha enviada fica como registro.
+do $$
+begin
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'descadastros' and policyname = 'Descadastro não se apaga pelo app') then
+    create policy "Descadastro não se apaga pelo app" on public.descadastros as restrictive for delete to authenticated using (false);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'descadastros' and policyname = 'Descadastro não se altera pelo app') then
+    create policy "Descadastro não se altera pelo app" on public.descadastros as restrictive for update to authenticated using (false);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'campanhas_email' and policyname = 'Campanha enviada fica como registro') then
+    create policy "Campanha enviada fica como registro" on public.campanhas_email as restrictive for delete to authenticated
+      using (status in ('rascunho', 'erro'));
+  end if;
+end $$;
+
+-- 4) Trava de envio: a função enviar-emails reserva a campanha antes de mandar, para dois envios ao mesmo tempo
+--    não mandarem em dobro. Uma reserva parada há mais de 10 minutos (função que caiu) pode ser retomada.
+alter table public.campanhas_email add column if not exists envio_iniciado_em timestamptz;
+
+-- 5) Registro de cada coleta (agendada ou pelo botão "Buscar agora"): serve de trava contra chamadas repetidas
+--    e de histórico. Só a função lê e grava (sem regras para quem usa o app).
+create table if not exists public.coletas (
+  id bigint generated always as identity primary key,
+  iniciada_em timestamptz not null default now(),
+  origem text not null,
+  pessoa uuid
+);
+create index if not exists coletas_data on public.coletas (iniciada_em desc);
+alter table public.coletas enable row level security;
+
+-- 6) Funções do banco: o Postgres e o Supabase deixam qualquer um, inclusive quem não tem login, chamar as funções novas.
+--    Quem não tem login não precisa de nenhuma: o acesso dele sai. Quem tem login continua com as que o app e as regras usam.
+do $$
+declare f record;
+begin
+  for f in select p.oid::regprocedure as assinatura from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'public' and p.prokind = 'f' loop
+    execute format('revoke execute on function %s from public, anon', f.assinatura);
+  end loop;
+end $$;
+grant execute on function public.meu_papel(), public.minha_org(), public.sou_master(), public.sou_admin(), public.gere_org(uuid),
+  public.gere_cliente(uuid), public.pode_ver(uuid), public.org_de(uuid), public.pode_enviar(uuid), public.definir_envio_email(uuid, boolean),
+  public.salvar_meu_nome(text), public.contar_entradas(date, date) to authenticated;
+grant execute on all functions in schema public to service_role;

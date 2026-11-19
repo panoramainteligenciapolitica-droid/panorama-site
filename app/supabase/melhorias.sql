@@ -1,4 +1,4 @@
--- Melhorias de novembro de 2026. Rode no SQL Editor depois de relgov.sql e contas-email.sql. Pode rodar de novo.
+-- Melhorias de novembro de 2026. Rode no SQL Editor depois de relgov.sql, agendamento.sql e contas-email.sql. Pode rodar de novo.
 --
 -- 1. Segurança: funções internas deixam de poder ser chamadas sem login
 -- 2. Similaridade mínima e relatório mensal por cliente (no banco, iguais para toda a equipe)
@@ -10,22 +10,14 @@
 -- 8. Agendamentos: tramitação às 7h20, avisos a cada 15 minutos, resumo diário às 8h (Brasília)
 
 -- ---------- 1. segurança ----------
--- As funções "security definer" do schema public eram executáveis por qualquer um (role anon).
--- Ficam só para quem tem login; a do gatilho de perfil (criar_perfil) não é chamada por ninguém.
+-- Mesma regra do relgov.sql: quem não tem login não executa nenhuma função do banco. Quem tem login fica só com as que
+-- receberam permissão explícita (relgov.sql, contas-email.sql e as deste arquivo, mais abaixo). Nada é aberto aqui.
 do $$
 declare f record;
 begin
-  for f in
-    select p.oid::regprocedure as assinatura, p.proname
-    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public' and p.prosecdef
-  loop
+  for f in select p.oid::regprocedure as assinatura from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'public' and p.prokind = 'f' loop
     execute format('revoke execute on function %s from public, anon', f.assinatura);
-    if f.proname = 'criar_perfil' then
-      execute format('revoke execute on function %s from authenticated', f.assinatura);
-    else
-      execute format('grant execute on function %s to authenticated', f.assinatura);
-    end if;
   end loop;
 end $$;
 -- Funções criadas daqui para a frente também nascem fechadas para quem não tem login
@@ -65,9 +57,12 @@ create table if not exists public.tramitacoes (
   unique (ref, marca)
 );
 create index if not exists tramitacoes_ref_quando on public.tramitacoes (ref, quando desc);
+create index if not exists proposicoes_casa_id_casa on public.proposicoes (casa, id_casa);
 alter table public.tramitacoes enable row level security;
 drop policy if exists "Equipe com login lê a tramitação" on public.tramitacoes;
-create policy "Equipe com login lê a tramitação" on public.tramitacoes for select to authenticated using (true);
+-- Lê quem vê algum cliente que monitora aquela proposição (ref = Casa:id da proposição na Casa)
+create policy "Equipe com login lê a tramitação" on public.tramitacoes for select to authenticated using (
+  exists (select 1 from public.proposicoes p where p.id_casa is not null and p.casa || ':' || p.id_casa = tramitacoes.ref and public.pode_ver(p.cliente_id)));
 
 -- ---------- 4. avisos ----------
 create table if not exists public.avisos (
@@ -239,7 +234,8 @@ begin
 end $$;
 
 -- ---------- 8. agendamentos ----------
--- Mesma chave pública (anon) de agendamento.sql e de app/config.js. Rode depois de publicar as funções novas.
+-- Mesma chave pública (anon) e mesmo segredo do Vault de agendamento.sql: as funções só aceitam o agendamento com o
+-- cabeçalho x-coleta-segredo. Rode depois de agendamento.sql e de publicar as funções novas.
 do $$
 declare
   chave text := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyc2hlbGN2bnlpc2VjdWVrbnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMDUwODUsImV4cCI6MjEwODc4MTA4NX0.sSrzefLVppDXdjayGk4b3Ooz6FzL2N2-nuI_CLVgVmw';
@@ -253,7 +249,11 @@ begin
   ) as x(nome, quando, funcao, corpo) loop
     if exists (select 1 from cron.job where jobname = j.nome) then perform cron.unschedule(j.nome); end if;
     perform cron.schedule(j.nome, j.quando, format(
-      $f$select net.http_post(url := %L, headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', %L), body := %L::jsonb, timeout_milliseconds := 150000)$f$,
+      $f$select net.http_post(url := %L, headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', %L,
+        'x-coleta-segredo', (select decrypted_secret from vault.decrypted_secrets where name = 'coleta_segredo')), body := %L::jsonb, timeout_milliseconds := 150000)$f$,
       base || j.funcao, 'Bearer ' || chave, j.corpo));
   end loop;
 end $$;
+
+-- As funções do servidor (chave de serviço) continuam podendo chamar tudo
+grant execute on all functions in schema public to service_role;

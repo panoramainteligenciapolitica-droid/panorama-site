@@ -138,6 +138,23 @@ function fimPrazoEmendas(passos: Passo[]): { fim: string; orgao: string | null; 
   return null;
 }
 
+// Chamada do agendamento: cabeçalho x-coleta-segredo igual ao segredo do Vault (o mesmo da coleta, veja agendamento.sql)
+// ou a COLETA_SEGREDO dos segredos das funções. A chave pública (anon) sozinha não basta.
+function iguais(a: string, b: string) {
+  const x = new TextEncoder().encode(a), y = new TextEncoder().encode(b);
+  let dif = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) dif |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return dif === 0;
+}
+// deno-lint-ignore no-explicit-any
+async function doAgendamento(req: Request, sb: any) {
+  const enviado = req.headers.get('x-coleta-segredo') ?? '';
+  if (!enviado) return false;
+  let segredo = Deno.env.get('COLETA_SEGREDO') ?? '';
+  if (!segredo) segredo = String((await sb.rpc('segredo_coleta')).data ?? '');
+  return segredo.length >= 16 && iguais(enviado, segredo);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -153,6 +170,8 @@ Deno.serve(async (req) => {
     const { data } = await doUsuario.from('proposicoes').select('id').eq('id', corpo.proposicao_id).maybeSingle();
     if (!data) return resposta({ erro: 'Proposição não encontrada' }, 404);
     filtro = corpo.proposicao_id;
+  } else if (!(await doAgendamento(req, sb))) {
+    return resposta({ erro: 'A rodada completa só roda pelo agendamento.' }, 403);
   }
 
   const campos = 'id, cliente_id, casa, sigla, numero, ano, id_externo, id_casa, situacao, tramitacao_conferida_em';

@@ -237,6 +237,23 @@ async function resumo() {
   return { tarefas, relatorios, emails };
 }
 
+// Chamada do agendamento: cabeçalho x-coleta-segredo igual ao segredo do Vault (o mesmo da coleta, veja agendamento.sql)
+// ou a COLETA_SEGREDO dos segredos das funções. A chave pública (anon) sozinha não basta.
+function iguais(a: string, b: string) {
+  const x = new TextEncoder().encode(a), y = new TextEncoder().encode(b);
+  let dif = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) dif |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return dif === 0;
+}
+// deno-lint-ignore no-explicit-any
+async function doAgendamento(req: Request, sb: any) {
+  const enviado = req.headers.get('x-coleta-segredo') ?? '';
+  if (!enviado) return false;
+  let segredo = Deno.env.get('COLETA_SEGREDO') ?? '';
+  if (!segredo) segredo = String((await sb.rpc('segredo_coleta')).data ?? '');
+  return segredo.length >= 16 && iguais(enviado, segredo);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   const corpo = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
@@ -250,6 +267,9 @@ Deno.serve(async (req) => {
       if (!user) return resposta({ erro: 'Entre no app para testar' }, 401);
       const r = await pushPara([user.id], { titulo: 'Notificações ligadas', texto: 'Este aparelho vai receber os avisos do Panorama RelGov.', link: APP + '?secao=avisos', tag: 'teste' }, await vapid());
       return resposta(r);
+    }
+    if ((corpo.acao === 'notificar' || corpo.acao === 'resumo') && !(await doAgendamento(req, sb))) {
+      return resposta({ erro: 'Esta ação só roda pelo agendamento.' }, 403);
     }
     if (corpo.acao === 'notificar') return resposta(await notificar());
     if (corpo.acao === 'resumo') return resposta(await resumo());
