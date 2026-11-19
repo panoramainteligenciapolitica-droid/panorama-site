@@ -309,12 +309,12 @@ footer .padrao { width: 130px; }
    flutuam sobre uma luz ambiente em azul e dourado da marca. O texto fica sempre sobre vidro
    bem opaco, para manter a leitura; quem pede menos transparência no sistema recebe superfícies sólidas. */
 :root {
-  --vidro: rgba(255, 255, 255, .58);
-  --vidro-forte: rgba(255, 255, 255, .78);
+  --vidro: rgba(255, 255, 255, .53);
+  --vidro-forte: rgba(255, 255, 255, .73);
   --vidro-borda: rgba(255, 255, 255, .75);
   --vidro-desfoque: blur(22px) saturate(175%);
   --vidro-sombra: inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 -1px 0 rgba(27, 46, 83, .05), 0 22px 44px -26px rgba(27, 46, 83, .38), 0 2px 6px -2px rgba(27, 46, 83, .08);
-  --vidro-escuro: rgba(255, 255, 255, .075);
+  --vidro-escuro: rgba(255, 255, 255, .06);
   --vidro-escuro-borda: rgba(255, 255, 255, .16);
   --vidro-escuro-sombra: inset 0 1px 0 rgba(255, 255, 255, .22), 0 24px 48px -28px rgba(0, 0, 0, .6);
   --r-vidro: 22px;
@@ -376,7 +376,7 @@ body { background: #f2f4f8; }
 
 /* A cápsula do topo se adapta ao que passa por baixo: escura sobre as faixas azuis, clara no resto */
 .top .logo, .nav a, .top .entrar { transition: color .4s; }
-.top.escuro .wrap { background: rgba(18, 30, 58, .42); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 22px 44px -26px rgba(0, 0, 0, .6); }
+.top.escuro .wrap { background: rgba(18, 30, 58, .37); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 22px 44px -26px rgba(0, 0, 0, .6); }
 .top.escuro .wrap::before { background: linear-gradient(140deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .08) 35%, rgba(255, 255, 255, .03) 60%, rgba(255, 255, 255, .3)); }
 .top.escuro .logo { color: #fff; }
 .top.escuro .nav a, .top.escuro .entrar { color: rgba(255, 255, 255, .78); }
@@ -404,13 +404,14 @@ body { background: #f2f4f8; }
   background: var(--navy); color: #fff; overflow: hidden; isolation: isolate;
 }
 .hero-art { position: absolute; inset: 0; z-index: -1; background: none; display: block; overflow: hidden; }
-.hero-art img { position: absolute; right: -5%; top: 50%; width: min(62vw, 1080px); height: auto; padding: 0; margin-top: calc(min(62vw, 1080px) * -0.25); }
+.hero-art img { position: absolute; right: 0; top: 50%; width: min(44vw, 760px); height: auto; padding: 0; margin-top: calc(min(44vw, 760px) * -0.2955); filter: drop-shadow(0 30px 40px rgba(10, 18, 40, .45)); }
 /* O padrão começa abaixo da cápsula do topo, para o vidro não virar uma mancha marrom atrás do botão */
-.hero-art .padrao { width: clamp(150px, 19vw, 280px); top: var(--topo); }
+.hero-art .padrao { width: clamp(150px, 19vw, 280px); top: var(--topo); z-index: 1; }
+.hero-art img { z-index: 2; }
 .hero-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(26, 42, 76, .55), transparent 50%), linear-gradient(0deg, rgba(26, 42, 76, .6), transparent 30%); }
 .hero-text {
   justify-self: start; margin-left: max(12px, env(safe-area-inset-left, 0px), calc((100vw - var(--wrap)) / 2 + 12px));
-  width: min(42rem, calc(100% - 24px)); padding: clamp(1.75rem, 3.5vw, 2.75rem); gap: 1.2rem;
+  width: min(38rem, calc(100% - 24px)); padding: clamp(1.75rem, 3.5vw, 2.75rem); gap: 1.2rem;
   justify-items: start; text-align: left; border-radius: 36px; position: relative; isolation: isolate;
   background: rgba(255, 255, 255, .1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 40px 80px -40px rgba(0, 0, 0, .7);
   -webkit-backdrop-filter: blur(26px) saturate(170%); backdrop-filter: blur(26px) saturate(170%);
@@ -437,9 +438,9 @@ body { background: #f2f4f8; }
 /* No celular, a arte fica em cima e o painel sobe sobre ela */
 @media (max-width: 900px) {
   .hero { min-height: 0; align-items: end; padding: calc(var(--topo) + 1rem) 0 4.5rem; }
-  .hero-art img { right: auto; left: 50%; top: calc(var(--topo) - .5rem); width: 110vw; margin: 0 0 0 -55vw; }
+  .hero-art img { right: auto; left: 0; top: calc(var(--topo) + 1rem); width: 100vw; margin: 0; }
   .hero-art::after { background: linear-gradient(0deg, #1d2e53 38%, rgba(29, 46, 83, .3) 70%, transparent); }
-  .hero-text { margin: 52vw auto 0; justify-self: center; width: calc(100% - 24px); border-radius: 28px; }
+  .hero-text { margin: calc(59vw + 2rem) auto 0; justify-self: center; width: calc(100% - 24px); border-radius: 28px; }
 }
 @media (max-width: 480px) { .hero-chips { gap: .6rem 1.2rem; } .hero-chips b { font-size: .9rem; } .hero .actions .btn { flex: 1 1 auto; justify-content: center; } }
 
@@ -499,7 +500,7 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
    (painel da abertura, cartões de "Por que atuar", formulário) usa um azul vidro dois ou três tons mais claro,
    para cartão e fundo não terem o mesmo azul. Os cabeçalhos dos quatro eixos ficam no azul da marca.
    Textos acima de 4,5:1. */
-:root { --azul-vidro: rgba(78, 110, 165, .55); --azul-vidro-hover: rgba(88, 122, 180, .6); --texto-sobre-azul: #dbe3f0; }
+:root { --azul-vidro: rgba(78, 110, 165, .5); --azul-vidro-hover: rgba(88, 122, 180, .55); --texto-sobre-azul: #dbe3f0; }
 .hero-text { background: var(--azul-vidro); }
 .hero .lead, .hero-chips span { color: var(--texto-sobre-azul); }
 .reasons li { background: var(--azul-vidro); }
@@ -521,12 +522,16 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .badge { background: linear-gradient(180deg, rgba(232, 204, 160, .95), rgba(197, 157, 97, .92)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 6px 14px -8px rgba(0, 0, 0, .6); }
 .freq { background: rgba(255, 255, 255, .6); border-color: rgba(197, 157, 97, .55); box-shadow: inset 0 1px 0 #fff, 0 4px 10px -6px rgba(27, 46, 83, .35); }
 .hero-chips { gap: .6rem; border-top: 0; padding-top: .4rem; }
-.hero-chips li { padding: .55rem .95rem; border-radius: 18px; background: rgba(255, 255, 255, .1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 10px 20px -14px rgba(0, 0, 0, .6); }
+.hero-chips li { padding: .55rem .95rem; border-radius: 18px; background: rgba(255, 255, 255, .05); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 10px 20px -14px rgba(0, 0, 0, .6); }
 .nav a.on { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 
 @media (prefers-reduced-transparency: reduce) { :root { --azul-vidro: #3a5486; --azul-vidro-hover: #415d92; } }
 
 @media (max-height: 940px) { .rolar { display: none; } }
+
+/* Destaques da abertura centralizados, com o texto centralizado */
+.hero-chips { justify-content: center; }
+.hero-chips li { justify-items: center; text-align: center; }
 
 /* O padrão dourado no canto não fica por baixo dos textos */
 @media (max-width: 1200px) { .why .wrap { padding-top: calc(clamp(150px, 22vw, 300px) * .75 + 1.5rem); } }
@@ -584,12 +589,12 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
       </div>
       <ul class="hero-chips" aria-label="Destaques">
         <li><b>Desde 2018</b><span>em Brasília</span></li>
-        <li><b>Congresso e Executivo</b><span>federal</span></li>
+        <li><b>Congresso Nacional e Executivo</b><span>federais</span></li>
       </ul>
     </div>
     <div class="hero-art">
       <svg class="padrao c-tr" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf2" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph2"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl2" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf2" x="0" y="0" class="pg" style="--k:7"/><use href="#pl2" x="100" y="0" class="pg" style="--k:6"/><use href="#ph2" x="200" y="0" style="--k:5"/><use href="#pl2" x="300" y="0" class="pg" style="--k:4"/><use href="#ph2" x="400" y="0" style="--k:3"/><use href="#pl2" x="500" y="0" class="pg" style="--k:2"/><use href="#ph2" x="600" y="0" style="--k:1"/><use href="#pl2" x="700" y="0" class="pg" style="--k:0"/><use href="#pf2" x="100" y="100" class="pg" style="--k:7"/><use href="#pl2" x="200" y="100" class="pg" style="--k:6"/><use href="#ph2" x="300" y="100" style="--k:5"/><use href="#pl2" x="400" y="100" class="pg" style="--k:4"/><use href="#ph2" x="500" y="100" style="--k:3"/><use href="#pl2" x="600" y="100" class="pg" style="--k:2"/><use href="#ph2" x="700" y="100" style="--k:1"/><use href="#pf2" x="200" y="200" class="pg" style="--k:7"/><use href="#pl2" x="300" y="200" class="pg" style="--k:6"/><use href="#ph2" x="400" y="200" style="--k:5"/><use href="#pl2" x="500" y="200" class="pg" style="--k:4"/><use href="#ph2" x="600" y="200" style="--k:3"/><use href="#pl2" x="700" y="200" class="pg" style="--k:2"/><use href="#pf2" x="300" y="300" class="pg" style="--k:7"/><use href="#pl2" x="400" y="300" class="pg" style="--k:6"/><use href="#ph2" x="500" y="300" style="--k:5"/><use href="#pl2" x="600" y="300" class="pg" style="--k:4"/><use href="#ph2" x="700" y="300" style="--k:3"/><use href="#pf2" x="400" y="400" class="pg" style="--k:7"/><use href="#pl2" x="500" y="400" class="pg" style="--k:6"/><use href="#ph2" x="600" y="400" style="--k:5"/><use href="#pl2" x="700" y="400" class="pg" style="--k:4"/><use href="#pf2" x="500" y="500" class="pg" style="--k:7"/><use href="#pl2" x="600" y="500" class="pg" style="--k:6"/><use href="#ph2" x="700" y="500" style="--k:5"/></svg>
-      <img src="assets/brasilia.jpg" width="1300" height="701" alt="Congresso Nacional, Palácio do Planalto e espelho d'água em Brasília, recortados nas formas do símbolo do Panorama">
+      <img src="assets/simbolo-brasilia.webp" width="1186" height="701" alt="Congresso Nacional, Palácio do Planalto e espelho d'água em Brasília, recortados nas formas do símbolo do Panorama">
     </div>
     <a class="rolar" href="#quem-somos" aria-label="Ir para Quem somos"><span></span></a>
   </section>
