@@ -537,6 +537,8 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .head .eyebrow { text-align: center; hyphens: none; -webkit-hyphens: none; }
 .navy .head .eyebrow { color: var(--gold); }
 
+.principios-intro { color: var(--muted); max-width: 40rem; }
+
 /* O padrão dourado no canto não fica por baixo dos textos */
 @media (max-width: 1200px) { .why .wrap { padding-top: calc(clamp(150px, 22vw, 300px) * .75 + 1.5rem); } }
 @media (max-width: 860px) { .contact .wrap { padding-bottom: calc(clamp(140px, 20vw, 280px) * .75 + 1.5rem); } }
@@ -606,17 +608,12 @@ footer small { text-align: center; }
 <main id="inicio" lang="pt-BR">
   <section class="hero" aria-label="Apresentação">
     <div class="hero-text">
-      <p class="eyebrow">Relações institucionais e governamentais</p>
+      <p class="eyebrow">Consultoria boutique em relações institucionais e governamentais</p>
       <h1>Decodificando dados, <span>direcionando decisões</span></h1>
-      <p class="lead">Ajudamos empresas, entidades e associações de classe a participar, com técnica e transparência, das decisões do Congresso Nacional e do Poder Executivo federal, para que a sua organização se antecipe ao que afeta o seu setor.</p>
+      <p class="lead">Transformamos o que acontece no Congresso Nacional e no Poder Executivo federal em informação clara e estratégia, para que empresas, entidades e associações de classe se antecipem às decisões que afetam o seu setor.</p>
       <div class="actions">
-        <a class="btn btn-navy" href="#contato">Fale com a Panorama</a>
-        <a class="btn btn-line" href="#servicos">Conheça os serviços</a>
+        <a class="btn btn-navy" href="#quem-somos">Conheça a Panorama</a>
       </div>
-      <ul class="hero-chips" aria-label="Destaques">
-        <li><b>Desde 2018</b><span>em Brasília</span></li>
-        <li><b>Poder Legislativo e Executivo</b><span>federais</span></li>
-      </ul>
     </div>
     <div class="hero-art">
       <svg class="padrao c-tr" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf2" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph2"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl2" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf2" x="0" y="0" class="pg" style="--k:7"/><use href="#pl2" x="100" y="0" class="pg" style="--k:6"/><use href="#ph2" x="200" y="0" style="--k:5"/><use href="#pl2" x="300" y="0" class="pg" style="--k:4"/><use href="#ph2" x="400" y="0" style="--k:3"/><use href="#pl2" x="500" y="0" class="pg" style="--k:2"/><use href="#ph2" x="600" y="0" style="--k:1"/><use href="#pl2" x="700" y="0" class="pg" style="--k:0"/><use href="#pf2" x="100" y="100" class="pg" style="--k:7"/><use href="#pl2" x="200" y="100" class="pg" style="--k:6"/><use href="#ph2" x="300" y="100" style="--k:5"/><use href="#pl2" x="400" y="100" class="pg" style="--k:4"/><use href="#ph2" x="500" y="100" style="--k:3"/><use href="#pl2" x="600" y="100" class="pg" style="--k:2"/><use href="#ph2" x="700" y="100" style="--k:1"/><use href="#pf2" x="200" y="200" class="pg" style="--k:7"/><use href="#pl2" x="300" y="200" class="pg" style="--k:6"/><use href="#ph2" x="400" y="200" style="--k:5"/><use href="#pl2" x="500" y="200" class="pg" style="--k:4"/><use href="#ph2" x="600" y="200" style="--k:3"/><use href="#pl2" x="700" y="200" class="pg" style="--k:2"/><use href="#pf2" x="300" y="300" class="pg" style="--k:7"/><use href="#pl2" x="400" y="300" class="pg" style="--k:6"/><use href="#ph2" x="500" y="300" style="--k:5"/><use href="#pl2" x="600" y="300" class="pg" style="--k:4"/><use href="#ph2" x="700" y="300" style="--k:3"/><use href="#pf2" x="400" y="400" class="pg" style="--k:7"/><use href="#pl2" x="500" y="400" class="pg" style="--k:6"/><use href="#ph2" x="600" y="400" style="--k:5"/><use href="#pl2" x="700" y="400" class="pg" style="--k:4"/><use href="#pf2" x="500" y="500" class="pg" style="--k:7"/><use href="#pl2" x="600" y="500" class="pg" style="--k:6"/><use href="#ph2" x="700" y="500" style="--k:5"/></svg>
@@ -635,8 +632,8 @@ footer small { text-align: center; }
       <div class="rule" aria-hidden="true"></div>
       <div>
         <div class="about-text">
-          <p>A Panorama é uma <strong>consultoria boutique</strong> de relações governamentais. Atuamos com <strong>um único cliente por setor</strong>, um dos princípios que guiam o nosso trabalho, e acreditamos que esse trabalho se faz com <strong>transparência, técnica e compromisso com a entrega</strong>.</p>
-          <p>Nossa missão é ajudar empresas, entidades e associações de classe a atuar junto ao Congresso Nacional e ao Poder Executivo federal, com informação confiável e orientação estratégica em um cenário que muda o tempo todo.</p>
+          <p>A Panorama começou a atuar em 2018, em Brasília, com uma convicção: decisões públicas bem informadas fazem bem às organizações e à sociedade. Somos uma <strong>consultoria boutique de relações institucionais e governamentais</strong>, com uma equipe enxuta e experiente que acompanha pessoalmente cada pauta, com <strong>transparência, técnica e compromisso com a entrega</strong>.</p>
+          <p>Nossa missão é ajudar empresas, entidades e associações de classe a participar das decisões do Congresso Nacional e do Poder Executivo federal, com informação confiável e orientação estratégica em um cenário que muda o tempo todo.</p>
           <div class="facts">
             <div><b>2018</b><span>início da atuação</span></div>
             <div><b>2024</b><span>nova estrutura da empresa</span></div>
@@ -645,21 +642,22 @@ footer small { text-align: center; }
           <div class="marco">
             <p class="eyebrow">2026 · Ponto de inflexão</p>
             <h3>Hub Legislativo</h3>
-            <p>Reunimos o monitoramento e a inteligência legislativa numa plataforma própria, o <strong>Hub Legislativo</strong>. Ele acompanha proposições, tramitação, pautas e agendas e consolida em um só lugar toda a atuação feita para cada cliente. A análise ficou mais rápida, o histórico de cada trabalho está sempre à mão e cada recomendação chega com mais base técnica.</p>
+            <p>Depois de reestruturar a empresa em 2024, reunimos o monitoramento e a inteligência legislativa numa plataforma própria, o <strong>Hub Legislativo</strong>. Ele acompanha proposições, tramitação, pautas e agendas e consolida em um só lugar toda a atuação feita para cada cliente. A análise ficou mais rápida, o histórico de cada trabalho está sempre à mão e cada recomendação chega com mais base técnica.</p>
           </div>
         </div>
         <div class="principios">
           <p class="eyebrow">Princípios de atuação</p>
+          <p class="principios-intro">Ser boutique é uma escolha que define como trabalhamos. Acompanhar de perto exige dedicação, e dedicação não se divide. Dessa escolha vêm os nossos princípios.</p>
           <div class="principio-base">
             <svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg>
             <div>
               <h3>Um único cliente por setor</h3>
-              <p>É o princípio basilar da nossa atuação como consultoria boutique. Representamos uma só organização em cada setor, para que a nossa dedicação, as nossas informações e as nossas posições nunca se dividam entre interesses concorrentes. Assim evitamos os conflitos de interesse que podem surgir quando uma mesma consultoria atende partes com agendas opostas, e tratamos o compliance como compromisso diário, não como formalidade.</p>
+              <p>É o nosso princípio basilar. Em cada setor, representamos uma só organização. Assim, as informações que reunimos, as estratégias que construímos e as posições que defendemos servem a um único interesse, sem disputar atenção com um concorrente atendido pela mesma equipe. É a forma mais direta de evitar os conflitos de interesse que podem surgir quando uma mesma consultoria atende partes com agendas opostas, e de tratar o compliance como compromisso diário, não como formalidade.</p>
             </div>
           </div>
         </div>
         <ul class="values">
-          <li><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><div><h3>Ética e transparência</h3><p>Atuação dentro das regras, com informação verificável.</p></div></li>
+          <li><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><div><h3>Ética e transparência</h3><p>Atuação dentro das regras de cada Casa e do Executivo, com informação verificável.</p></div></li>
           <li><svg class="mark" viewBox="263 140 263 100" aria-hidden="true"><path d="M488.49,225.46c-13.68-38.69-50.56-66.42-93.94-66.42s-80.26,27.730-93.94,66.42h187.88Z"/></svg><div><h3>Informação confiável</h3><p>Dados checados e análise clara para decidir com segurança.</p></div></li>
           <li><svg class="mark" viewBox="0 286 263 100" aria-hidden="true"><path d="M37.58,300.61c13.68,38.69,50.56,66.42,93.94,66.42s80.26-27.73,93.94-66.42H37.58Z"/></svg><div><h3>Estratégia sob medida</h3><p>Cada plano parte dos objetivos e do contexto de cada cliente.</p></div></li>
           <li><svg class="mark" viewBox="263 263 263 263" aria-hidden="true"><path d="M281.82,526.07c0-134.89,109.35-244.25,244.25-244.25v-18.79h-263.03v263.03h18.79Z"/></svg><div><h3>Atendimento próximo</h3><p>Ouvimos suas necessidades e tratamos cada cliente como parceiro.</p></div></li>
@@ -673,9 +671,9 @@ footer small { text-align: center; }
     <svg class="padrao c-tl" viewBox="0 0 800 600" aria-hidden="true"><defs><path id="pf3" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph3"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl3" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf3" x="0" y="0" class="pg" style="--k:7"/><use href="#pl3" x="100" y="0" class="pg" style="--k:6"/><use href="#ph3" x="200" y="0" style="--k:5"/><use href="#pl3" x="300" y="0" class="pg" style="--k:4"/><use href="#ph3" x="400" y="0" style="--k:3"/><use href="#pl3" x="500" y="0" class="pg" style="--k:2"/><use href="#ph3" x="600" y="0" style="--k:1"/><use href="#pl3" x="700" y="0" class="pg" style="--k:0"/><use href="#pf3" x="100" y="100" class="pg" style="--k:7"/><use href="#pl3" x="200" y="100" class="pg" style="--k:6"/><use href="#ph3" x="300" y="100" style="--k:5"/><use href="#pl3" x="400" y="100" class="pg" style="--k:4"/><use href="#ph3" x="500" y="100" style="--k:3"/><use href="#pl3" x="600" y="100" class="pg" style="--k:2"/><use href="#ph3" x="700" y="100" style="--k:1"/><use href="#pf3" x="200" y="200" class="pg" style="--k:7"/><use href="#pl3" x="300" y="200" class="pg" style="--k:6"/><use href="#ph3" x="400" y="200" style="--k:5"/><use href="#pl3" x="500" y="200" class="pg" style="--k:4"/><use href="#ph3" x="600" y="200" style="--k:3"/><use href="#pl3" x="700" y="200" class="pg" style="--k:2"/><use href="#pf3" x="300" y="300" class="pg" style="--k:7"/><use href="#pl3" x="400" y="300" class="pg" style="--k:6"/><use href="#ph3" x="500" y="300" style="--k:5"/><use href="#pl3" x="600" y="300" class="pg" style="--k:4"/><use href="#ph3" x="700" y="300" style="--k:3"/><use href="#pf3" x="400" y="400" class="pg" style="--k:7"/><use href="#pl3" x="500" y="400" class="pg" style="--k:6"/><use href="#ph3" x="600" y="400" style="--k:5"/><use href="#pl3" x="700" y="400" class="pg" style="--k:4"/><use href="#pf3" x="500" y="500" class="pg" style="--k:7"/><use href="#pl3" x="600" y="500" class="pg" style="--k:6"/><use href="#ph3" x="700" y="500" style="--k:5"/></svg>
     <div class="wrap">
       <div class="head center">
-        <p class="eyebrow">Por que investir em relações governamentais</p>
+        <p class="eyebrow">Por que investir em relações institucionais e governamentais</p>
         <h2 class="statement">Decisões de governo mudam o ambiente de negócios. Quem acompanha de perto se antecipa</h2>
-        <p>Atuar na defesa dos seus interesses protege a sua organização e contribui para um ambiente político mais transparente e alinhado às necessidades da sociedade.</p>
+        <p>Uma lei, uma regulamentação ou uma votação podem mudar as regras do seu setor de um dia para o outro. Participar desse processo com técnica e transparência protege a sua organização e aproxima as políticas públicas da realidade de quem as vive.</p>
       </div>
       <ul class="reasons">
         <li><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><h3>Participação nas políticas públicas</h3><p>Contribua tecnicamente para as políticas que afetam o seu setor e aproxime a regulação da realidade de quem opera.</p></li>
@@ -692,7 +690,7 @@ footer small { text-align: center; }
       <div class="head center">
         <p class="eyebrow">Serviços</p>
         <h2>Quatro eixos de trabalho, montados sob medida</h2>
-        <p>Cada eixo pode ser contratado separadamente. Recomendamos combiná-los com o monitoramento, que dá base a todo o resto.</p>
+        <p>É assim que colocamos tudo isso em prática. Cada eixo pode ser contratado separadamente, e recomendamos começar pelo monitoramento, que dá base a todo o resto e hoje roda no nosso Hub Legislativo.</p>
       </div>
       <div class="axes">
         <article class="axis">
@@ -700,7 +698,7 @@ footer small { text-align: center; }
             <svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg>
             <span class="n">Eixo 1</span>
             <h3>Monitoramento legislativo e regulatório</h3>
-            <p>Acompanhamento diário do Congresso Nacional e do Poder Executivo federal, para você saber primeiro o que pode afetar seus interesses.</p>
+            <p>Acompanhamento diário do Congresso Nacional e do Poder Executivo federal, feito no Hub Legislativo, para você saber primeiro o que pode afetar seus interesses.</p>
             <span class="badge">Base recomendada</span>
           </div>
           <ul class="products">
@@ -753,7 +751,7 @@ footer small { text-align: center; }
           </ul>
         </article>
       </div>
-      <p class="axes-note">Precisa de outro formato, como um eixo completo mais um produto de outro eixo? Fale conosco e montamos a melhor combinação para você.</p>
+      <p class="axes-note">Precisa de outro formato, como um eixo completo mais um produto de outro eixo? Montamos a combinação que faz sentido para a sua agenda.</p>
       <div class="method">
         <div class="head center">
           <p class="eyebrow">Como trabalhamos</p>
@@ -774,7 +772,7 @@ footer small { text-align: center; }
       <div class="head center">
         <p class="eyebrow">Setores</p>
         <h2>Experiência com entidades de setores estratégicos do país</h2>
-        <p>Nossa equipe atende empresas, associações e entidades representativas que atuam junto ao Congresso Nacional e ao Poder Executivo federal.</p>
+        <p>Fiéis ao princípio de um único cliente por setor, construímos experiência com empresas, associações e entidades representativas de áreas estratégicas para o país.</p>
       </div>
       <div class="sectors">
         <div class="sector"><svg class="padrao c-tr" viewBox="0 0 500 400" aria-hidden="true"><defs><path id="pf6" d="M100 0V100H0V92A92 92 0 0 0 92 0Z"/><g id="ph6"><rect width="100" height="100" class="pg" style="fill: var(--gold)"/><path d="M22 44a28 28 0 0 1 56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/><path d="M22 56h56a28 28 0 0 1-56 0Z" class="pn" style="fill: var(--pn-cor, #22355f)"/></g><path id="pl6" d="M8 8A92 92 0 0 1 92 92A92 92 0 0 1 8 8Z"/></defs><use href="#pf6" x="0" y="0" class="pg" style="--k:4"/><use href="#pl6" x="100" y="0" class="pg" style="--k:3"/><use href="#ph6" x="200" y="0" style="--k:2"/><use href="#pl6" x="300" y="0" class="pg" style="--k:1"/><use href="#ph6" x="400" y="0" style="--k:0"/><use href="#pf6" x="100" y="100" class="pg" style="--k:4"/><use href="#pl6" x="200" y="100" class="pg" style="--k:3"/><use href="#ph6" x="300" y="100" style="--k:2"/><use href="#pl6" x="400" y="100" class="pg" style="--k:1"/><use href="#pf6" x="200" y="200" class="pg" style="--k:4"/><use href="#pl6" x="300" y="200" class="pg" style="--k:3"/><use href="#ph6" x="400" y="200" style="--k:2"/><use href="#pf6" x="300" y="300" class="pg" style="--k:4"/><use href="#pl6" x="400" y="300" class="pg" style="--k:3"/></svg><svg class="mark" viewBox="0 0 263 263" aria-hidden="true"><path d="M244.25,0C244.25,134.89,134.89,244.25,0,244.25v18.79h263.03V0h-18.79Z"/></svg><b>Sistema de Justiça</b><span>Pautas de organização e funcionamento do sistema de Justiça.</span></div>
@@ -791,7 +789,7 @@ footer small { text-align: center; }
       <div class="contact-intro">
         <p class="eyebrow">Contato</p>
         <h2>Vamos conversar sobre o seu cenário</h2>
-        <p>Conte em poucas linhas o que a sua organização acompanha. Vamos encontrar o melhor formato para atender você.</p>
+        <p>Conte em poucas linhas o que a sua organização acompanha. Antes de qualquer proposta, conferimos se já atendemos alguém do seu setor e, se estiver tudo certo, indicamos o melhor formato para você.</p>
       </div>
       <div class="rule" aria-hidden="true"></div>
       <form id="contact-form" novalidate>
