@@ -560,6 +560,28 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .principios + .values { margin-top: 1.25rem; }
 .marco p, .principio-base p { text-align: left; hyphens: manual; }
 @media (max-width: 480px) { .principio-base { grid-template-columns: minmax(0, 1fr); } }
+
+/* Alinhamento dos textos: até 3 linhas, centralizado; mais que isso, justificado. Nada alinhado à esquerda.
+   O script conta as linhas de cada texto na largura da tela e marca os longos com .justif. */
+.txt { text-align: center !important; hyphens: manual !important; -webkit-hyphens: manual !important; }
+.txt.justif { text-align: justify !important; hyphens: auto !important; -webkit-hyphens: auto !important; }
+h1, h2, h3 { text-align: center; }
+.hero-text { justify-items: center; text-align: center; }
+.hero h1, .hero .lead { text-align: center; }
+.hero .actions { justify-content: center; }
+.values li, .principio-base { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+.marco { justify-items: center; text-align: center; border-left: 0; border-top: 3px solid var(--gold); }
+.reasons li, .steps li, .sector, .axis-head { justify-items: center; text-align: center; }
+.badge { justify-self: center; }
+.products li { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+.freq { justify-self: center; }
+footer .wrap { justify-content: center; padding-left: max(150px, env(safe-area-inset-left, 0px)); }
+footer small { text-align: center; }
+.principios { justify-items: center; text-align: center; }
+.principio-base { width: 100%; }
+.eyebrow { text-align: center; }
+@media (max-width: 860px) { .rule { justify-self: center; margin-inline: auto; } }
+@media (max-width: 600px) { footer .wrap { padding-left: 20px; padding-right: 20px; padding-bottom: 7rem; } }
 </style>
 <script>document.documentElement.classList.add('js');setTimeout(function(){if(!window.__mov)document.documentElement.classList.remove('js')},2500);</script>
 </head>
@@ -821,6 +843,23 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
       el.style.setProperty('--my', (e.clientY - r.top).toFixed(0) + 'px');
     }, { passive: true });
   }
+
+  // Alinhamento: textos de até 3 linhas ficam centralizados; os maiores, justificados
+  (function () {
+    var textos = [].slice.call(document.querySelectorAll('main p:not(.eyebrow):not(.form-note), main .sector span, .products p, footer small'));
+    textos.forEach(function (el) { el.classList.add('txt'); });
+    function alinhar() {
+      textos.forEach(function (el) {
+        var lh = parseFloat(getComputedStyle(el).lineHeight) || 24;
+        var linhas = Math.round(el.getBoundingClientRect().height / lh);
+        el.classList.toggle('justif', linhas > 3);
+      });
+    }
+    var t;
+    alinhar();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(alinhar);
+    window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(alinhar, 150); });
+  })();
 
   // Movimento ao rolar a página
   (function () {
