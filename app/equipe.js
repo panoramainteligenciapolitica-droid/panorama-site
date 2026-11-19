@@ -20,21 +20,8 @@
     if (/duplicate|unique/i.test(m)) return 'Já existe um cadastro com esse nome.';
     return m || 'Não foi possível salvar. Tente de novo.';
   }
-  function confirmar(botao, texto, acao) {
-    if (botao.dataset.confirmando) { acao(); return; }
-    var original = botao.textContent;
-    botao.dataset.confirmando = '1'; botao.textContent = texto;
-    setTimeout(function () { delete botao.dataset.confirmando; botao.textContent = original; }, 3500);
-  }
-  // Erros da função vêm no corpo da resposta
-  function chamarFuncao(corpo) {
-    return P.sb.functions.invoke('gerenciar-pessoas', { body: corpo }).then(function (r) {
-      if (!r.error) return r.data;
-      var ctx = r.error.context;
-      if (ctx && ctx.json) return ctx.json().then(function (j) { throw new Error(j.erro || r.error.message); }, function () { throw r.error; });
-      throw r.error;
-    });
-  }
+  var confirmar = P.confirmar;
+  function chamarFuncao(corpo) { return P.chamarFuncao('gerenciar-pessoas', corpo); }
   function nomeOrg(id) { var o = dados.orgs.find(function (x) { return x.id === id; }); return o ? o.nome : 'Sem organização'; }
   function clientesDaOrg(org) { return dados.clientes.filter(function (c) { return c.organizacao_id === org; }); }
   function opcoes(sel, lista, valor) {
@@ -123,15 +110,15 @@
         el('button', { type: 'button', class: 'remover', text: 'Renomear', onclick: function () {
           var novo = window.prompt('Novo nome para ' + o.nome, o.nome);
           if (!novo || !novo.trim() || novo.trim() === o.nome) return;
-          P.sb.from('organizacoes').update({ nome: novo.trim() }).eq('id', o.id).then(function (r) {
-            if (r.error) { P.avisar(erroAmigavel(r.error)); return; }
+          P.sb.from('organizacoes').update({ nome: novo.trim() }).eq('id', o.id).select('id').then(function (r) {
+            if (r.error || !(r.data || []).length) { P.avisar(r.error ? erroAmigavel(r.error) : 'Você não tem permissão para isso.'); return; }
             P.avisar('Organização renomeada'); atualizarTudo();
           });
         } }),
         el('button', { type: 'button', class: 'remover', text: 'Apagar', onclick: function () {
           confirmar(this, 'Apaga ' + o.nome + ' e todos os clientes dela? Toque de novo', function () {
-            P.sb.from('organizacoes').delete().eq('id', o.id).then(function (r) {
-              if (r.error) { P.avisar('Não foi possível apagar'); return; }
+            P.sb.from('organizacoes').delete().eq('id', o.id).select('id').then(function (r) {
+              if (r.error || !(r.data || []).length) { P.avisar('Não foi possível apagar'); return; }
               P.avisar('Organização apagada'); atualizarTudo();
             });
           });
@@ -159,8 +146,8 @@
         el('button', { type: 'button', class: 'remover', text: 'Renomear', onclick: function () {
           var novo = window.prompt('Novo nome para ' + c.nome, c.nome);
           if (!novo || !novo.trim() || novo.trim() === c.nome) return;
-          P.sb.from('clientes').update({ nome: novo.trim() }).eq('id', c.id).then(function (r) {
-            if (r.error) { P.avisar(erroAmigavel(r.error)); return; }
+          P.sb.from('clientes').update({ nome: novo.trim() }).eq('id', c.id).select('id').then(function (r) {
+            if (r.error || !(r.data || []).length) { P.avisar(r.error ? erroAmigavel(r.error) : 'Você não tem permissão para isso.'); return; }
             P.avisar('Cliente renomeado'); atualizarTudo();
           });
         } }),
@@ -170,8 +157,8 @@
           opcoes(sel, dados.orgs, c.organizacao_id);
           sel.addEventListener('change', function () {
             var nova = sel.value, nomeNova = nomeOrg(nova);
-            P.sb.from('clientes').update({ organizacao_id: nova }).eq('id', c.id).then(function (r) {
-              if (r.error) { sel.value = c.organizacao_id; P.avisar(erroAmigavel(r.error)); return; }
+            P.sb.from('clientes').update({ organizacao_id: nova }).eq('id', c.id).select('id').then(function (r) {
+              if (r.error || !(r.data || []).length) { sel.value = c.organizacao_id; P.avisar(erroAmigavel(r.error)); return; }
               var deFora = dados.pessoas.filter(function (p) { return p.organizacao_id && p.organizacao_id !== nova; }).map(function (p) { return p.user_id; });
               var limpar = deFora.length ? P.sb.from('acessos').delete().eq('cliente_id', c.id).in('user_id', deFora) : Promise.resolve();
               Promise.resolve(limpar).then(function () { P.avisar(c.nome + ' agora é da ' + nomeNova); atualizarTudo(); });
@@ -181,8 +168,8 @@
         })() : null,
         el('button', { type: 'button', class: 'remover', text: 'Apagar', onclick: function () {
           confirmar(this, 'Apaga tudo de ' + c.nome + '? Toque de novo', function () {
-            P.sb.from('clientes').delete().eq('id', c.id).then(function (r) {
-              if (r.error) { P.avisar('Não foi possível apagar'); return; }
+            P.sb.from('clientes').delete().eq('id', c.id).select('id').then(function (r) {
+              if (r.error || !(r.data || []).length) { P.avisar('Não foi possível apagar'); return; }
               P.avisar('Cliente apagado'); atualizarTudo();
             });
           });
@@ -300,7 +287,7 @@
     var erro = $('pessoa-erro'); erro.textContent = '';
     var email = $('pessoa-email').value.trim(), senha = $('pessoa-senha').value;
     var nivel = ehMaster() ? $('pessoa-papel').value : 'atendimento';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { erro.textContent = 'Digite um e-mail válido.'; return; }
+    if (!P.emailValido(email)) { erro.textContent = 'Digite um e-mail válido.'; return; }
     if (senha.length < 8) { erro.textContent = 'A senha provisória precisa de pelo menos 8 caracteres.'; return; }
     if (nivel !== 'master' && !orgDoForm()) { erro.textContent = 'Escolha a organização.'; return; }
     var clientes = nivel === 'atendimento' ? [].slice.call($('pessoa-clientes').querySelectorAll('input:checked')).map(function (c) { return c.dataset.cliente; }) : [];

@@ -30,22 +30,25 @@ Em qualquer tela, tocar no número da proposição abre o inteiro teor, com down
 
 Para ligar a coleta:
 
-1. Rode de novo `supabase/esquema.sql` (cria as tabelas de proposições).
+1. Rode de novo os arquivos do banco, sempre nesta ordem: `esquema.sql`, `clientes.sql`, `niveis.sql`, `relgov.sql` (veja "Banco: ordem dos arquivos").
 2. Edge Functions > Deploy a new function > Via Editor: publique `coletar-proposicoes` e `inteiro-teor`, cada uma com o seu `index.ts`.
+   As duas só atendem quem tem login no app (a coleta também aceita o agendamento, com o segredo abaixo).
 3. Database > Extensions: ligue `pg_cron` e `pg_net`. Depois rode `supabase/agendamento.sql` no SQL Editor.
+   Ele sorteia o segredo do agendamento e o guarda no Vault; ninguém precisa copiar o valor.
 
 ## Aba Geral (entradas por tipo)
 
 Conta quantas proposições deram entrada nas duas Casas, por tipo (PL, PEC, REQ...), no período escolhido: último dia com registros, 7 dias, 15 dias, semana atual, mês atual ou datas livres.
 
 - Tocar no tipo abre a lista daquele tipo; tocar no número da Câmara ou do Senado abre só as daquela Casa. Cada item tem "Monitorar" e o link para a Casa.
-- Os números vêm da tabela `entradas`, que a coleta diária preenche com tudo o que foi apresentado. Rode de novo `supabase/esquema.sql` para criá-la, junto com a função `contar_entradas`.
+- Os números vêm da tabela `entradas`, que a coleta diária preenche com tudo o que foi apresentado (criada por `esquema.sql`, junto com a função `contar_entradas`).
 - A contagem começa no dia em que a coleta passar a rodar. Para preencher meses passados, chame a função com um período de até 31 dias por vez, por exemplo no SQL Editor:
 
 ```sql
 select net.http_post(
   url := 'https://crshelcvnyisecueknzd.supabase.co/functions/v1/coletar-proposicoes',
-  headers := '{"Content-Type": "application/json", "Authorization": "Bearer <chave anon>"}'::jsonb,
+  headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer <chave anon>',
+    'x-coleta-segredo', (select decrypted_secret from vault.decrypted_secrets where name = 'coleta_segredo')),
   body := '{"inicio": "2026-10-01", "fim": "2026-10-31", "soEntradas": true}'::jsonb,
   timeout_milliseconds := 150000
 );
@@ -78,8 +81,23 @@ Rode `supabase/relgov.sql` no SQL Editor (depois de `niveis.sql`). O menu latera
 - **Relatórios**: relatório do cliente por período, para imprimir, salvar em PDF ou baixar em Word.
 
 Envio de e-mails: publique as funções `enviar-emails` e `descadastrar` (esta com "Verify JWT" desligado) e crie os segredos
-`RESEND_API_KEY` e `EMAIL_REMETENTE` em Edge Functions > Secrets. Master e coordenadores enviam; atendimentos só quando liberados
+`RESEND_API_KEY`, `EMAIL_REMETENTE` e `DESCADASTRO_SEGREDO` (valor longo e aleatório) em Edge Functions > Secrets.
+Sem `DESCADASTRO_SEGREDO` a assinatura dos links usa a chave de serviço; ao criá-lo, os links de e-mails já enviados deixam de valer.
+Cada e-mail traz o descadastro em um clique dos provedores (cabeçalho `List-Unsubscribe-Post`), que chama `descadastrar` direto.
+O envio reserva a campanha: duas chamadas ao mesmo tempo não mandam em dobro, e um envio parado há mais de 10 minutos pode continuar. Master e coordenadores enviam; atendimentos só quando liberados
 em Configurações > Perfis e permissões. Todo e-mail leva o link de descadastro (`descadastro.html`).
+
+## Banco: ordem dos arquivos
+Sempre `esquema.sql`, `clientes.sql`, `niveis.sql`, `relgov.sql`. Todos podem rodar de novo sem abrir nada: o `relgov.sql`, por último,
+também fecha regras antigas, confere que listas, contatos e proposições ligados a um registro são do mesmo cliente, aceita só links
+http(s) em alertas e recebidos, e tira de quem não tem login o acesso às funções do banco. Os testes em `testes/` conferem isso.
+
+## Segurança: o que conferir no painel do Supabase (não está no código)
+- Authentication > Sign In / Providers: "Allow new users to sign up" desligado.
+- Authentication > Rate Limits: limites de login e de e-mail ligados; Authentication > Attack Protection: proteção contra senhas vazadas.
+- MFA para as contas master.
+- Project Settings > API: "Max rows" em 1000 (o app e as funções leem em páginas desse tamanho).
+- A chave `service_role` só nas funções (variável de ambiente), nunca em `config.js`.
 
 ## Programa para Windows
 A pasta `desktop/` gera o instalador do Panorama RelGov (veja `desktop/LEIAME.md`). O programa abre este app publicado, então

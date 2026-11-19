@@ -26,6 +26,7 @@
     $('df-titulo').textContent = cfg.titulo;
     $('df-erro').textContent = '';
     $('df-apagar').hidden = !cfg.aoApagar;
+    delete $('df-apagar').dataset.confirmando; $('df-apagar').textContent = 'Apagar';
     $('df-salvar').textContent = cfg.botao || 'Salvar';
     var v = cfg.valores || {};
     $('df-campos').replaceChildren.apply($('df-campos'), cfg.campos.map(function (c) {
@@ -34,6 +35,7 @@
       else if (c.tipo === 'select') {
         entrada = el('select', { id: id }, (c.opcoes || []).map(function (o) { return el('option', { value: o.valor, text: o.rotulo }); }));
       } else entrada = el('input', { id: id, type: c.tipo || 'text', autocomplete: 'off' });
+      if (c.somenteLeitura) entrada.readOnly = true;
       if (c.tipo === 'checkbox') entrada.checked = Boolean(v[c.nome]);
       else if (v[c.nome] !== undefined && v[c.nome] !== null) entrada.value = c.tipo === 'datetime-local' ? String(v[c.nome]).slice(0, 16) : v[c.nome];
       if (c.placeholder) entrada.placeholder = c.placeholder;
@@ -58,7 +60,8 @@
       if (c.tipo === 'datetime-local' && x) x = new Date(x).toISOString();
       if ((c.tipo === 'date' || c.tipo === 'select') && x === '') x = null;
       if (c.obrigatorio && (x === '' || x === null) && !falta) falta = c.rotulo;
-      if (c.tipo === 'email' && x && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x) && !falta) falta = c.rotulo + ' (e-mail inválido)';
+      if (c.tipo === 'url' && x && !/^https?:\/\//i.test(x) && !falta) falta = c.rotulo + ' (use um endereço que comece com https://)';
+      if (c.tipo === 'email' && x && !P.emailValido(x) && !falta) falta = c.rotulo + ' (e-mail inválido)';
       valores[c.nome] = x === '' ? null : x;
     });
     if (falta) { $('df-erro').textContent = 'Preencha: ' + falta + '.'; return; }
@@ -69,10 +72,10 @@
   $('df-fechar').addEventListener('click', fecharForm);
   $('df-cancelar').addEventListener('click', fecharForm);
   $('df-apagar').addEventListener('click', function () {
-    var b = this;
-    if (!b.dataset.confirmando) { b.dataset.confirmando = '1'; b.textContent = 'Toque de novo para apagar'; setTimeout(function () { delete b.dataset.confirmando; b.textContent = 'Apagar'; }, 3500); return; }
-    delete b.dataset.confirmando; b.textContent = 'Apagar';
-    Promise.resolve(atual.aoApagar()).then(fecharForm, function (e) { $('df-erro').textContent = erroAmigavel(e); });
+    var acao = atual && atual.aoApagar;
+    P.confirmar(this, 'Toque de novo para apagar', function () {
+      Promise.resolve(acao()).then(fecharForm, function (e) { $('df-erro').textContent = erroAmigavel(e); });
+    });
   });
 
   function erroAmigavel(e) {
@@ -85,7 +88,11 @@
 
   // ---------- CSV (abre no Excel com acentos e separador ;) ----------
   function csv(linhas, colunas) {
-    var esc = function (v) { v = v === null || v === undefined ? '' : String(v); return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var esc = function (v) {
+      v = v === null || v === undefined ? '' : String(v);
+      if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; // o Excel trataria como fórmula (injeção de fórmula em planilha)
+      return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    };
     return '﻿' + [colunas.map(function (c) { return esc(c.rotulo); }).join(';')].concat(linhas.map(function (l) {
       return colunas.map(function (c) { return esc(typeof c.valor === 'function' ? c.valor(l) : l[c.valor]); }).join(';');
     })).join('\r\n');
@@ -109,7 +116,7 @@
     if (!linhas.length) return [];
     var norm = function (t) { return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim(); };
     var cab = linhas[0].map(norm);
-    return linhas.slice(1).map(function (l) { var o = {}; cab.forEach(function (c, k) { o[c] = (l[k] || '').trim(); }); return o; });
+    return linhas.slice(1).map(function (l) { var o = {}; cab.forEach(function (c, k) { o[c] = (l[k] || '').trim().replace(/^'(?=[=+\-@])/, ''); }); return o; }); // o replace desfaz a proteção contra fórmula do csv()
   }
   function escolherArquivo(aceita) {
     return new Promise(function (ok) {
