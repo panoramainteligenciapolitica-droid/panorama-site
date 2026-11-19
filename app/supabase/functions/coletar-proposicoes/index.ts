@@ -2,7 +2,11 @@
 // Roda todo dia pelo agendamento (agendamento.sql) e quando alguém toca em "Buscar agora" no app.
 // Traz tudo o que foi apresentado: o app decide o que mostrar (palavras-chave e semelhança com as monitoradas).
 // Tudo o que chega também vai para "entradas", que alimenta a contagem por tipo da aba Geral.
-// Para preencher dias passados: corpo {"inicio": "2026-10-01", "fim": "2026-10-31", "soEntradas": true}, até 31 dias por vez.
+// Para preencher dias passados: corpo {"inicio": "2026-10-01", "fim": "2026-10-31", "soEntradas": true}, até 31 dias por vez,
+// com o cabeçalho x-coleta-segredo (veja agendamento.sql).
+// Quem pode chamar: o agendamento (cabeçalho x-coleta-segredo igual ao segredo "coleta_segredo" do Vault, que a função lê pelo
+// banco com segredo_coleta(); COLETA_SEGREDO nos segredos das funções vale no lugar, se existir) ou uma pessoa com login no app,
+// esta no máximo uma vez a cada 3 minutos e só para ontem e hoje. A chave pública (anon) sozinha não basta.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 
 const cors = {
@@ -20,6 +24,17 @@ type Candidata = {
 const ACESSORIOS = new Set(('PRL PAR PARF PRLP PRLE PPP PEP PPR RRL REL VTS RDF ERD DTQ RPD RPDR SBT SBE SBR SSP ' +
   'EMC EMP EMS EMR EMA EML EMD EMO ESB EMRP ATA DOC AVN OF').split(' '));
 const principal = (c: Candidata) => !ACESSORIOS.has(c.sigla.toUpperCase().replace(/-.*$/, '')) && c.ano !== '0';
+
+const resposta = (corpo: unknown, status = 200) =>
+  new Response(JSON.stringify(corpo), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
+// Compara sem revelar pelo tempo de resposta onde está a primeira diferença
+function iguais(a: string, b: string) {
+  const x = new TextEncoder().encode(a), y = new TextEncoder().encode(b);
+  let dif = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) dif |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return dif === 0;
+}
+const ESPERA_MS = 3 * 60_000;
 
 const dia = (d: Date) => d.toISOString().slice(0, 10);
 const normalizar = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -84,15 +99,44 @@ async function temasDaCamara(itens: Candidata[], palavras: string[]) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
-  const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const url = Deno.env.get('SUPABASE_URL')!;
+  const sb = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+  // ---------- quem chama ----------
+  const enviado = req.headers.get('x-coleta-segredo') ?? '';
+  let segredo = Deno.env.get('COLETA_SEGREDO') ?? '';
+  if (enviado && !segredo) segredo = String((await sb.rpc('segredo_coleta')).data ?? '');
+  const agendada = segredo.length >= 16 && iguais(enviado, segredo);
+  let pessoa: string | null = null;
+  if (!agendada) {
+    const comoQuemChama = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
+    });
+    const { data } = await comoQuemChama.auth.getUser();
+    pessoa = data?.user?.id ?? null;
+    if (!pessoa) return resposta({ erro: 'Entre de novo no app.' }, 401);
+  }
+  // Uma busca a cada 3 minutos para o projeto todo: a coleta é cara e consulta as Casas centenas de vezes.
+  // Registra primeiro e depois confere quem chegou antes, para duas chamadas ao mesmo tempo não passarem juntas.
+  const { data: minha, error: erroRegistro } = await sb.from('coletas').insert({ origem: agendada ? 'agendamento' : 'app', pessoa }).select('id').single();
+  if (erroRegistro) return resposta({ erro: 'A tabela coletas não existe. Rode de novo supabase/relgov.sql.' }, 500);
+  if (!agendada) {
+    const { data: primeira } = await sb.from('coletas').select('id').gte('iniciada_em', new Date(Date.now() - ESPERA_MS).toISOString())
+      .order('id', { ascending: true }).limit(1).maybeSingle();
+    if (primeira && primeira.id !== minha.id) {
+      await sb.from('coletas').delete().eq('id', minha.id);
+      return resposta({ erro: 'Uma busca acabou de rodar. Espere uns minutos e tente de novo.' }, 429);
+    }
+  }
+
   const hoje = new Date(), ontem = new Date(hoje.getTime() - 864e5);
   const erros: string[] = [];
   const corpo = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
   const dataValida = (t: unknown) => typeof t === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t);
   let inicio = dia(ontem), fim = dia(hoje);
-  if (dataValida(corpo.inicio) && dataValida(corpo.fim) && corpo.inicio <= corpo.fim) {
+  if (agendada && dataValida(corpo.inicio) && dataValida(corpo.fim) && corpo.inicio <= corpo.fim) {
     if (Date.parse(corpo.fim) - Date.parse(corpo.inicio) > 31 * 864e5) {
-      return new Response(JSON.stringify({ erros: ['Use no máximo 31 dias por vez'] }), { headers: { ...cors, 'Content-Type': 'application/json' }, status: 400 });
+      return resposta({ erros: ['Use no máximo 31 dias por vez'] }, 400);
     }
     inicio = corpo.inicio; fim = corpo.fim;
   }
@@ -112,7 +156,7 @@ Deno.serve(async (req) => {
     if (error) erros.push(error.message);
   }
   const coletadas = todas.filter(principal);
-  if (corpo.soEntradas) {
+  if (agendada && corpo.soEntradas) {
     return new Response(JSON.stringify({ entradas: entradas.length, camara: cd.length, senado: sf.length, erros }), {
       headers: { ...cors, 'Content-Type': 'application/json' },
     });

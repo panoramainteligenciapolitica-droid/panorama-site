@@ -27,12 +27,14 @@ returns table (provedor text, email text, nome text, conectado_em timestamptz, u
 language sql stable security definer set search_path = public as $$
   select provedor, email, nome, conectado_em, usado_em from public.contas_email where user_id = auth.uid()
 $$;
+revoke execute on function public.minha_conta_email() from public, anon;
 grant execute on function public.minha_conta_email() to authenticated;
 
 create or replace function public.desconectar_conta_email() returns void
 language sql security definer set search_path = public as $$
   delete from public.contas_email where user_id = auth.uid()
 $$;
+revoke execute on function public.desconectar_conta_email() from public, anon;
 grant execute on function public.desconectar_conta_email() to authenticated;
 
 -- Registro de por onde cada campanha saiu (ex.: "fulano@gmail.com (Gmail)" ou "Resend")

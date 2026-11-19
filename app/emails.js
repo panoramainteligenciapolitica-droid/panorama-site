@@ -17,15 +17,24 @@
   var PROVEDOR = { google: 'Gmail', microsoft: 'Outlook' };
   var LIMITES = 'Limites de cada serviço: Gmail pessoal, cerca de 500 destinatários por dia (Google Workspace, 2.000); Outlook.com/Hotmail, 300 por dia; Microsoft 365, 10.000 por dia e até 30 por minuto. Listas grandes podem levar alguns minutos.';
 
-  function chamarFuncao(nome, corpo) {
-    return P.sb.functions.invoke(nome, { body: corpo }).then(function (r) {
-      if (!r.error) return r.data;
-      var ctx = r.error.context;
-      if (ctx && ctx.json) return ctx.json().then(function (j) { throw new Error(j.erro || r.error.message); }, function () { throw r.error; });
-      throw new Error(/not found|404/i.test(r.error.message || '') ? 'A função ' + nome + ' ainda não foi publicada no Supabase.' : r.error.message);
+  var chamarFuncao = P.chamarFuncao;
+  function chamar(corpo) { return P.chamarFuncao('enviar-emails', corpo); }
+  // Envio que ficou "Enviando" há mais de 10 minutos: a função caiu no meio e pode continuar de onde parou
+  function parado(c) { return c.status === 'enviando' && (!c.envio_iniciado_em || Date.now() - new Date(c.envio_iniciado_em).getTime() > 10 * 60e3); }
+
+  // Grava só os e-mails que ainda não estão na lista (um repetido não pode barrar o lote inteiro)
+  function gravarMembros(l, novos) {
+    return P.tabela('lista_membros').listar({ onde: { lista_id: l.id }, campos: 'id, email', limite: 50000 }).then(function (atuais) {
+      var ja = {}, n = 0;
+      atuais.forEach(function (m) { ja[m.email.toLowerCase()] = true; });
+      var gravar = novos.filter(function (m) { if (ja[m.email]) return false; ja[m.email] = true; return true; });
+      n = novos.length - gravar.length;
+      return P.tabela('lista_membros').inserirVarios(gravar).then(function (q) {
+        P.avisar(q + (q === 1 ? ' adicionado' : ' adicionados') + (n ? ' · ' + n + ' já estavam na lista' : ''));
+        renderListas();
+      });
     });
   }
-  function chamar(corpo) { return chamarFuncao('enviar-emails', corpo); }
 
   // ================= conta de e-mail própria (Gmail / Outlook) =================
   var conta = { carregada: false, dados: null };
@@ -159,9 +168,9 @@
         var novos = v.texto.split(/\n|;/).map(function (linha) {
           var m = linha.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/) || [null, '', linha.trim()];
           return { lista_id: l.id, nome: m[1].trim() || null, email: m[2].trim().toLowerCase(), tratamento: v.tratamento, origem: 'manual' };
-        }).filter(function (x) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x.email); });
+        }).filter(function (x) { return P.emailValido(x.email); });
         if (!novos.length) throw new Error('Nenhum e-mail válido.');
-        return P.tabela('lista_membros').inserirVarios(novos).then(function (n) { P.avisar(n + ' adicionados'); renderListas(); });
+        return gravarMembros(l, novos);
       }
     });
   }
@@ -169,9 +178,9 @@
     G.escolherArquivo().then(function (texto) {
       var novos = G.lerCsv(texto).map(function (o) {
         return { lista_id: l.id, nome: o.nome || o.name || null, email: String(o['e-mail'] || o.email || '').trim().toLowerCase(), tratamento: o.tratamento || null, origem: 'planilha' };
-      }).filter(function (x) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x.email); });
+      }).filter(function (x) { return P.emailValido(x.email); });
       if (!novos.length) { P.avisar('A planilha precisa de uma coluna "email"'); return; }
-      P.tabela('lista_membros').inserirVarios(novos).then(function (n) { P.avisar(n + ' importados'); renderListas(); }, function (e) { P.avisar(G.erroAmigavel(e)); });
+      gravarMembros(l, novos).catch(function (e) { P.avisar(G.erroAmigavel(e)); });
     });
   }
 
@@ -200,7 +209,7 @@
             el('div', { class: 'item-acoes' }, [
               c.status === 'rascunho' ? el('button', { type: 'button', class: 'acao-forte', text: 'Editar e enviar', onclick: function () { editarCampanha(c, listas); } })
                 : el('button', { type: 'button', text: 'Ver relatório', onclick: function () { relatorioEnvio(c); } }),
-              c.status === 'parcial' || c.status === 'enviando' ? el('button', { type: 'button', class: 'acao-forte', text: 'Continuar envio', onclick: function () { enviar(c, this, /^Servidor/.test(c.enviado_por || '') ? 'resend' : undefined).catch(function () {}); } }) : null,
+              c.status === 'parcial' || c.status === 'erro' || parado(c) ? el('button', { type: 'button', class: 'acao-forte', text: 'Continuar envio', onclick: function () { enviar(c, this, /^Servidor/.test(c.enviado_por || '') ? 'resend' : undefined).catch(function () {}); } }) : null,
               el('button', { type: 'button', text: 'Duplicar', onclick: function () {
                 P.tabela('campanhas_email').inserir({ assunto: c.assunto, corpo: c.corpo, lista_id: c.lista_id, remetente_nome: c.remetente_nome, responder_para: c.responder_para, status: 'rascunho' })
                   .then(renderEmails, function (e) { P.avisar(G.erroAmigavel(e)); });
@@ -250,12 +259,12 @@
     Promise.all([P.tabela('lista_membros').listar({ onde: { lista_id: c.lista_id }, campos: 'nome, email, tratamento' }), P.tabela('descadastros').listar().catch(function () { return []; }), carregarContaEmail().catch(function () { return null; })]).then(function (r) {
       var d = r[2];
       var fora = {}; r[1].forEach(function (d) { fora[d.email.toLowerCase()] = true; });
-      var vistos = {}, validos = r[0].filter(function (m) { var e = m.email.toLowerCase(); if (fora[e] || vistos[e]) return false; vistos[e] = true; return true; });
+      var vistos = {}, validos = r[0].filter(function (m) { var e = m.email.trim().toLowerCase(); if (!P.emailValido(e) || fora[e] || vistos[e]) return false; vistos[e] = true; return true; });
       var ex = validos[0] || { nome: 'Fulano de Tal', tratamento: 'Deputado(a)', email: 'exemplo@camara.leg.br' };
       var preencher = function (t) { return t.replace(/\{\{\s*nome\s*\}\}/gi, ex.nome || '').replace(/\{\{\s*primeiro_nome\s*\}\}/gi, (ex.nome || '').split(' ')[0]).replace(/\{\{\s*tratamento\s*\}\}/gi, ex.tratamento || '').replace(/\{\{\s*email\s*\}\}/gi, ex.email).replace(/[ \t]{2,}/g, ' '); };
       G.formulario({
         titulo: 'Enviar para ' + validos.length + ' ' + (validos.length === 1 ? 'pessoa' : 'pessoas') + ' (' + (lista ? lista.nome : '') + ')',
-        campos: [{ nome: 'previa', rotulo: 'Prévia para ' + (ex.nome || ex.email), tipo: 'textarea', linhas: 12 },
+        campos: [{ nome: 'previa', rotulo: 'Prévia para ' + (ex.nome || ex.email) + ' (para mudar o texto, feche e edite o rascunho)', tipo: 'textarea', linhas: 12, somenteLeitura: true },
           d ? { nome: 'via', rotulo: 'Enviar por', tipo: 'select', opcoes: [{ valor: 'conta', rotulo: 'Minha conta: ' + descreverConta(d) }, { valor: 'resend', rotulo: 'Servidor do app (Resend)' }],
             ajuda: LIMITES } : { nome: 'via', rotulo: 'Enviar por', tipo: 'select', opcoes: [{ valor: 'resend', rotulo: 'Servidor do app (Resend)' }], ajuda: 'Para enviar do seu próprio endereço, conecte seu Gmail ou Outlook em Configurações > Minha conta.' },
           { nome: 'teste', rotulo: 'Mandar só um teste para o meu e-mail', tipo: 'checkbox' }],
@@ -296,7 +305,7 @@
     P.tabela('envios_email').listar({ onde: { campanha_id: c.id }, ordem: 'enviado_em' }).then(function (l) {
       G.formulario({
         titulo: c.assunto,
-        campos: [{ nome: 'r', rotulo: c.enviados + ' enviados · ' + c.falhas + ' falhas' + (c.enviado_por ? ' · por ' + c.enviado_por : ''), tipo: 'textarea', linhas: 14 }],
+        campos: [{ nome: 'r', rotulo: c.enviados + ' enviados · ' + c.falhas + ' falhas' + (c.enviado_por ? ' · por ' + c.enviado_por : ''), tipo: 'textarea', linhas: 14, somenteLeitura: true }],
         valores: { r: l.map(function (x) { return (x.status === 'enviado' ? '✓ ' : '✗ ') + (x.nome ? x.nome + ' ' : '') + '<' + x.email + '>' + (x.erro ? ' · ' + x.erro : ''); }).join('\n') || 'Sem registros.' },
         botao: 'Fechar', aoSalvar: function () {}
       });

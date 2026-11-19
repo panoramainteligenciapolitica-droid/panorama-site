@@ -13,9 +13,15 @@ create table if not exists public.alertas (
   publicado_em timestamptz not null default now()
 );
 alter table public.alertas enable row level security;
-drop policy if exists "Clientes com login leem os alertas" on public.alertas;
-create policy "Clientes com login leem os alertas"
-  on public.alertas for select to authenticated using (true);
+-- Regra aberta só na primeira instalação. Depois de clientes.sql (coluna cliente_id), rodar este arquivo de novo
+-- não pode recriá-la: as regras por cliente (clientes.sql e niveis.sql) é que valem.
+do $$
+begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'alertas' and column_name = 'cliente_id') then
+    drop policy if exists "Clientes com login leem os alertas" on public.alertas;
+    create policy "Clientes com login leem os alertas" on public.alertas for select to authenticated using (true);
+  end if;
+end $$;
 
 -- O que cada cliente recebe de outros apps pelo menu Compartilhar. Cada um vê só o que é seu.
 create table if not exists public.notas (
@@ -38,8 +44,8 @@ create policy "Cada cliente apaga as próprias notas"
   on public.notas for delete to authenticated using (user_id = auth.uid());
 
 -- ---------- Monitoramento de proposições (uso interno da equipe) ----------
--- Por enquanto, todo usuário com login lê e edita. Se clientes também entrarem no app,
--- estas regras precisam separar equipe e clientes.
+-- Na primeira instalação, todo usuário com login lê e edita. clientes.sql troca por regras por cliente,
+-- e rodar este arquivo de novo depois disso mantém as regras por cliente.
 
 create table if not exists public.especialidades (
   id uuid primary key default gen_random_uuid(),
@@ -102,8 +108,11 @@ declare t text;
 begin
   foreach t in array array['especialidades', 'palavras', 'proposicoes', 'candidatas'] loop
     execute format('alter table public.%I enable row level security', t);
-    execute format('drop policy if exists "Equipe com login usa %1$s" on public.%1$I', t);
-    execute format('create policy "Equipe com login usa %1$s" on public.%1$I for all to authenticated using (true) with check (true)', t);
+    -- Com o banco já separado por cliente (clientes.sql), não recria a regra aberta: ela liberaria todos os clientes
+    if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = t and column_name = 'cliente_id') then
+      execute format('drop policy if exists "Equipe com login usa %1$s" on public.%1$I', t);
+      execute format('create policy "Equipe com login usa %1$s" on public.%1$I for all to authenticated using (true) with check (true)', t);
+    end if;
   end loop;
 end $$;
 
