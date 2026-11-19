@@ -26,7 +26,13 @@ create trigger criar_perfil after insert on auth.users for each row execute func
 
 -- Quem já existe vira perfil; enquanto ninguém for administrador, os que já existem viram administradores
 insert into public.perfis (user_id, email) select id, email from auth.users on conflict (user_id) do nothing;
-update public.perfis set admin = true where not exists (select 1 from public.perfis where admin);
+-- (só antes de niveis.sql: depois dele a coluna admin não existe mais e quem manda é o papel)
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'perfis' and column_name = 'admin') then
+    update public.perfis set admin = true where not exists (select 1 from public.perfis where admin);
+  end if;
+end $$;
 
 -- ---------- clientes e acessos ----------
 create table if not exists public.clientes (
@@ -34,9 +40,10 @@ create table if not exists public.clientes (
   nome text not null unique,
   criado_em timestamptz not null default now()
 );
+-- (sem "on conflict": depois de niveis.sql o nome só é único dentro de cada organização)
 insert into public.clientes (nome)
-  values ('Magistratura'), ('Ministério Público'), ('ATRICON'), ('ANEC'), ('ABIMP')
-  on conflict (nome) do nothing;
+  select n from unnest(array['Magistratura', 'Ministério Público', 'ATRICON', 'ANEC', 'ABIMP']) as n
+  where not exists (select 1 from public.clientes c where c.nome = n);
 
 create table if not exists public.acessos (
   user_id uuid not null references public.perfis (user_id) on delete cascade,
@@ -44,40 +51,46 @@ create table if not exists public.acessos (
   primary key (user_id, cliente_id)
 );
 
--- security definer: as regras abaixo consultam perfis e acessos sem esbarrar nas regras dessas tabelas
-create or replace function public.sou_admin() returns boolean
+-- Funções e regras da fase "admin". Depois de niveis.sql (coluna papel), rodar este arquivo de novo não pode
+-- trazê-las de volta: o sou_admin antigo leria uma coluna que não existe e "Admin altera perfis" deixaria
+-- coordenadores mudarem o próprio nível. Por isso tudo isto só roda antes de niveis.sql.
+do $fase_admin$
+begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'perfis' and column_name = 'papel') then
+    raise notice 'niveis.sql já foi aplicado: mantidas as funções e regras de niveis.sql';
+    return;
+  end if;
+  execute $sql$create or replace function public.sou_admin() returns boolean
 language sql stable security definer set search_path = public as $$
   select coalesce((select admin from public.perfis where user_id = auth.uid()), false)
-$$;
-create or replace function public.pode_ver(cliente uuid) returns boolean
+$$$sql$;
+  execute $sql$create or replace function public.pode_ver(cliente uuid) returns boolean
 language sql stable security definer set search_path = public as $$
   select public.sou_admin() or exists (select 1 from public.acessos where user_id = auth.uid() and cliente_id = cliente)
-$$;
-grant execute on function public.sou_admin() to authenticated;
-grant execute on function public.pode_ver(uuid) to authenticated;
-
-alter table public.perfis enable row level security;
-drop policy if exists "Cada um vê o próprio perfil; admin vê todos" on public.perfis;
-create policy "Cada um vê o próprio perfil; admin vê todos" on public.perfis for select to authenticated
-  using (user_id = auth.uid() or public.sou_admin());
-drop policy if exists "Admin altera perfis" on public.perfis;
-create policy "Admin altera perfis" on public.perfis for update to authenticated
-  using (public.sou_admin()) with check (public.sou_admin());
-
-alter table public.clientes enable row level security;
-drop policy if exists "Vê os clientes liberados" on public.clientes;
-create policy "Vê os clientes liberados" on public.clientes for select to authenticated using (public.pode_ver(id));
-drop policy if exists "Admin cuida dos clientes" on public.clientes;
-create policy "Admin cuida dos clientes" on public.clientes for all to authenticated
-  using (public.sou_admin()) with check (public.sou_admin());
-
-alter table public.acessos enable row level security;
-drop policy if exists "Vê os próprios acessos; admin vê todos" on public.acessos;
-create policy "Vê os próprios acessos; admin vê todos" on public.acessos for select to authenticated
-  using (user_id = auth.uid() or public.sou_admin());
-drop policy if exists "Admin cuida dos acessos" on public.acessos;
-create policy "Admin cuida dos acessos" on public.acessos for all to authenticated
-  using (public.sou_admin()) with check (public.sou_admin());
+$$$sql$;
+  execute $sql$grant execute on function public.sou_admin() to authenticated$sql$;
+  execute $sql$grant execute on function public.pode_ver(uuid) to authenticated$sql$;
+  execute $sql$alter table public.perfis enable row level security$sql$;
+  execute $sql$drop policy if exists "Cada um vê o próprio perfil; admin vê todos" on public.perfis$sql$;
+  execute $sql$create policy "Cada um vê o próprio perfil; admin vê todos" on public.perfis for select to authenticated
+  using (user_id = auth.uid() or public.sou_admin())$sql$;
+  execute $sql$drop policy if exists "Admin altera perfis" on public.perfis$sql$;
+  execute $sql$create policy "Admin altera perfis" on public.perfis for update to authenticated
+  using (public.sou_admin()) with check (public.sou_admin())$sql$;
+  execute $sql$alter table public.clientes enable row level security$sql$;
+  execute $sql$drop policy if exists "Vê os clientes liberados" on public.clientes$sql$;
+  execute $sql$create policy "Vê os clientes liberados" on public.clientes for select to authenticated using (public.pode_ver(id))$sql$;
+  execute $sql$drop policy if exists "Admin cuida dos clientes" on public.clientes$sql$;
+  execute $sql$create policy "Admin cuida dos clientes" on public.clientes for all to authenticated
+  using (public.sou_admin()) with check (public.sou_admin())$sql$;
+  execute $sql$alter table public.acessos enable row level security$sql$;
+  execute $sql$drop policy if exists "Vê os próprios acessos; admin vê todos" on public.acessos$sql$;
+  execute $sql$create policy "Vê os próprios acessos; admin vê todos" on public.acessos for select to authenticated
+  using (user_id = auth.uid() or public.sou_admin())$sql$;
+  execute $sql$drop policy if exists "Admin cuida dos acessos" on public.acessos$sql$;
+  execute $sql$create policy "Admin cuida dos acessos" on public.acessos for all to authenticated
+  using (public.sou_admin()) with check (public.sou_admin())$sql$;
+end $fase_admin$;
 
 -- ---------- banco de cada cliente ----------
 do $$
@@ -127,9 +140,14 @@ create index if not exists alertas_cliente_data on public.alertas (cliente_id, p
 drop policy if exists "Clientes com login leem os alertas" on public.alertas;
 drop policy if exists "Vê os alertas dos seus clientes" on public.alertas;
 create policy "Vê os alertas dos seus clientes" on public.alertas for select to authenticated using (public.pode_ver(cliente_id));
-drop policy if exists "Admin cuida dos alertas" on public.alertas;
-create policy "Admin cuida dos alertas" on public.alertas for all to authenticated
-  using (public.sou_admin()) with check (public.sou_admin());
+do $$
+begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'perfis' and column_name = 'papel') then
+    drop policy if exists "Admin cuida dos alertas" on public.alertas;
+    create policy "Admin cuida dos alertas" on public.alertas for all to authenticated
+      using (public.sou_admin()) with check (public.sou_admin());
+  end if;
+end $$;
 
 -- Cada pessoa troca o próprio nome (o papel de administrador só um administrador muda)
 create or replace function public.salvar_meu_nome(novo text) returns void

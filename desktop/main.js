@@ -92,9 +92,8 @@ function montarMenu() {
       { role: 'zoomIn', label: 'Aumentar' },
       { role: 'zoomOut', label: 'Diminuir' },
       { type: 'separator' },
-      { role: 'togglefullscreen', label: 'Tela cheia' },
-      { role: 'toggleDevTools', label: 'Ferramentas de desenvolvedor' }
-    ] },
+      { role: 'togglefullscreen', label: 'Tela cheia' }
+    ].concat(app.isPackaged ? [] : [{ role: 'toggleDevTools', label: 'Ferramentas de desenvolvedor' }]) },
     { label: 'Aj&uda', submenu: [
       item('Configurações', '?config=1', 'Ctrl+,'),
       { label: 'Abrir no navegador', click: () => shell.openExternal(ENDERECO) },
@@ -118,7 +117,8 @@ function servirLocal() {
     let rel = decodeURIComponent(url.pathname).replace(/^\/+/, '');
     if (!rel || rel.endsWith('/')) rel += 'index.html';
     const alvo = path.normalize(path.join(raiz, rel));
-    if (!alvo.startsWith(raiz)) return new Response('Proibido', { status: 403 });
+    // O separador no fim impede escapar para uma pasta vizinha de nome parecido (app-local-x)
+    if (alvo !== raiz && !alvo.startsWith(raiz + path.sep)) return new Response('Proibido', { status: 403 });
     return net.fetch(pathToFileURL(alvo).toString());
   });
 }
@@ -146,9 +146,10 @@ function criarJanela() {
     return { action: 'deny' };
   });
   janela.webContents.on('will-navigate', (ev, url) => {
-    const destino = new URL(url);
+    let destino;
+    try { destino = new URL(url); } catch (e) { ev.preventDefault(); return; }
     const doApp = (destino.origin === ORIGEM && destino.pathname.startsWith('/app/')) || destino.protocol === 'panorama:';
-    if (!doApp) { ev.preventDefault(); shell.openExternal(url); }
+    if (!doApp) { ev.preventDefault(); if (/^https?:$/.test(destino.protocol)) shell.openExternal(url); }
   });
 
   // Sem conexão com o site: abre a cópia local do app

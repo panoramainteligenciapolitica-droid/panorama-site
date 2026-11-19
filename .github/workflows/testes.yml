@@ -1,0 +1,43 @@
+# Roda os testes do app a cada pull request e a cada mudança na main: regras do banco (num Postgres que imita o Supabase),
+# verificações estáticas, sintaxe das funções e o uso do app no modo de demonstração.
+name: Testes
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: teste
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: teste
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Regras do banco
+        run: testes/regras.sh
+      - name: Verificações estáticas
+        run: python3 testes/estaticos.py
+      - name: Sintaxe das funções do Supabase
+        run: npm install --no-save --prefix /tmp/ts typescript@5.6.3 && TYPESCRIPT=/tmp/ts/node_modules/typescript node testes/sintaxe-funcoes.js app/supabase/functions/*/index.ts
+      - name: Uso do app (modo de demonstração)
+        run: |
+          npm install --no-save --prefix /tmp/pw playwright@1.49.1
+          /tmp/pw/node_modules/.bin/playwright install --with-deps chromium
+          NODE_PATH=/tmp/pw/node_modules node testes/app-demo.js
