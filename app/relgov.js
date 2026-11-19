@@ -287,8 +287,11 @@
   // ---------- Configurações: e-mail ----------
   function renderEmailCfg() {
     $('painel-emailcfg').replaceChildren(el('section', { class: 'bloco' }, [
-      el('h2', { text: 'Serviço de envio' }),
-      el('p', { text: 'Os e-mails em massa saem pelo Resend (resend.com), com o seu domínio. Para ligar:' }),
+      el('h2', { text: 'Contas Gmail e Outlook da equipe' }),
+      el('p', { text: 'Cada pessoa pode conectar o próprio Gmail ou Outlook em Configurações > Minha conta. Os e-mails que ela manda pelo app passam a sair do endereço dela. Para liberar essa opção, o master cadastra o app uma vez no Google e na Microsoft e coloca as chaves no Supabase (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CLIENT_ID e MICROSOFT_CLIENT_SECRET em Edge Functions > Secrets), seguindo o passo a passo do arquivo LEIAME.md.' })
+    ]), el('section', { class: 'bloco' }, [
+      el('h2', { text: 'Servidor do app (Resend)' }),
+      el('p', { text: 'Quem não conectou uma conta envia pelo Resend (resend.com), com o domínio do app. Para ligar:' }),
       el('ol', { class: 'passos' }, [
         el('li', { text: 'Crie a conta no Resend e verifique o domínio panoramaip.com.br (o Resend mostra os registros DNS para copiar).' }),
         el('li', { text: 'No Resend, crie uma API Key com permissão de envio.' }),

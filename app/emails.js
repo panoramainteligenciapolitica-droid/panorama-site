@@ -1,4 +1,6 @@
-// Comunicação em massa: listas de e-mail do cliente e campanhas enviadas pela função enviar-emails (Resend).
+// Comunicação em massa: listas de e-mail do cliente e campanhas enviadas pela função enviar-emails.
+// Os e-mails saem pela conta Gmail ou Outlook que a pessoa conectou (Configurações > Minha conta, função conta-email)
+// ou, sem conta conectada, pelo servidor do app (Resend).
 // O texto aceita {{nome}}, {{primeiro_nome}}, {{tratamento}} e {{email}}; cada envio leva o link de descadastro.
 (window.PanoramaModulos = window.PanoramaModulos || []).push(function (P) {
   'use strict';
@@ -12,6 +14,10 @@
     { nome: 'Boletim', assunto: 'Boletim semanal de [cliente]', corpo: 'Olá, {{primeiro_nome}}.\n\nOs destaques da semana no Congresso:\n\n1. \n2. \n3. \n\nAté a próxima,\n[assinatura]' }
   ];
 
+  var PROVEDOR = { google: 'Gmail', microsoft: 'Outlook' };
+  var LIMITES = 'Limites de cada serviço: Gmail pessoal, cerca de 500 destinatários por dia (Google Workspace, 2.000); Outlook.com/Hotmail, 300 por dia; Microsoft 365, 10.000 por dia e até 30 por minuto. Listas grandes podem levar alguns minutos.';
+
+  var chamarFuncao = P.chamarFuncao;
   function chamar(corpo) { return P.chamarFuncao('enviar-emails', corpo); }
   // Envio que ficou "Enviando" há mais de 10 minutos: a função caiu no meio e pode continuar de onde parou
   function parado(c) { return c.status === 'enviando' && (!c.envio_iniciado_em || Date.now() - new Date(c.envio_iniciado_em).getTime() > 10 * 60e3); }
@@ -29,6 +35,80 @@
       });
     });
   }
+
+  // ================= conta de e-mail própria (Gmail / Outlook) =================
+  var conta = { carregada: false, dados: null };
+  function carregarContaEmail() {
+    if (P.estado.demo || !P.estado.sessao) { conta = { carregada: true, dados: null }; return Promise.resolve(null); }
+    return P.sb.rpc('minha_conta_email').then(function (r) {
+      conta = { carregada: true, dados: (!r.error && r.data && r.data[0]) || null, erro: r.error };
+      return conta.dados;
+    });
+  }
+  function descreverConta(d) { return d.email + ' (' + (PROVEDOR[d.provedor] || d.provedor) + ')'; }
+
+  // Volta do Google/Microsoft: ?config=1&conta_email=ok|erro&msg=...
+  var retorno = (function () {
+    var q = new URLSearchParams(location.search);
+    if (!q.get('conta_email')) return null;
+    var r = { ok: q.get('conta_email') === 'ok', msg: q.get('msg') || '' };
+    try { history.replaceState(null, '', './?config=1'); } catch (e) { /* segue */ }
+    return r;
+  })();
+
+  function conectar(provedor, botao) {
+    botao.disabled = true;
+    var voltar = /^https?:/.test(location.protocol) ? location.origin + location.pathname + '?config=1' : '';
+    chamarFuncao('conta-email', { acao: 'iniciar', provedor: provedor, voltar: voltar }).then(function (j) {
+      if (window.PanoramaDesktop || !/^https?:/.test(location.protocol)) {
+        // No programa para Windows a autorização abre no navegador; ao voltar para o programa, o status é atualizado
+        window.open(j.url, '_blank');
+        botao.disabled = false;
+        renderMinhaContaEmail('Conclua a autorização no navegador que abriu e depois volte para cá.');
+      } else location.href = j.url;
+    }, function (e) { botao.disabled = false; renderMinhaContaEmail(e.message, true); });
+  }
+
+  function renderMinhaContaEmail(aviso, ehErro) {
+    var caixa = $('minha-conta-email');
+    if (!caixa) return;
+    var titulo = el('h2', { text: 'Meu e-mail para envios' });
+    if (P.estado.demo) { caixa.replaceChildren(titulo, el('p', { class: 'discreto', text: 'Disponível só com login.' })); return; }
+    var msg = aviso ? el('p', { class: 'mensagem' + (ehErro ? ' erro' : ''), role: 'status', text: aviso }) : null;
+    var d = conta.dados;
+    if (conta.erro) {
+      caixa.replaceChildren(titulo, el('p', { class: 'mensagem erro', text: /function|schema cache|does not exist/i.test(conta.erro.message || '') ?
+        'O banco ainda não tem esta função. Peça ao master para rodar o arquivo contas-email.sql no Supabase.' : 'Não foi possível ler sua conta de e-mail.' }));
+      return;
+    }
+    var bGoogle = el('button', { type: 'button', class: 'botao botao-pequeno', text: d ? 'Trocar para Gmail' : 'Conectar Gmail', onclick: function () { conectar('google', bGoogle); } });
+    var bMs = el('button', { type: 'button', class: 'botao botao-pequeno' + (d ? ' botao-linha' : ''), text: d ? 'Trocar para Outlook' : 'Conectar Outlook / Microsoft 365', onclick: function () { conectar('microsoft', bMs); } });
+    if (d) bGoogle.classList.add('botao-linha');
+    var bSair = d ? el('button', { type: 'button', class: 'botao-texto', text: 'Desconectar', onclick: function () {
+      var b = this;
+      if (!b.dataset.confirmando) { b.dataset.confirmando = '1'; b.textContent = 'Toque de novo para desconectar'; setTimeout(function () { delete b.dataset.confirmando; b.textContent = 'Desconectar'; }, 3500); return; }
+      b.disabled = true;
+      chamarFuncao('conta-email', { acao: 'desconectar' }).catch(function () { return P.sb.rpc('desconectar_conta_email'); })
+        .then(carregarContaEmail).then(function () { renderMinhaContaEmail('Conta desconectada. Os envios voltam a sair pelo servidor do app.'); });
+    } }) : null;
+    caixa.replaceChildren.apply(caixa, [titulo,
+      d ? el('p', {}, [el('strong', { text: 'Conectado: ' }), el('span', { text: descreverConta(d) })])
+        : el('p', { text: 'Conecte sua conta Gmail ou Outlook para que os e-mails que você manda pelo app (envio em massa, testes) saiam do seu próprio endereço, com as respostas chegando na sua caixa e cópia em Enviados.' }),
+      d ? el('p', { class: 'discreto', text: 'Os e-mails que você enviar pelo app saem por esta conta. Conectado em ' + new Date(d.conectado_em).toLocaleDateString('pt-BR') + (d.usado_em ? ' · último envio em ' + new Date(d.usado_em).toLocaleString('pt-BR') : '') + '.' }) : null,
+      msg,
+      el('div', { class: 'acoes' }, [bGoogle, bMs, bSair]),
+      el('p', { class: 'discreto', text: 'O app pede só a permissão de enviar e-mails: ele não lê a sua caixa de entrada. A senha da conta não passa pelo app, e você pode desconectar quando quiser (aqui ou nas configurações de segurança do Google/Microsoft). ' + LIMITES })
+    ].filter(Boolean));
+  }
+  document.addEventListener('panorama-config', function () {
+    var r = retorno; retorno = null;
+    renderMinhaContaEmail();
+    carregarContaEmail().then(function () { renderMinhaContaEmail(r && r.msg, r && !r.ok); });
+  });
+  // Ao voltar do navegador (programa para Windows) ou de outra aba, atualiza o status
+  window.addEventListener('focus', function () {
+    if (P.estado.sessao && !P.estado.demo && $('minha-conta-email') && !$('tela-config').hidden) carregarContaEmail().then(function () { renderMinhaContaEmail(); });
+  });
 
   // ================= listas =================
   function renderListas() {
@@ -109,8 +189,10 @@
     var painel = $('painel-emails');
     if (G.semCliente(painel)) return;
     painel.replaceChildren(el('p', { class: 'discreto', text: 'Carregando…' }));
-    Promise.all([P.tabela('campanhas_email').listar({ ordem: 'criado_em', desc: true }), P.tabela('listas_email').listar({ ordem: 'nome' })]).then(function (r) {
-      var camps = r[0], listas = r[1];
+    Promise.all([P.tabela('campanhas_email').listar({ ordem: 'criado_em', desc: true }), P.tabela('listas_email').listar({ ordem: 'nome' }), carregarContaEmail().catch(function () { return null; })]).then(function (r) {
+      var camps = r[0], listas = r[1], d = r[2];
+      var porOnde = P.estado.demo ? null : el('p', { class: 'discreto' }, d ? [el('span', { text: 'Seus envios saem por ' + descreverConta(d) + '. ' }), el('a', { href: '?config=1', text: 'Trocar', onclick: function (ev) { ev.preventDefault(); P.irPara('?config=1'); } })]
+        : [el('span', { text: 'Seus envios saem pelo servidor do app. ' }), el('a', { href: '?config=1', text: 'Conectar meu Gmail ou Outlook', onclick: function (ev) { ev.preventDefault(); P.irPara('?config=1'); } })]);
       var nomeLista = function (id) { var l = listas.find(function (x) { return x.id === id; }); return l ? l.nome : 'lista apagada'; };
       painel.replaceChildren.apply(painel, [
         G.cabecalho('Envio de e-mails', G.podeEnviar() ? 'Escreva para uma lista inteira de uma vez. Cada pessoa recebe um e-mail individual, com o próprio nome.' :
@@ -118,16 +200,16 @@
           G.botao('Novo e-mail', function () { novaCampanha(listas[0] && listas[0].id); }),
           G.botao('Listas', function () { P.irPara('?secao=listas'); }, 'botao-linha')
         ]),
-        P.estado.demo ? el('p', { class: 'faixa-demo', text: 'No modo de teste dá para montar listas e rascunhos, mas o envio só funciona com login.' }) : null,
+        P.estado.demo ? el('p', { class: 'faixa-demo', text: 'No modo de teste dá para montar listas e rascunhos, mas o envio só funciona com login.' }) : porOnde,
         camps.length ? el('ul', { class: 'lista' }, camps.map(function (c) {
           return el('li', { class: 'item' }, [
             el('div', { class: 'item-topo' }, [el('span', { class: 'tema', text: STATUS[c.status] || c.status }), el('span', { text: G.dataHora(c.enviado_em || c.criado_em) })]),
             el('h2', { text: c.assunto }),
-            el('p', { class: 'discreto', text: 'Para: ' + nomeLista(c.lista_id) + (c.total ? ' · ' + c.enviados + ' de ' + c.total + ' enviados' + (c.falhas ? ' · ' + c.falhas + ' falhas' : '') : '') }),
+            el('p', { class: 'discreto', text: 'Para: ' + nomeLista(c.lista_id) + (c.total ? ' · ' + c.enviados + ' de ' + c.total + ' enviados' + (c.falhas ? ' · ' + c.falhas + ' falhas' : '') : '') + (c.enviado_por ? ' · por ' + c.enviado_por : '') }),
             el('div', { class: 'item-acoes' }, [
               c.status === 'rascunho' ? el('button', { type: 'button', class: 'acao-forte', text: 'Editar e enviar', onclick: function () { editarCampanha(c, listas); } })
                 : el('button', { type: 'button', text: 'Ver relatório', onclick: function () { relatorioEnvio(c); } }),
-              c.status === 'parcial' || c.status === 'erro' || parado(c) ? el('button', { type: 'button', class: 'acao-forte', text: 'Continuar envio', onclick: function () { enviar(c, this); } }) : null,
+              c.status === 'parcial' || c.status === 'erro' || parado(c) ? el('button', { type: 'button', class: 'acao-forte', text: 'Continuar envio', onclick: function () { enviar(c, this, /^Servidor/.test(c.enviado_por || '') ? 'resend' : undefined).catch(function () {}); } }) : null,
               el('button', { type: 'button', text: 'Duplicar', onclick: function () {
                 P.tabela('campanhas_email').inserir({ assunto: c.assunto, corpo: c.corpo, lista_id: c.lista_id, remetente_nome: c.remetente_nome, responder_para: c.responder_para, status: 'rascunho' })
                   .then(renderEmails, function (e) { P.avisar(G.erroAmigavel(e)); });
@@ -174,7 +256,8 @@
   // Depois de salvar o rascunho: prévia, teste e envio
   function confirmarEnvio(c, listas) {
     var lista = listas.find(function (l) { return l.id === c.lista_id; });
-    Promise.all([P.tabela('lista_membros').listar({ onde: { lista_id: c.lista_id }, campos: 'nome, email, tratamento' }), P.tabela('descadastros').listar().catch(function () { return []; })]).then(function (r) {
+    Promise.all([P.tabela('lista_membros').listar({ onde: { lista_id: c.lista_id }, campos: 'nome, email, tratamento' }), P.tabela('descadastros').listar().catch(function () { return []; }), carregarContaEmail().catch(function () { return null; })]).then(function (r) {
+      var d = r[2];
       var fora = {}; r[1].forEach(function (d) { fora[d.email.toLowerCase()] = true; });
       var vistos = {}, validos = r[0].filter(function (m) { var e = m.email.trim().toLowerCase(); if (!P.emailValido(e) || fora[e] || vistos[e]) return false; vistos[e] = true; return true; });
       var ex = validos[0] || { nome: 'Fulano de Tal', tratamento: 'Deputado(a)', email: 'exemplo@camara.leg.br' };
@@ -182,32 +265,47 @@
       G.formulario({
         titulo: 'Enviar para ' + validos.length + ' ' + (validos.length === 1 ? 'pessoa' : 'pessoas') + ' (' + (lista ? lista.nome : '') + ')',
         campos: [{ nome: 'previa', rotulo: 'Prévia para ' + (ex.nome || ex.email) + ' (para mudar o texto, feche e edite o rascunho)', tipo: 'textarea', linhas: 12, somenteLeitura: true },
+          d ? { nome: 'via', rotulo: 'Enviar por', tipo: 'select', opcoes: [{ valor: 'conta', rotulo: 'Minha conta: ' + descreverConta(d) }, { valor: 'resend', rotulo: 'Servidor do app (Resend)' }],
+            ajuda: LIMITES } : { nome: 'via', rotulo: 'Enviar por', tipo: 'select', opcoes: [{ valor: 'resend', rotulo: 'Servidor do app (Resend)' }], ajuda: 'Para enviar do seu próprio endereço, conecte seu Gmail ou Outlook em Configurações > Minha conta.' },
           { nome: 'teste', rotulo: 'Mandar só um teste para o meu e-mail', tipo: 'checkbox' }],
-        valores: { previa: 'Assunto: ' + preencher(c.assunto) + '\n\n' + preencher(c.corpo), teste: true },
+        valores: { previa: 'Assunto: ' + preencher(c.assunto) + '\n\n' + preencher(c.corpo), teste: true, via: d ? 'conta' : 'resend' },
         botao: 'Enviar',
         aoSalvar: function (v) {
           if (P.estado.demo) throw new Error('No modo de teste o envio fica desligado. Entre com login para enviar.');
           if (!G.podeEnviar()) throw new Error('Você ainda não tem permissão para enviar. Peça a um coordenador.');
-          if (v.teste) return chamar({ campanha_id: c.id, teste: true }).then(function (j) { P.avisar('Teste enviado para ' + j.teste); });
+          if (v.teste) return chamar({ campanha_id: c.id, teste: true, via: v.via }).then(function (j) { P.avisar('Teste enviado para ' + j.teste + (j.enviado_por ? ' por ' + j.enviado_por : '')); });
           if (!validos.length) throw new Error('A lista não tem destinatários.');
-          return enviar(c);
+          enviar(c, null, v.via).catch(function () {});
         }
       });
     });
   }
-  function enviar(c, botao) {
+  // Envia e, se o tempo de uma chamada acabar, continua sozinho até terminar (ou até o limite do Gmail/Outlook)
+  function enviar(c, botao, via) {
     if (botao) botao.disabled = true;
     P.avisar('Enviando… pode levar alguns minutos em listas grandes');
-    return chamar({ campanha_id: c.id }).then(function (j) {
-      P.avisar(j.status === 'parcial' ? j.enviados + ' enviados; faltam ' + j.restantes + '. Toque em "Continuar envio".' : j.enviados + ' e-mails enviados' + (j.falhas ? ', ' + j.falhas + ' falhas' : ''));
-      renderEmails();
-    }, function (e) { if (botao) botao.disabled = false; P.avisar(e.message || 'Falha no envio'); renderEmails(); throw e; });
+    var rodadas = 0;
+    function rodada() {
+      return chamar({ campanha_id: c.id, via: via }).then(function (j) {
+        rodadas++;
+        if (j.status === 'parcial' && !j.aviso && j.restantes > 0 && rodadas < 60) {
+          P.avisar(j.enviados + ' de ' + j.total + ' enviados… continuando');
+          if (P.estado.aba === 'emails') renderEmails();
+          return rodada();
+        }
+        if (j.aviso) P.avisar(j.aviso + ' (' + j.enviados + ' de ' + j.total + ' enviados; use "Continuar envio" depois.)');
+        else P.avisar(j.status === 'parcial' ? j.enviados + ' enviados; faltam ' + j.restantes + '. Toque em "Continuar envio".' : j.enviados + ' e-mails enviados' + (j.falhas ? ', ' + j.falhas + ' falhas' : ''));
+        renderEmails();
+        return j;
+      });
+    }
+    return rodada().catch(function (e) { if (botao) botao.disabled = false; P.avisar(e.message || 'Falha no envio'); renderEmails(); throw e; });
   }
   function relatorioEnvio(c) {
     P.tabela('envios_email').listar({ onde: { campanha_id: c.id }, ordem: 'enviado_em' }).then(function (l) {
       G.formulario({
         titulo: c.assunto,
-        campos: [{ nome: 'r', rotulo: c.enviados + ' enviados · ' + c.falhas + ' falhas', tipo: 'textarea', linhas: 14, somenteLeitura: true }],
+        campos: [{ nome: 'r', rotulo: c.enviados + ' enviados · ' + c.falhas + ' falhas' + (c.enviado_por ? ' · por ' + c.enviado_por : ''), tipo: 'textarea', linhas: 14, somenteLeitura: true }],
         valores: { r: l.map(function (x) { return (x.status === 'enviado' ? '✓ ' : '✗ ') + (x.nome ? x.nome + ' ' : '') + '<' + x.email + '>' + (x.erro ? ' · ' + x.erro : ''); }).join('\n') || 'Sem registros.' },
         botao: 'Fechar', aoSalvar: function () {}
       });
