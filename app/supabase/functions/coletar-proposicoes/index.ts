@@ -4,7 +4,8 @@
 // Tudo o que chega também vai para "entradas", que alimenta a contagem por tipo da aba Geral.
 // Para preencher dias passados: corpo {"inicio": "2026-10-01", "fim": "2026-10-31", "soEntradas": true}, até 31 dias por vez,
 // com o cabeçalho x-coleta-segredo (veja agendamento.sql).
-// Quem pode chamar: o agendamento (cabeçalho x-coleta-segredo igual ao segredo COLETA_SEGREDO) ou uma pessoa com login no app,
+// Quem pode chamar: o agendamento (cabeçalho x-coleta-segredo igual ao segredo "coleta_segredo" do Vault, que a função lê pelo
+// banco com segredo_coleta(); COLETA_SEGREDO nos segredos das funções vale no lugar, se existir) ou uma pessoa com login no app,
 // esta no máximo uma vez a cada 3 minutos e só para ontem e hoje. A chave pública (anon) sozinha não basta.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 
@@ -102,8 +103,10 @@ Deno.serve(async (req) => {
   const sb = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
   // ---------- quem chama ----------
-  const segredo = Deno.env.get('COLETA_SEGREDO') ?? '';
-  const agendada = segredo.length >= 16 && iguais(req.headers.get('x-coleta-segredo') ?? '', segredo);
+  const enviado = req.headers.get('x-coleta-segredo') ?? '';
+  let segredo = Deno.env.get('COLETA_SEGREDO') ?? '';
+  if (enviado && !segredo) segredo = String((await sb.rpc('segredo_coleta')).data ?? '');
+  const agendada = segredo.length >= 16 && iguais(enviado, segredo);
   let pessoa: string | null = null;
   if (!agendada) {
     const comoQuemChama = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, {

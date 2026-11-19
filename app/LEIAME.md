@@ -33,9 +33,8 @@ Para ligar a coleta:
 1. Rode de novo os arquivos do banco, sempre nesta ordem: `esquema.sql`, `clientes.sql`, `niveis.sql`, `relgov.sql` (veja "Banco: ordem dos arquivos").
 2. Edge Functions > Deploy a new function > Via Editor: publique `coletar-proposicoes` e `inteiro-teor`, cada uma com o seu `index.ts`.
    As duas só atendem quem tem login no app (a coleta também aceita o agendamento, com o segredo abaixo).
-3. Crie o segredo da coleta, um valor longo e aleatório: em Edge Functions > Secrets como `COLETA_SEGREDO` e, no SQL Editor,
-   `select vault.create_secret('<o mesmo valor>', 'coleta_segredo');`. O valor nunca vai para este repositório.
-4. Database > Extensions: ligue `pg_cron` e `pg_net`. Depois rode `supabase/agendamento.sql` no SQL Editor.
+3. Database > Extensions: ligue `pg_cron` e `pg_net`. Depois rode `supabase/agendamento.sql` no SQL Editor.
+   Ele sorteia o segredo do agendamento e o guarda no Vault; ninguém precisa copiar o valor.
 
 ## Aba Geral (entradas por tipo)
 

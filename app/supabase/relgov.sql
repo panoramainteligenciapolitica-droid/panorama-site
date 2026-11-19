@@ -269,8 +269,8 @@ create table if not exists public.coletas (
 create index if not exists coletas_data on public.coletas (iniciada_em desc);
 alter table public.coletas enable row level security;
 
--- 6) Funções do banco: o Postgres deixa qualquer um (inclusive quem não tem login) chamar funções novas.
---    Quem não tem login não precisa de nenhuma; quem tem login chama só as que o app usa ou as regras consultam.
+-- 6) Funções do banco: o Postgres e o Supabase deixam qualquer um, inclusive quem não tem login, chamar as funções novas.
+--    Quem não tem login não precisa de nenhuma: o acesso dele sai. Quem tem login continua com as que o app e as regras usam.
 do $$
 declare f record;
 begin
