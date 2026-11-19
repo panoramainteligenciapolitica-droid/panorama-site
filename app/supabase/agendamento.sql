@@ -20,7 +20,6 @@ $$;
 revoke execute on function public.segredo_coleta() from public, anon, authenticated;
 grant execute on function public.segredo_coleta() to service_role;
 
-select cron.unschedule(jobid) from cron.job where jobname = 'coletar-proposicoes';
 
 select cron.schedule(
   'coletar-proposicoes',

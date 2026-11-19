@@ -160,21 +160,12 @@ create table if not exists public.descadastros (
 do $$
 declare t text;
 begin
-  foreach t in array array['mapa_parlamentares', 'contatos', 'interacoes', 'tarefas', 'listas_email', 'lista_membros'] loop
+  foreach t in array array['mapa_parlamentares', 'contatos', 'interacoes', 'tarefas', 'listas_email', 'lista_membros', 'descadastros'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "Cada cliente no seu banco: %1$s" on public.%1$I', t);
     execute format('create policy "Cada cliente no seu banco: %1$s" on public.%1$I for all to authenticated using (public.pode_ver(cliente_id)) with check (public.pode_ver(cliente_id))', t);
   end loop;
 end $$;
-
--- Descadastros: quem vê o cliente consulta e registra; ninguém apaga pelo app (quem pediu para sair não volta a receber
--- por engano ou por má-fé). Para desfazer um pedido legítimo, o master apaga pelo Table Editor.
-alter table public.descadastros enable row level security;
-drop policy if exists "Cada cliente no seu banco: descadastros" on public.descadastros;
-drop policy if exists "Vê os descadastros do cliente" on public.descadastros;
-create policy "Vê os descadastros do cliente" on public.descadastros for select to authenticated using (public.pode_ver(cliente_id));
-drop policy if exists "Registra descadastros do cliente" on public.descadastros;
-create policy "Registra descadastros do cliente" on public.descadastros for insert to authenticated with check (public.pode_ver(cliente_id));
 
 -- Campanhas: quem vê o cliente lê; quem pode enviar cria e edita rascunhos. O envio em si é feito pela função enviar-emails.
 alter table public.campanhas_email enable row level security;
@@ -186,9 +177,7 @@ drop policy if exists "Quem envia edita rascunhos" on public.campanhas_email;
 create policy "Quem envia edita rascunhos" on public.campanhas_email for update to authenticated
   using (public.pode_enviar(cliente_id) and status = 'rascunho') with check (public.pode_enviar(cliente_id) and status = 'rascunho');
 drop policy if exists "Quem envia apaga campanhas" on public.campanhas_email;
--- Só rascunhos e envios que falharam por inteiro: o que foi enviado fica como registro
-create policy "Quem envia apaga campanhas" on public.campanhas_email for delete to authenticated
-  using (public.pode_enviar(cliente_id) and status in ('rascunho', 'erro'));
+create policy "Quem envia apaga campanhas" on public.campanhas_email for delete to authenticated using (public.pode_enviar(cliente_id));
 
 alter table public.envios_email enable row level security;
 drop policy if exists "Vê os envios do cliente" on public.envios_email;
@@ -242,17 +231,37 @@ do $$
 declare t text;
 begin
   foreach t in array array['lista_membros', 'campanhas_email', 'interacoes', 'tarefas'] loop
-    execute format('drop trigger if exists conferir_mesmo_cliente on public.%I', t);
-    execute format('create trigger conferir_mesmo_cliente before insert or update on public.%I for each row execute function public.conferir_mesmo_cliente()', t);
+    execute format('create or replace trigger conferir_mesmo_cliente before insert or update on public.%I for each row execute function public.conferir_mesmo_cliente()', t);
   end loop;
 end $$;
 
 -- 3) Links abertos pelo app: só http e https (um link "javascript:" rodaria código no app de quem clica).
 --    "not valid": vale para o que for gravado daqui em diante, sem travar se já houver um link antigo diferente.
-alter table public.alertas drop constraint if exists alertas_link_http;
-alter table public.alertas add constraint alertas_link_http check (link is null or link ~* '^https?://') not valid;
-alter table public.notas drop constraint if exists notas_link_http;
-alter table public.notas add constraint notas_link_http check (link is null or link ~* '^https?://') not valid;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'alertas_link_http') then
+    alter table public.alertas add constraint alertas_link_http check (link is null or link ~* '^https?://') not valid;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'notas_link_http') then
+    alter table public.notas add constraint notas_link_http check (link is null or link ~* '^https?://') not valid;
+  end if;
+end $$;
+
+-- 3b) Regras restritivas (valem por cima das outras): descadastro não se apaga nem se altera pelo app (quem pediu para sair
+--     não volta a receber por engano ou má-fé; um pedido legítimo se desfaz pelo Table Editor) e campanha enviada fica como registro.
+do $$
+begin
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'descadastros' and policyname = 'Descadastro não se apaga pelo app') then
+    create policy "Descadastro não se apaga pelo app" on public.descadastros as restrictive for delete to authenticated using (false);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'descadastros' and policyname = 'Descadastro não se altera pelo app') then
+    create policy "Descadastro não se altera pelo app" on public.descadastros as restrictive for update to authenticated using (false);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'campanhas_email' and policyname = 'Campanha enviada fica como registro') then
+    create policy "Campanha enviada fica como registro" on public.campanhas_email as restrictive for delete to authenticated
+      using (status in ('rascunho', 'erro'));
+  end if;
+end $$;
 
 -- 4) Trava de envio: a função enviar-emails reserva a campanha antes de mandar, para dois envios ao mesmo tempo
 --    não mandarem em dobro. Uma reserva parada há mais de 10 minutos (função que caiu) pode ser retomada.
