@@ -119,13 +119,16 @@ Deno.serve(async (req) => {
   const { data: lista } = await sb.from('listas_email').select('cliente_id').eq('id', camp.lista_id).maybeSingle();
   if (!lista || lista.cliente_id !== camp.cliente_id) return resposta({ erro: 'Esta lista não é deste cliente.' }, 403);
 
-  // Reserva a campanha: só uma chamada por vez envia (dois cliques ou duas abas não mandam em dobro)
-  const parada = new Date(Date.now() - RESERVA_MS).toISOString();
-  const { data: reservada } = await sb.from('campanhas_email')
-    .update({ status: 'enviando', envio_iniciado_em: new Date().toISOString() })
-    .eq('id', camp.id)
-    .or(`status.in.(rascunho,parcial,erro),and(status.eq.enviando,envio_iniciado_em.is.null),and(status.eq.enviando,envio_iniciado_em.lt."${parada}")`)
-    .select('id').maybeSingle();
+  // Reserva a campanha: só uma chamada por vez envia (dois cliques ou duas abas não mandam em dobro).
+  // A troca de status só acontece se a campanha ainda estiver como foi lida agora; quem chegar depois não acha nada para trocar.
+  const retomavel = camp.status === 'enviando' && (!camp.envio_iniciado_em || Date.parse(camp.envio_iniciado_em) < Date.now() - RESERVA_MS);
+  let reservada: unknown = null;
+  if (['rascunho', 'parcial', 'erro'].includes(camp.status) || retomavel) {
+    let troca = sb.from('campanhas_email').update({ status: 'enviando', envio_iniciado_em: new Date().toISOString() })
+      .eq('id', camp.id).eq('status', camp.status);
+    troca = camp.envio_iniciado_em ? troca.eq('envio_iniciado_em', camp.envio_iniciado_em) : troca.is('envio_iniciado_em', null);
+    reservada = (await troca.select('id').maybeSingle()).data;
+  }
   if (!reservada) {
     return resposta({ erro: camp.status === 'enviada' ? 'Este e-mail já foi enviado. Use "Duplicar" para mandar de novo.' : 'Este e-mail já está sendo enviado. Espere terminar.' }, 409);
   }

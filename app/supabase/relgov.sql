@@ -282,3 +282,4 @@ end $$;
 grant execute on function public.meu_papel(), public.minha_org(), public.sou_master(), public.sou_admin(), public.gere_org(uuid),
   public.gere_cliente(uuid), public.pode_ver(uuid), public.org_de(uuid), public.pode_enviar(uuid), public.definir_envio_email(uuid, boolean),
   public.salvar_meu_nome(text), public.contar_entradas(date, date) to authenticated;
+grant execute on all functions in schema public to service_role;

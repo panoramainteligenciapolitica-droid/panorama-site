@@ -87,7 +87,9 @@
   // um "javascript:" gravado num alerta rodaria código no app de quem clica.
   function linkSeguro(u) {
     u = String(u === null || u === undefined ? '' : u).trim();
-    return !/^[a-z][a-z0-9+.-]*:/i.test(u) || /^(https?|mailto|tel|blob):/i.test(u) ? u : '#';
+    // O navegador ignora tabulações, quebras e controles no endereço ("java\nscript:" vira "javascript:"): confere sem eles
+    var limpo = u.replace(/[\u0000-\u0020\u007f]/g, '');
+    return !/^[a-z][a-z0-9+.-]*:/i.test(limpo) || /^(https?|mailto|tel|blob):/i.test(limpo) ? u : '#';
   }
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   function emailValido(t) { return EMAIL.test(String(t || '').trim()); }

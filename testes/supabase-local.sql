@@ -12,3 +12,5 @@ grant execute on function auth.uid() to anon, authenticated;
 grant usage on schema public to anon, authenticated, service_role;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+-- Como no Supabase: funções novas já nascem liberadas para anon e authenticated (relgov.sql tira de anon)
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
