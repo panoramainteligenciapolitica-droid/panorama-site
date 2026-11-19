@@ -533,6 +533,10 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .hero-chips { justify-content: center; }
 .hero-chips li { justify-items: center; text-align: center; }
 
+/* Sobretítulos sempre centralizados, sem justificar nem hifenizar */
+.head .eyebrow { text-align: center; hyphens: none; -webkit-hyphens: none; }
+.navy .head .eyebrow { color: var(--gold); }
+
 /* O padrão dourado no canto não fica por baixo dos textos */
 @media (max-width: 1200px) { .why .wrap { padding-top: calc(clamp(150px, 22vw, 300px) * .75 + 1.5rem); } }
 @media (max-width: 860px) { .contact .wrap { padding-bottom: calc(clamp(140px, 20vw, 280px) * .75 + 1.5rem); } }
@@ -919,7 +923,7 @@ footer .wrap { -webkit-backdrop-filter: none; backdrop-filter: none; }
 
       if (words.length) {
         var r = statement.getBoundingClientRect();
-        var p = clamp((vh * 0.9 - r.top) / (vh * 0.55)) * words.length;
+        var p = clamp((vh * 0.95 - r.top) / (vh * 0.3)) * words.length;
         words.forEach(function (w, i) { w.style.opacity = (0.18 + 0.82 * clamp(p - i)).toFixed(3); });
       }
       if (bg && why) {
