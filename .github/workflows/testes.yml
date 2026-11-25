@@ -32,6 +32,8 @@ jobs:
           node-version: 22
       - name: Regras do banco
         run: testes/regras.sh
+      - name: Mapa do código em dia (CODEMAP.md)
+        run: python3 testes/mapa.py
       - name: Verificações estáticas
         run: python3 testes/estaticos.py
       - name: Sintaxe das funções do Supabase
