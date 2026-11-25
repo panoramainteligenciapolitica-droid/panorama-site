@@ -18,7 +18,7 @@ A=00000000-0000-0000-0000-00000000000a; B=00000000-0000-0000-0000-00000000000b; 
 L=11111111-1111-1111-1111-111111111111
 
 $P -f "$T/supabase-local.sql" >/dev/null 2>&1 || { echo "não consegui preparar o banco"; exit 2; }
-for f in esquema.sql clientes.sql niveis.sql relgov.sql; do rodar $f && ok "instala $f" || falha "instala $f"; done
+for f in esquema.sql clientes.sql niveis.sql relgov.sql contas-email.sql; do rodar $f && ok "instala $f" || falha "instala $f"; done
 
 $P >/dev/null <<SQL
 insert into auth.users (id, email) values ('$A', 'a@x.com'), ('$B', 'b@x.com'), ('$C', 'c@x.com');
@@ -30,6 +30,9 @@ insert into proposicoes (cliente_id, casa, sigla, numero, ano, ementa) values ((
 insert into listas_email (id, cliente_id, nome) values ('$L', (select id from clientes where nome = 'ANEC'), 'Lista ANEC');
 insert into descadastros (cliente_id, email) values ((select id from clientes where nome = 'ANEC'), 'saiu@x.com');
 insert into campanhas_email (cliente_id, assunto, corpo, status) values ((select id from clientes where nome = 'ANEC'), 'Enviada', 'x', 'enviada');
+SQL
+$P >/dev/null <<SQL
+insert into contas_email (user_id, provedor, email, refresh_token) values ('$B', 'google', 'b@gmail.com', 'segredo-do-b');
 SQL
 ATRICON=$($P -Atc "select id from clientes where nome = 'ATRICON'"); ANEC=$($P -Atc "select id from clientes where nome = 'ANEC'")
 
@@ -56,11 +59,20 @@ verificar() {
   espera "[$fase] sem login não lê nada" "$(como anon '' 'select count(*) from contatos')" 0
   r=$(como anon '' "select public.definir_envio_email('$A', true)")
   echo "$r" | grep -qi "permission denied" && ok "[$fase] sem login não chama funções do banco" || falha "[$fase] sem login chamou função do banco ($r)"
+  # Contas Gmail/Outlook conectadas: os tokens só o servidor lê
+  r=$(como authenticated $B 'select refresh_token from contas_email')
+  echo "$r" | grep -qi "permission denied" && ok "[$fase] ninguém lê os tokens das contas de e-mail pelo app" || falha "[$fase] app leu contas_email ($r)"
+  espera "[$fase] cada um vê só a própria conta de e-mail" "$(como authenticated $B 'select email from minha_conta_email()')" "b@gmail.com"
+  espera "[$fase] não vê a conta de e-mail de outra pessoa" "$(como authenticated $A 'select count(*) from minha_conta_email()')" 0
+  r=$(como authenticated $A "insert into contas_email (user_id, provedor, email, refresh_token) values ('$A', 'google', 'x@x.com', 'x') returning 'gravou'")
+  [ "$r" != "gravou" ] && ok "[$fase] app não grava conta de e-mail direto" || falha "[$fase] app gravou em contas_email"
+  r=$(como anon '' 'select count(*) from minha_conta_email()')
+  echo "$r" | grep -qi "permission denied" && ok "[$fase] sem login não consulta conta de e-mail" || falha "[$fase] sem login consultou conta de e-mail ($r)"
 }
 verificar "1ª instalação"
 
 # O LEIAME manda rodar os arquivos de novo depois de atualizações: as regras têm de continuar fechadas
-for f in esquema.sql clientes.sql niveis.sql relgov.sql esquema.sql; do rodar $f && ok "roda $f de novo" || falha "roda $f de novo"; done
+for f in esquema.sql clientes.sql niveis.sql relgov.sql contas-email.sql esquema.sql; do rodar $f && ok "roda $f de novo" || falha "roda $f de novo"; done
 verificar "depois de rodar tudo de novo"
 
 echo; echo "falhas: $falhas"; exit $(( falhas > 0 ))
