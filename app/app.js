@@ -16,44 +16,34 @@
   function ler(chave) { try { return localStorage.getItem(chave); } catch (e) { return null; } }
   function gravar(chave, valor) { try { if (valor === null) localStorage.removeItem(chave); else localStorage.setItem(chave, valor); } catch (e) { /* segue sem guardar */ } }
 
-  // ---------- dados de exemplo para a demonstração ----------
-  var EXEMPLOS = [
-    { id: 'exemplo-1', tema: 'Serviços financeiros', publicado_em: '2026-10-27T14:00:00Z',
-      titulo: 'Exemplo: comissão aprova parecer sobre crédito para pequenas empresas',
-      resumo: 'O texto segue para votação no plenário. Prazo de emendas termina na próxima semana.',
-      conteudo: 'Este é um alerta de exemplo, para mostrar como o app apresenta um conteúdo completo.\n\nO que aconteceu: a comissão aprovou o parecer do relator.\n\nPróximos passos: votação em plenário e prazo de emendas.\n\nImpacto para o setor: a ser analisado pela equipe da Panorama.' },
-    { id: 'exemplo-2', tema: 'Comércio exterior', publicado_em: '2026-10-24T11:30:00Z',
-      titulo: 'Exemplo: consulta pública sobre procedimentos aduaneiros',
-      resumo: 'Contribuições podem ser enviadas por 30 dias. Recomendamos posicionamento conjunto do setor.',
-      conteudo: 'Este é um alerta de exemplo.\n\nA consulta pública recebe contribuições por 30 dias a partir da publicação.' },
-    { id: 'exemplo-3', tema: 'Segurança pública', publicado_em: '2026-10-21T09:00:00Z',
-      titulo: 'Exemplo: audiência pública discute financiamento da segurança',
-      resumo: 'Audiência reúne representantes dos estados e do governo federal.',
-      conteudo: 'Este é um alerta de exemplo.\n\nA audiência foi convocada para discutir fontes de financiamento.' }
-  ];
-
   // ---------- acesso a dados ----------
   function listarAlertas() {
-    if (estado.demo) return Promise.resolve(EXEMPLOS);
-    if (!estado.cliente) return Promise.resolve([]);
+    // Sem dados de exemplo: no modo de teste não há alertas (eles são publicados pela equipe, com login)
+    if (estado.demo || !estado.cliente) return Promise.resolve([]);
     return sb.from('alertas').select('id, titulo, resumo, tema, publicado_em').eq('cliente_id', estado.cliente)
       .order('publicado_em', { ascending: false }).limit(100)
       .then(function (r) { if (r.error) throw r.error; return r.data; });
   }
   function obterAlerta(id) {
-    if (estado.demo) return Promise.resolve(EXEMPLOS.find(function (a) { return a.id === id; }) || null);
+    if (estado.demo) return Promise.resolve(null);
     return sb.from('alertas').select('*').eq('id', id).maybeSingle()
       .then(function (r) { if (r.error) throw r.error; return r.data; });
   }
   function listarNotas() {
     if (estado.demo) return Promise.resolve(estado.notasDemo);
-    return sb.from('notas').select('id, titulo, texto, link, criado_em')
-      .order('criado_em', { ascending: false }).limit(100)
+    // Recebidos do cliente escolhido (e os antigos, de antes de existir a separação por cliente)
+    var q = sb.from('notas').select('id, titulo, texto, link, criado_em, cliente_id');
+    if (estado.cliente) q = q.or('cliente_id.is.null,cliente_id.eq.' + estado.cliente);
+    return q.order('criado_em', { ascending: false }).limit(100)
       .then(function (r) { if (r.error) throw r.error; return r.data; });
   }
   function salvarNota(n) {
     if (estado.demo) { estado.notasDemo.unshift(Object.assign({ id: 'nota-' + Date.now(), criado_em: new Date().toISOString() }, n)); return Promise.resolve(); }
-    return sb.from('notas').insert(n).then(function (r) { if (r.error) throw r.error; });
+    return sb.from('notas').insert(Object.assign({ cliente_id: estado.cliente || null }, n)).then(function (r) {
+      // Banco sem a coluna cliente_id (antes de melhorias.sql): grava sem ela
+      if (r.error && /cliente_id/.test(r.error.message || '')) return sb.from('notas').insert(n).then(function (r2) { if (r2.error) throw r2.error; });
+      if (r.error) throw r.error;
+    });
   }
   function apagarNota(id) {
     if (estado.demo) { estado.notasDemo = estado.notasDemo.filter(function (n) { return n.id !== id; }); return Promise.resolve(); }
@@ -217,7 +207,10 @@
     var uid = estado.sessao.user.id;
     return Promise.all([
       sb.from('perfis').select('*').eq('user_id', uid).maybeSingle(),
-      sb.from('clientes').select('id, nome').order('nome')
+      // limiar e relatorio_lista_id vêm de melhorias.sql; sem elas, lê só o básico
+      sb.from('clientes').select('id, nome, organizacao_id, limiar, relatorio_lista_id').order('nome').then(function (r) {
+        return r.error ? sb.from('clientes').select('id, nome').order('nome') : r;
+      })
     ]).then(function (r) {
       if (r[0].error) throw r[0].error;
       if (r[1].error) throw r[1].error;
@@ -227,6 +220,7 @@
       var existe = estado.clientes.some(function (c) { return c.id === guardado; });
       estado.cliente = existe ? guardado : (estado.clientes[0] ? estado.clientes[0].id : null);
       estado.contaCarregada = true;
+      if (window.PanoramaAvisos) window.PanoramaAvisos.iniciar();
     });
   }
   // Nível de acesso: master, coordenador ou atendimento (bancos antigos só tinham "admin")
@@ -245,6 +239,7 @@
     estado.cliente = id;
     gravar('panorama-cliente', id);
     renderAlertas();
+    renderRecebidos();
     (modulos || []).forEach(function (m) { if (m.aoTrocarCliente) m.aoTrocarCliente(id); });
   }
 
@@ -294,12 +289,12 @@
 
   // ---------- menu lateral: cada seção abre um painel (e, nas proposições, uma das vistas) ----------
   var SECOES = {
-    geral: ['geral'], proposicoes: ['proposicoes'], monitoradas: ['proposicoes', 'monitoradas'], novas: ['proposicoes', 'novas'],
+    geral: ['geral'], avisos: ['avisos'], indicadores: ['indicadores'], proposicoes: ['proposicoes'], monitoradas: ['proposicoes', 'monitoradas'], novas: ['proposicoes', 'novas'],
     filtros: ['proposicoes', 'filtros'], agenda: ['agenda'], deputados: ['parlamentares', 'CD'], senadores: ['parlamentares', 'SF'],
     parlamentares: ['parlamentares', 'CD'], mapa: ['mapa'], contatos: ['contatos'], interacoes: ['interacoes'], tarefas: ['tarefas'],
     alertas: ['alertas'], emails: ['emails'], listas: ['listas'], recebidos: ['recebidos'], relatorio: ['relatorio']
   };
-  var PAINEIS = ['geral', 'proposicoes', 'agenda', 'parlamentares', 'mapa', 'contatos', 'interacoes', 'tarefas', 'emails', 'listas', 'alertas', 'recebidos', 'relatorio'];
+  var PAINEIS = ['geral', 'avisos', 'indicadores', 'proposicoes', 'agenda', 'parlamentares', 'mapa', 'contatos', 'interacoes', 'tarefas', 'emails', 'listas', 'alertas', 'recebidos', 'relatorio'];
   function marcarMenu(secao) {
     document.querySelectorAll('#menu a[data-secao]').forEach(function (a) {
       if (a.dataset.secao === secao) { a.setAttribute('aria-current', 'page'); var d = a.closest('details'); if (d) d.open = true; }
@@ -533,7 +528,7 @@
   sb.auth.onAuthStateChange(function (evento, sessao) {
     var mudou = Boolean(sessao) !== Boolean(estado.sessao);
     estado.sessao = sessao;
-    if (!sessao) { estado.contaCarregada = false; estado.perfil = null; estado.clientes = []; estado.cliente = null; }
+    if (!sessao) { estado.contaCarregada = false; estado.perfil = null; estado.clientes = []; estado.cliente = null; if (window.PanoramaAvisos) window.PanoramaAvisos.iniciar(); }
     if (evento === 'PASSWORD_RECOVERY') { estado.trocandoSenha = true; primeiro = false; renderNovaSenha(); return; }
     if (estado.trocandoSenha && sessao) return;
     if (primeiro || mudou) { primeiro = false; rotear(); }

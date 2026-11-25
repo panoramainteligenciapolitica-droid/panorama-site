@@ -197,66 +197,120 @@
   function limparNovo(secao) { P.estado.busca = '?secao=' + secao; try { history.replaceState(null, '', './?secao=' + secao); } catch (e) { /* segue */ } }
 
   // ================= tarefas e prazos =================
+  // Equipe que vê o cliente (para escolher o responsável); vazio se o banco ainda não tem a função
+  var equipeCache = {};
+  function equipeDoCliente() {
+    var c = P.estado.cliente;
+    if (P.estado.demo || !c) return Promise.resolve([]);
+    if (equipeCache[c]) return Promise.resolve(equipeCache[c]);
+    return P.sb.rpc('equipe_do_cliente', { cliente: c }).then(function (r) {
+      if (r.error) return [];
+      equipeCache[c] = r.data || []; return equipeCache[c];
+    }, function () { return []; });
+  }
+  function meuId() { return P.estado.perfil && P.estado.perfil.user_id; }
+  function minha(t) {
+    if (t.responsavel_id) return t.responsavel_id === meuId();
+    var eu = P.estado.perfil || {}, r = G.normalizar(t.responsavel);
+    return Boolean(r) && (r === G.normalizar(eu.nome) || r === G.normalizar(eu.email));
+  }
+
   function editarTarefa(t, props, depois, valores) {
-    G.formulario({
-      titulo: t ? 'Editar tarefa' : 'Nova tarefa',
-      campos: [
-        { nome: 'titulo', rotulo: 'O que fazer', obrigatorio: true },
-        { nome: 'prazo', rotulo: 'Prazo', tipo: 'date', largura: 'meia' },
-        { nome: 'prioridade', rotulo: 'Prioridade', tipo: 'select', opcoes: G.opcoesDe(R.PRIORIDADES), largura: 'meia' },
-        { nome: 'responsavel', rotulo: 'Responsável', largura: 'meia' },
-        { nome: 'status', rotulo: 'Situação', tipo: 'select', opcoes: G.opcoesDe(R.STATUS_TAREFA), largura: 'meia' },
-        { nome: 'proposicao_id', rotulo: 'Proposição relacionada', tipo: 'select', opcoes: opcoesProps(props) },
-        { nome: 'notas', rotulo: 'Notas', tipo: 'textarea', linhas: 3 }
-      ],
-      valores: t || Object.assign({ prioridade: 'media', status: 'aberta', responsavel: (P.estado.perfil && (P.estado.perfil.nome || P.estado.perfil.email)) || '' }, valores || {}),
-      aoSalvar: function (v) {
-        v.concluida_em = v.status === 'feita' ? (t && t.concluida_em) || new Date().toISOString() : null;
-        return (t ? P.tabela('tarefas').atualizar(t.id, v) : P.tabela('tarefas').inserir(v)).then(function () { P.avisar('Tarefa salva'); depois(); });
-      },
-      aoApagar: t ? function () { return P.tabela('tarefas').apagar(t.id).then(depois); } : null
+    equipeDoCliente().then(function (equipe) {
+      var nomeDe = function (id) { var m = equipe.find(function (x) { return x.user_id === id; }); return m ? (m.nome || m.email) : ''; };
+      var campoResp = equipe.length
+        ? { nome: 'responsavel_id', rotulo: 'Responsável', tipo: 'select', largura: 'meia', opcoes: [{ valor: '', rotulo: 'Ninguém' }].concat(equipe.map(function (m) { return { valor: m.user_id, rotulo: m.nome || m.email }; })) }
+        : { nome: 'responsavel', rotulo: 'Responsável', largura: 'meia' };
+      var padrao = equipe.length ? { responsavel_id: meuId() || '' } : { responsavel: (P.estado.perfil && (P.estado.perfil.nome || P.estado.perfil.email)) || '' };
+      G.formulario({
+        titulo: t ? 'Editar tarefa' : 'Nova tarefa',
+        campos: [
+          { nome: 'titulo', rotulo: 'O que fazer', obrigatorio: true },
+          { nome: 'prazo', rotulo: 'Prazo', tipo: 'date', largura: 'meia' },
+          { nome: 'prioridade', rotulo: 'Prioridade', tipo: 'select', opcoes: G.opcoesDe(R.PRIORIDADES), largura: 'meia' },
+          campoResp,
+          { nome: 'status', rotulo: 'Situação', tipo: 'select', opcoes: G.opcoesDe(R.STATUS_TAREFA), largura: 'meia' },
+          { nome: 'proposicao_id', rotulo: 'Proposição relacionada', tipo: 'select', opcoes: opcoesProps(props) },
+          { nome: 'notas', rotulo: 'Notas', tipo: 'textarea', linhas: 3 }
+        ],
+        valores: t || Object.assign({ prioridade: 'media', status: 'aberta' }, padrao, valores || {}),
+        aoSalvar: function (v) {
+          if (equipe.length) { v.responsavel_id = v.responsavel_id || null; v.responsavel = v.responsavel_id ? nomeDe(v.responsavel_id) : null; }
+          v.concluida_em = v.status === 'feita' ? (t && t.concluida_em) || new Date().toISOString() : null;
+          return (t ? P.tabela('tarefas').atualizar(t.id, v) : P.tabela('tarefas').inserir(v)).then(function () { P.avisar('Tarefa salva'); depois(); });
+        },
+        aoApagar: t ? function () { return P.tabela('tarefas').apagar(t.id).then(depois); } : null
+      });
     });
+  }
+  function mudarStatus(t, status) {
+    P.tabela('tarefas').atualizar(t.id, { status: status, concluida_em: status === 'feita' ? new Date().toISOString() : null }).then(renderTarefas, function (e) { P.avisar(G.erroAmigavel(e)); });
   }
   function renderTarefas() {
     var painel = $('painel-tarefas');
     if (G.semCliente(painel)) return;
     painel.replaceChildren(el('p', { class: 'discreto', text: 'Carregando…' }));
+    var ft = filtros.tarefas;
     Promise.all([P.tabela('tarefas').listar({ ordem: 'prazo' }), G.monitoradas().catch(function () { return []; })]).then(function (r) {
-      var todas = r[0], props = r[1], hoje = G.hojeIso(), em7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+      var lidas = r[0], props = r[1], hoje = G.hojeIso(), em7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+      var todas = ft.minhas ? lidas.filter(minha) : lidas;
       var prop = function (id) { var p = props.find(function (x) { return x.id === id; }); return p ? G.identProp(p) : ''; };
-      var grupos = [
-        ['Atrasadas', function (t) { return t.status !== 'feita' && t.prazo && t.prazo < hoje; }, 'atrasada'],
-        ['Próximos 7 dias', function (t) { return t.status !== 'feita' && t.prazo && t.prazo >= hoje && t.prazo <= em7; }, ''],
-        ['Depois', function (t) { return t.status !== 'feita' && t.prazo && t.prazo > em7; }, ''],
-        ['Sem prazo', function (t) { return t.status !== 'feita' && !t.prazo; }, ''],
-        ['Feitas', function (t) { return t.status === 'feita'; }, 'feita']
-      ].filter(function (g) { return g[0] !== 'Feitas' || filtros.tarefas.feitas; });
+      var detalhe = function (t) { return [t.prazo ? 'até ' + G.dataBr(t.prazo) : '', t.responsavel, prop(t.proposicao_id), t.status === 'andamento' && !ft.quadro ? 'em andamento' : ''].filter(Boolean).join(' · '); };
       var abertas = todas.filter(function (t) { return t.status !== 'feita'; }).length;
-      painel.replaceChildren(
-        G.cabecalho('Tarefas e prazos', abertas + (abertas === 1 ? ' tarefa aberta' : ' tarefas abertas') + '. Prazos de emendas, retornos de reuniões, entregas ao cliente.', [
-          G.botao('Nova tarefa', function () { editarTarefa(null, props, renderTarefas); }),
-          G.botao(filtros.tarefas.feitas ? 'Esconder feitas' : 'Mostrar feitas', function () { filtros.tarefas.feitas = !filtros.tarefas.feitas; renderTarefas(); }, 'botao-linha'),
-          G.botao('Baixar planilha', function () {
-            G.baixarCsv('tarefas.csv', todas, [{ rotulo: 'Tarefa', valor: 'titulo' }, { rotulo: 'Prazo', valor: function (t) { return G.dataBr(t.prazo); } }, { rotulo: 'Prioridade', valor: function (t) { return R.PRIORIDADES[t.prioridade]; } },
-              { rotulo: 'Responsável', valor: 'responsavel' }, { rotulo: 'Situação', valor: function (t) { return R.STATUS_TAREFA[t.status]; } }, { rotulo: 'Proposição', valor: function (t) { return prop(t.proposicao_id); } }, { rotulo: 'Notas', valor: 'notas' }]);
-          }, 'botao-linha')
-        ]),
-        el('div', { class: 'grupos-tarefas' }, grupos.map(function (g) {
+      var botoes = [
+        G.botao('Nova tarefa', function () { editarTarefa(null, props, renderTarefas); }),
+        G.botao(ft.minhas ? 'Ver de todos' : 'Só as minhas', function () { ft.minhas = !ft.minhas; renderTarefas(); }, 'botao-linha'),
+        G.botao(ft.quadro ? 'Ver em lista' : 'Ver em quadro', function () { ft.quadro = !ft.quadro; renderTarefas(); }, 'botao-linha'),
+        ft.quadro ? null : G.botao(ft.feitas ? 'Esconder feitas' : 'Mostrar feitas', function () { ft.feitas = !ft.feitas; renderTarefas(); }, 'botao-linha'),
+        G.botao('Baixar planilha', function () {
+          G.baixarCsv('tarefas.csv', todas, [{ rotulo: 'Tarefa', valor: 'titulo' }, { rotulo: 'Prazo', valor: function (t) { return G.dataBr(t.prazo); } }, { rotulo: 'Prioridade', valor: function (t) { return R.PRIORIDADES[t.prioridade]; } },
+            { rotulo: 'Responsável', valor: 'responsavel' }, { rotulo: 'Situação', valor: function (t) { return R.STATUS_TAREFA[t.status]; } }, { rotulo: 'Proposição', valor: function (t) { return prop(t.proposicao_id); } }, { rotulo: 'Notas', valor: 'notas' }]);
+        }, 'botao-linha')
+      ].filter(Boolean);
+      var cab = G.cabecalho('Tarefas e prazos', abertas + (abertas === 1 ? ' tarefa aberta' : ' tarefas abertas') + (ft.minhas ? ' com você' : '') + '. Prazos de emendas, retornos de reuniões, entregas ao cliente.', botoes);
+
+      var corpo;
+      if (ft.quadro) {
+        var colunas = [['aberta', 'A fazer'], ['andamento', 'Em andamento'], ['feita', 'Feita']];
+        corpo = el('div', { class: 'quadro-tarefas' }, colunas.map(function (c, i) {
+          var deles = todas.filter(function (t) { return (t.status || 'aberta') === c[0]; });
+          if (c[0] === 'feita') deles = deles.slice(-30).reverse();
+          return el('section', { class: 'coluna-quadro' }, [el('h3', { text: c[1] + ' · ' + deles.length }),
+            el('ul', { class: 'lista-tarefas' }, deles.length ? deles.map(function (t) {
+              var atrasada = t.status !== 'feita' && t.prazo && t.prazo < hoje;
+              return el('li', { class: 'cartao-tarefa' + (atrasada ? ' atrasado' : '') }, [
+                el('button', { type: 'button', class: 'tarefa-texto', onclick: function () { editarTarefa(t, props, renderTarefas); } }, [el('b', { text: t.titulo }), el('span', { class: 'discreto', text: detalhe(t) })]),
+                el('div', { class: 'mover-tarefa' }, [
+                  i > 0 ? el('button', { type: 'button', class: 'botao-texto', text: '← ' + colunas[i - 1][1], onclick: function () { mudarStatus(t, colunas[i - 1][0]); } }) : null,
+                  i < colunas.length - 1 ? el('button', { type: 'button', class: 'botao-texto', text: colunas[i + 1][1] + ' →', onclick: function () { mudarStatus(t, colunas[i + 1][0]); } }) : null
+                ].filter(Boolean)),
+                t.prioridade === 'alta' ? G.selo('Alta', 'forte') : null
+              ]);
+            }) : [el('li', { class: 'vazio', text: 'Nada aqui.' })])]);
+        }));
+      } else {
+        var grupos = [
+          ['Atrasadas', function (t) { return t.status !== 'feita' && t.prazo && t.prazo < hoje; }, 'atrasada'],
+          ['Próximos 7 dias', function (t) { return t.status !== 'feita' && t.prazo && t.prazo >= hoje && t.prazo <= em7; }, ''],
+          ['Depois', function (t) { return t.status !== 'feita' && t.prazo && t.prazo > em7; }, ''],
+          ['Sem prazo', function (t) { return t.status !== 'feita' && !t.prazo; }, ''],
+          ['Feitas', function (t) { return t.status === 'feita'; }, 'feita']
+        ].filter(function (g) { return g[0] !== 'Feitas' || ft.feitas; });
+        corpo = el('div', { class: 'grupos-tarefas' }, grupos.map(function (g) {
           var deles = todas.filter(g[1]);
           if (!deles.length && g[0] !== 'Próximos 7 dias') return null;
           return el('section', { class: 'bloco-tarefas ' + g[2] }, [el('h3', { text: g[0] + ' · ' + deles.length }),
             el('ul', { class: 'lista-tarefas' }, deles.length ? deles.map(function (t) {
               var marca = el('input', { type: 'checkbox', 'aria-label': 'Marcar como feita' }); marca.checked = t.status === 'feita';
-              marca.addEventListener('change', function () {
-                P.tabela('tarefas').atualizar(t.id, { status: marca.checked ? 'feita' : 'aberta', concluida_em: marca.checked ? new Date().toISOString() : null }).then(renderTarefas, function (e) { P.avisar(G.erroAmigavel(e)); });
-              });
+              marca.addEventListener('change', function () { mudarStatus(t, marca.checked ? 'feita' : 'aberta'); });
               return el('li', {}, [marca, el('button', { type: 'button', class: 'tarefa-texto', onclick: function () { editarTarefa(t, props, renderTarefas); } }, [
                 el('b', { text: t.titulo }),
-                el('span', { class: 'discreto', text: [t.prazo ? 'até ' + G.dataBr(t.prazo) : '', t.responsavel, prop(t.proposicao_id), t.status === 'andamento' ? 'em andamento' : ''].filter(Boolean).join(' · ') })
+                el('span', { class: 'discreto', text: detalhe(t) })
               ]), t.prioridade === 'alta' ? G.selo('Alta', 'forte') : null]);
             }) : [el('li', { class: 'vazio', text: 'Nada para os próximos dias.' })])]);
-        }))
-      );
+        }));
+      }
+      painel.replaceChildren(cab, corpo);
       var q = parametros();
       if (q.get('novo')) { editarTarefa(null, props, renderTarefas, { titulo: q.get('titulo') || '', prazo: q.get('prazo') || null }); limparNovo('tarefas'); }
     }, function (e) { falhou(painel, e); });

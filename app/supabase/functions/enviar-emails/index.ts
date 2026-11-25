@@ -1,7 +1,11 @@
-// Envio de e-mails em massa pelo Resend (resend.com), a partir de uma campanha do app (relgov.sql).
-// Corpo: { campanha_id, teste?: true }. Com teste, manda só para o e-mail de quem pediu.
-// Segredos (Edge Functions > Secrets): RESEND_API_KEY e EMAIL_REMETENTE (ex.: contato@panoramaip.com.br,
-// de um domínio verificado no Resend). Opcional: DESCADASTRO_SEGREDO (senão usa a chave de serviço).
+// Envio de e-mails em massa a partir de uma campanha do app (relgov.sql), por um destes caminhos:
+//  - a conta Gmail ou Outlook que a própria pessoa conectou em Configurações > Minha conta (função conta-email);
+//  - o Resend (resend.com), com o domínio do app.
+// Corpo: { campanha_id, teste?: true, via?: 'conta' | 'resend' }. Sem via: usa a conta conectada, se houver.
+// Com teste, manda só para o e-mail de quem pediu.
+// Segredos (Edge Functions > Secrets): para o Resend, RESEND_API_KEY e EMAIL_REMETENTE (ex.: contato@panoramaip.com.br,
+// de um domínio verificado). Para as contas próprias, os mesmos GOOGLE_* e MICROSOFT_* da função conta-email.
+// Opcional: DESCADASTRO_SEGREDO (senão usa a chave de serviço).
 // Cada e-mail é personalizado ({{nome}}, {{tratamento}}, {{email}}) e leva o link de descadastro.
 // Quem já recebeu não recebe de novo: se o tempo acabar no meio, chamar de novo continua de onde parou.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
@@ -14,6 +18,110 @@ const resposta = (corpo: unknown, status = 200) =>
   new Response(JSON.stringify(corpo), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 const LOTE = 100; // máximo do envio em lote do Resend
 const LIMITE_MS = 110_000;
+// Gmail: cerca de 2 envios por segundo por conta. Outlook (Microsoft Graph): no máximo 30 por minuto por caixa.
+const PAUSA_MS = { google: 400, microsoft: 2_100 } as const;
+const NOME_PROVEDOR = { google: 'Gmail', microsoft: 'Outlook' } as const;
+const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+type Conta = { user_id: string; provedor: 'google' | 'microsoft'; email: string; nome: string | null; refresh_token: string; access_token: string | null; expira_em: string | null };
+type Mensagem = { para: string; assunto: string; html: string; texto: string; link: string; um_clique: string; de_nome: string; responder: string | null };
+class ErroCota extends Error {}
+class ErroConta extends Error {}
+
+// ---------- MIME para o Gmail ----------
+function b64(bytes: Uint8Array) {
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+const utf8 = (t: string) => new TextEncoder().encode(t);
+const cabecalhoUtf8 = (t: string) => /^[\x20-\x7e]*$/.test(t) ? t : '=?UTF-8?B?' + b64(utf8(t)) + '?=';
+const quebrar = (t: string) => t.replace(/.{1,76}/g, '$&\r\n');
+function mime(m: Mensagem, de: string) {
+  const fronteira = 'pnr' + crypto.randomUUID().replace(/-/g, '');
+  const cabecalhos = [
+    'From: ' + (m.de_nome ? cabecalhoUtf8(m.de_nome.replace(/[<>"]/g, '')) + ' ' : '') + '<' + de + '>',
+    'To: <' + m.para + '>',
+    'Subject: ' + cabecalhoUtf8(m.assunto),
+    m.responder ? 'Reply-To: <' + m.responder + '>' : null,
+    'List-Unsubscribe: <' + m.um_clique + '>, <' + m.link + '>',
+    'List-Unsubscribe-Post: List-Unsubscribe=One-Click',
+    'MIME-Version: 1.0',
+    'Content-Type: multipart/alternative; boundary="' + fronteira + '"',
+  ].filter(Boolean);
+  const corpo = [
+    '--' + fronteira, 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', quebrar(b64(utf8(m.texto))),
+    '--' + fronteira, 'Content-Type: text/html; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', quebrar(b64(utf8(m.html))),
+    '--' + fronteira + '--', '',
+  ];
+  return b64(utf8(cabecalhos.join('\r\n') + '\r\n\r\n' + corpo.join('\r\n'))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// ---------- conta conectada: token sempre válido ----------
+// deno-lint-ignore no-explicit-any
+async function tokenValido(sb: any, c: Conta) {
+  if (c.access_token && c.expira_em && new Date(c.expira_em).getTime() > Date.now() + 90_000) return c.access_token;
+  const google = c.provedor === 'google';
+  const corpo = new URLSearchParams({
+    client_id: Deno.env.get(google ? 'GOOGLE_CLIENT_ID' : 'MICROSOFT_CLIENT_ID') || '',
+    client_secret: Deno.env.get(google ? 'GOOGLE_CLIENT_SECRET' : 'MICROSOFT_CLIENT_SECRET') || '',
+    refresh_token: c.refresh_token, grant_type: 'refresh_token',
+  });
+  if (!google) corpo.set('scope', 'offline_access User.Read Mail.Send');
+  const r = await fetch(google ? 'https://oauth2.googleapis.com/token' : 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+    { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: corpo });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.access_token) {
+    if (j.error === 'invalid_grant') {
+      // Senha trocada, acesso removido ou prazo vencido: a pessoa precisa conectar de novo
+      await sb.from('contas_email').delete().eq('user_id', c.user_id);
+      throw new ErroConta('A conexão com ' + c.email + ' expirou ou foi removida. Conecte a conta de novo em Configurações > Minha conta.');
+    }
+    throw new ErroConta('Não foi possível renovar o acesso a ' + c.email + ' (' + (j.error_description || j.error || r.status) + ').');
+  }
+  c.access_token = j.access_token;
+  c.expira_em = new Date(Date.now() + (Number(j.expires_in) || 3600) * 1000).toISOString();
+  if (j.refresh_token) c.refresh_token = j.refresh_token; // a Microsoft troca o refresh token a cada renovação
+  await sb.from('contas_email').update({ access_token: c.access_token, expira_em: c.expira_em, refresh_token: c.refresh_token }).eq('user_id', c.user_id);
+  return c.access_token;
+}
+
+// deno-lint-ignore no-explicit-any
+async function enviarPelaConta(sb: any, c: Conta, m: Mensagem): Promise<string | null> {
+  const token = await tokenValido(sb, c);
+  let r: Response;
+  if (c.provedor === 'google') {
+    r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ raw: mime(m, c.email) }),
+    });
+  } else {
+    r = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: {
+          subject: m.assunto, body: { contentType: 'HTML', content: m.html },
+          toRecipients: [{ emailAddress: { address: m.para } }],
+          replyTo: m.responder ? [{ emailAddress: { address: m.responder } }] : [],
+        },
+        saveToSentItems: true,
+      }),
+    });
+  }
+  if (r.ok) {
+    const j = await r.json().catch(() => ({}));
+    return j?.id ?? null;
+  }
+  const j = await r.json().catch(() => ({}));
+  const msg = String(j?.error?.message || j?.error_description || ('Resposta ' + r.status));
+  if (r.status === 401) { c.expira_em = null; throw new ErroConta('O acesso à conta ' + c.email + ' foi recusado. Conecte de novo em Configurações > Minha conta.'); }
+  if (r.status === 429 || /quota|limit exceeded|rate ?limit|throttl|MailboxConcurrency|ErrorExceededMessageLimit/i.test(msg)) {
+    throw new ErroCota('A conta ' + c.email + ' chegou ao limite de envios do ' + NOME_PROVEDOR[c.provedor] + ' por agora. Continue mais tarde.');
+  }
+  if (r.status === 403 && c.provedor === 'microsoft' && /MailboxNotEnabledForRESTAPI|license/i.test(msg)) {
+    throw new ErroConta('Esta conta Microsoft não tem caixa de e-mail ativa para envio.');
+  }
+  throw new Error(msg.slice(0, 300));
+}
 const PAGINA_DESCADASTRO = 'https://panoramaip.com.br/app/descadastro.html';
 const RESERVA_MS = 10 * 60_000; // envio "Enviando" parado há mais que isso (função que caiu) pode ser retomado
 
@@ -63,10 +171,6 @@ Deno.serve(async (req) => {
   });
   const { data: quem } = await comoQuemChama.auth.getUser();
   if (!quem?.user) return resposta({ erro: 'Entre de novo no app.' }, 401);
-
-  const chaveResend = Deno.env.get('RESEND_API_KEY');
-  const remetente = Deno.env.get('EMAIL_REMETENTE');
-  if (!chaveResend || !remetente) return resposta({ erro: 'O envio de e-mails ainda não foi configurado (faltam RESEND_API_KEY e EMAIL_REMETENTE nos segredos das funções).' }, 503);
   const segredo = Deno.env.get('DESCADASTRO_SEGREDO') || servico;
 
   const corpoReq = await req.json().catch(() => ({}));
@@ -77,30 +181,43 @@ Deno.serve(async (req) => {
   const { data: pode } = await comoQuemChama.rpc('pode_enviar', { cliente: camp.cliente_id });
   if (!pode) return resposta({ erro: 'Você não tem permissão para enviar e-mails deste cliente.' }, 403);
 
-  const { data: cliente } = await sb.from('clientes').select('nome').eq('id', camp.cliente_id).maybeSingle();
-  const de = (camp.remetente_nome ? camp.remetente_nome.replace(/[<>"]/g, '') + ' ' : '') + '<' + remetente + '>';
+  // Por onde sai: a conta conectada de quem envia (padrão, se houver) ou o Resend
+  const { data: conta } = await sb.from('contas_email').select('*').eq('user_id', quem.user.id).maybeSingle() as { data: Conta | null };
+  const via = corpoReq.via === 'resend' ? 'resend' : corpoReq.via === 'conta' ? 'conta' : (conta ? 'conta' : 'resend');
+  if (via === 'conta' && !conta) return resposta({ erro: 'Conecte sua conta Gmail ou Outlook em Configurações > Minha conta, ou escolha enviar pelo servidor do app.' }, 400);
+  const chaveResend = Deno.env.get('RESEND_API_KEY');
+  const remetente = Deno.env.get('EMAIL_REMETENTE');
+  if (via === 'resend' && (!chaveResend || !remetente)) {
+    return resposta({ erro: 'O envio pelo servidor do app ainda não foi configurado (faltam RESEND_API_KEY e EMAIL_REMETENTE). Conecte sua conta Gmail ou Outlook em Configurações > Minha conta para enviar por ela.' }, 503);
+  }
+  const enviadoPor = via === 'conta' ? conta!.email + ' (' + NOME_PROVEDOR[conta!.provedor] + ')' : 'Servidor do app (' + remetente + ')';
 
+  const { data: cliente } = await sb.from('clientes').select('nome').eq('id', camp.cliente_id).maybeSingle();
   // Descadastro em um clique (exigido por Gmail e Yahoo para envio em massa): o provedor faz um POST direto na função
   const funcaoDescadastro = url + '/functions/v1/descadastrar';
-  async function montar(m: { nome?: string | null; tratamento?: string | null; email: string }) {
+
+  async function montar(m: { nome?: string | null; tratamento?: string | null; email: string }): Promise<Mensagem> {
     const t = await assinatura(segredo, camp.cliente_id + ':' + m.email.toLowerCase());
     const link = PAGINA_DESCADASTRO + '?c=' + camp.cliente_id + '&e=' + encodeURIComponent(m.email) + '&t=' + t;
     const rodape = 'Você recebeu este e-mail de ' + escapar(camp.remetente_nome || cliente?.nome || 'Panorama') +
       '. <a href="' + link + '">Não quero mais receber estes e-mails</a>.';
     const texto = preencher(camp.corpo, m);
     return {
-      from: de, to: [m.email], subject: preencher(camp.assunto, m),
-      html: html(texto, rodape), text: texto + '\n\n--\nPara não receber mais: ' + link,
-      reply_to: camp.responder_para || undefined,
-      headers: {
-        'List-Unsubscribe': '<' + funcaoDescadastro + '?c=' + camp.cliente_id + '&e=' + encodeURIComponent(m.email) + '&t=' + t + '>',
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-      },
+      para: m.email, assunto: preencher(camp.assunto, m), html: html(texto, rodape),
+      texto: texto + '\n\n--\nPara não receber mais: ' + link, link,
+      um_clique: funcaoDescadastro + '?c=' + camp.cliente_id + '&e=' + encodeURIComponent(m.email) + '&t=' + t,
+      de_nome: camp.remetente_nome || conta?.nome || '', responder: camp.responder_para || null,
     };
   }
-  async function mandar(lote: unknown[]) {
+  async function mandarResend(lote: Mensagem[]) {
+    const de = (camp.remetente_nome ? camp.remetente_nome.replace(/[<>"]/g, '') + ' ' : '') + '<' + remetente + '>';
     const r = await fetch('https://api.resend.com/emails/batch', {
-      method: 'POST', headers: { Authorization: 'Bearer ' + chaveResend, 'Content-Type': 'application/json' }, body: JSON.stringify(lote),
+      method: 'POST', headers: { Authorization: 'Bearer ' + chaveResend, 'Content-Type': 'application/json' },
+      body: JSON.stringify(lote.map((m) => ({
+        from: de, to: [m.para], subject: m.assunto, html: m.html, text: m.texto,
+        reply_to: m.responder || undefined,
+        headers: { 'List-Unsubscribe': '<' + m.um_clique + '>, <' + m.link + '>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+      }))),
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j?.message || ('Resend respondeu ' + r.status));
@@ -110,8 +227,10 @@ Deno.serve(async (req) => {
   // Teste: só para quem pediu
   if (corpoReq.teste) {
     try {
-      await mandar([await montar({ nome: 'Teste', tratamento: '', email: quem.user.email! })]);
-      return resposta({ ok: true, teste: quem.user.email });
+      const m = await montar({ nome: 'Teste', tratamento: '', email: quem.user.email! });
+      if (via === 'conta') { await enviarPelaConta(sb, conta!, m); await sb.from('contas_email').update({ usado_em: new Date().toISOString() }).eq('user_id', conta!.user_id); }
+      else await mandarResend([m]);
+      return resposta({ ok: true, teste: quem.user.email, enviado_por: enviadoPor });
     } catch (e) { return resposta({ erro: String((e as Error).message) }, 502); }
   }
   if (!camp.lista_id) return resposta({ erro: 'Escolha a lista de destinatários.' }, 400);
@@ -155,27 +274,52 @@ Deno.serve(async (req) => {
     vistos.add(e); return true;
   });
   const total = fila.length + feitos.length;
-  await sb.from('campanhas_email').update({ total }).eq('id', camp.id);
+  await sb.from('campanhas_email').update({ total, enviado_por: enviadoPor }).eq('id', camp.id);
 
-  let enviados = feitos.length, falhas = 0, i = 0;
-  for (; i < fila.length; i += LOTE) {
-    if (Date.now() - inicio > LIMITE_MS) break;
-    const parte = fila.slice(i, i + LOTE);
-    try {
-      const ids = await mandar(await Promise.all(parte.map(montar)));
-      enviados += parte.length;
-      await sb.from('envios_email').insert(parte.map((m, k) => ({
-        campanha_id: camp.id, cliente_id: camp.cliente_id, email: m.email, nome: m.nome, status: 'enviado', id_provedor: ids[k]?.id ?? null,
-      })));
-    } catch (e) {
-      falhas += parte.length;
-      await sb.from('envios_email').insert(parte.map((m) => ({
-        campanha_id: camp.id, cliente_id: camp.cliente_id, email: m.email, nome: m.nome, status: 'falha', erro: String((e as Error).message).slice(0, 500),
-      })));
+  let enviados = feitos.length, falhas = 0, i = 0, aviso = '';
+  const registrar = (parte: typeof fila, status: 'enviado' | 'falha', ids: (string | null)[] = [], erro = '') =>
+    sb.from('envios_email').insert(parte.map((m, k) => ({
+      campanha_id: camp.id, cliente_id: camp.cliente_id, email: m.email, nome: m.nome, status,
+      id_provedor: ids[k] ?? null, erro: erro ? erro.slice(0, 500) : null,
+    })));
+
+  if (via === 'resend') {
+    for (; i < fila.length; i += LOTE) {
+      if (Date.now() - inicio > LIMITE_MS) break;
+      const parte = fila.slice(i, i + LOTE);
+      try {
+        const ids = await mandarResend(await Promise.all(parte.map(montar)));
+        enviados += parte.length;
+        await registrar(parte, 'enviado', ids.map((x) => x?.id ?? null));
+      } catch (e) {
+        falhas += parte.length;
+        await registrar(parte, 'falha', [], String((e as Error).message));
+      }
     }
+  } else {
+    // Pela conta da pessoa: um e-mail por vez, no ritmo que o Gmail/Outlook aceitam
+    const pausa = PAUSA_MS[conta!.provedor];
+    for (; i < fila.length; i++) {
+      if (Date.now() - inicio > LIMITE_MS) break;
+      const m = fila[i];
+      const comeco = Date.now();
+      try {
+        const id = await enviarPelaConta(sb, conta!, await montar(m));
+        enviados++;
+        await registrar([m], 'enviado', [id]);
+      } catch (e) {
+        if (e instanceof ErroCota || e instanceof ErroConta) { aviso = e.message; break; }
+        falhas++;
+        await registrar([m], 'falha', [], String((e as Error).message));
+      }
+      const resta = pausa - (Date.now() - comeco);
+      if (resta > 0) await espera(resta);
+    }
+    await sb.from('contas_email').update({ usado_em: new Date().toISOString() }).eq('user_id', conta!.user_id);
   }
+
   const terminou = i >= fila.length;
   const status = terminou ? (enviados === 0 && falhas > 0 ? 'erro' : 'enviada') : 'parcial';
   await sb.from('campanhas_email').update({ status, enviados, falhas, enviado_em: new Date().toISOString(), envio_iniciado_em: null }).eq('id', camp.id);
-  return resposta({ ok: true, status, total, enviados, falhas, restantes: Math.max(0, fila.length - i) });
+  return resposta({ ok: true, status, total, enviados, falhas, restantes: Math.max(0, fila.length - i), aviso: aviso || undefined, enviado_por: enviadoPor });
 });

@@ -41,7 +41,7 @@
 </div>
 
 <nav class="menu-lateral" id="menu" aria-label="Seções do app" hidden>
-  <div class="menu-grupo"><a href="?secao=geral" data-secao="geral">Painel geral</a></div>
+  <div class="menu-grupo"><a href="?secao=geral" data-secao="geral">Painel geral</a><a href="?secao=avisos" data-secao="avisos">Avisos <span class="contador" id="menu-avisos"></span></a></div>
   <details class="menu-grupo" open>
     <summary>Legislativo</summary>
     <a href="?secao=monitoradas" data-secao="monitoradas">Proposições monitoradas</a>
@@ -71,6 +71,7 @@
   <details class="menu-grupo" open>
     <summary>Relatórios</summary>
     <a href="?secao=relatorio" data-secao="relatorio">Relatório do cliente</a>
+    <a href="?secao=indicadores" data-secao="indicadores">Indicadores da equipe</a>
   </details>
   <div class="menu-grupo menu-rodape"><a href="?config=1" data-secao="config">Configurações</a></div>
 </nav>
@@ -202,9 +203,12 @@
             <input type="range" id="limiar" min="5" max="80" step="5" aria-label="Similaridade mínima">
             <output id="limiar-valor" for="limiar"></output>
           </div>
+          <p class="discreto" id="limiar-nota"></p>
         </section>
       </div>
     </div>
+    <div role="tabpanel" id="painel-avisos" hidden></div>
+    <div role="tabpanel" id="painel-indicadores" hidden></div>
     <div role="tabpanel" id="painel-agenda" hidden></div>
     <div role="tabpanel" id="painel-parlamentares" hidden></div>
     <div role="tabpanel" id="painel-mapa" hidden></div>
@@ -301,6 +305,7 @@
       <button type="button" data-tema="pessoas" aria-pressed="false" hidden>Pessoas</button>
       <button type="button" data-tema="perfis" aria-pressed="false">Perfis e permissões</button>
       <button type="button" data-tema="emailcfg" aria-pressed="false" hidden>E-mail</button>
+      <button type="button" data-tema="historico" aria-pressed="false" hidden>Histórico</button>
       <button type="button" data-tema="programa" aria-pressed="false">Programa para Windows</button>
     </div>
 
@@ -320,6 +325,11 @@
           <p class="mensagem" id="conta-msg" role="status"></p>
           <div class="acoes"><button class="botao botao-pequeno" type="submit">Trocar senha</button></div>
         </form>
+      </section>
+      <section class="bloco" id="minha-conta-avisos" hidden></section>
+      <section class="bloco" id="minha-conta-email">
+        <h2>Meu e-mail para envios</h2>
+        <p class="discreto">Carregando…</p>
       </section>
     </div>
 
@@ -378,6 +388,7 @@
     </div>
     <div data-tema-painel="perfis" hidden><div id="painel-perfis"></div></div>
     <div data-tema-painel="emailcfg" hidden><div id="painel-emailcfg"></div></div>
+    <div data-tema-painel="historico" hidden><div id="painel-historico"></div></div>
     <div data-tema-painel="programa" hidden><div id="painel-programa"></div></div>
   </section>
 
@@ -436,6 +447,9 @@
 <script src="relacionamento.js"></script>
 <script src="emails.js"></script>
 <script src="relatorio.js"></script>
+<script src="avisos.js"></script>
+<script src="detalhe.js"></script>
+<script src="indicadores.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
